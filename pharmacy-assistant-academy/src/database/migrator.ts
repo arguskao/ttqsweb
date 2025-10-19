@@ -58,7 +58,10 @@ export class DatabaseMigrator {
             '003_create_course_enrollments_table.sql',
             '004_create_jobs_table.sql',
             '005_create_job_applications_table.sql',
-            '006_create_documents_table.sql'
+            '006_create_documents_table.sql',
+            '007_create_instructors_table.sql',
+            '008_create_ttqs_tables.sql',
+            '009_create_community_tables.sql'
         ]
 
         return allMigrations.filter(filename => {
@@ -119,6 +122,15 @@ export class DatabaseMigrator {
 
         // Drop all tables in reverse order
         const dropTables = [
+            'DROP TABLE IF EXISTS community_group_members CASCADE;',
+            'DROP TABLE IF EXISTS community_groups CASCADE;',
+            'DROP TABLE IF EXISTS shared_experiences CASCADE;',
+            'DROP TABLE IF EXISTS venue_recommendations CASCADE;',
+            'DROP TABLE IF EXISTS instructor_development_programs CASCADE;',
+            'DROP TABLE IF EXISTS ttqs_analytics CASCADE;',
+            'DROP TABLE IF EXISTS ttqs_evaluations CASCADE;',
+            'DROP TABLE IF EXISTS instructor_ratings CASCADE;',
+            'DROP TABLE IF EXISTS instructors CASCADE;',
             'DROP TABLE IF EXISTS job_applications CASCADE;',
             'DROP TABLE IF EXISTS jobs CASCADE;',
             'DROP TABLE IF EXISTS course_enrollments CASCADE;',

@@ -52,10 +52,13 @@ export class ApiRouter {
 
     // Find matching route
     private findRoute(method: string, path: string): { route: Route; params: Record<string, string> } | null {
+        // Strip query parameters from path for matching
+        const pathWithoutQuery = path.split('?')[0]
+
         for (const route of this.routes) {
             if (route.method !== method.toUpperCase()) continue
 
-            const params = this.matchPath(route.path, path)
+            const params = this.matchPath(route.path, pathWithoutQuery)
             if (params !== null) {
                 return { route, params }
             }
@@ -110,8 +113,11 @@ export class ApiRouter {
 
     // Handle incoming request
     async handleRequest(req: ApiRequest): Promise<ApiResponse> {
+        // Strip query parameters from URL for route matching
+        const urlWithoutQuery = req.url.split('?')[0]
+
         // Find matching route
-        const match = this.findRoute(req.method, req.url)
+        const match = this.findRoute(req.method, urlWithoutQuery)
 
         if (!match) {
             throw new NotFoundError(`路由不存在: ${req.method} ${req.url}`)

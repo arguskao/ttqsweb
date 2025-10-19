@@ -84,13 +84,14 @@ export interface Job {
 export interface Document {
   id: number
   title: string
-  description: string
+  description: string | null
   fileUrl: string
-  fileType: string
-  fileSize: number
-  category: string
+  fileType: string | null
+  fileSize: number | null
+  category: string | null
   isPublic: boolean
-  uploadedBy: number
+  uploadedBy: number | null
+  downloadCount: number
   createdAt: string
 }
 

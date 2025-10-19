@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS documents (
     category VARCHAR(100),
     is_public BOOLEAN DEFAULT true,
     uploaded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    download_count INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -53,4 +53,5 @@ export const apiService = {
     api.delete(url).then((response) => response.data),
 }
 
+export { api }
 export default api

@@ -37,7 +37,12 @@
                       <div class="field">
                         <label class="label">姓</label>
                         <div class="control">
-                          <input class="input" type="text" :value="user.lastName" readonly />
+                          <input 
+                            class="input" 
+                            type="text" 
+                            v-model="editForm.lastName" 
+                            :readonly="!isEditing" 
+                          />
                         </div>
                       </div>
                     </div>
@@ -45,7 +50,12 @@
                       <div class="field">
                         <label class="label">名</label>
                         <div class="control">
-                          <input class="input" type="text" :value="user.firstName" readonly />
+                          <input 
+                            class="input" 
+                            type="text" 
+                            v-model="editForm.firstName" 
+                            :readonly="!isEditing" 
+                          />
                         </div>
                       </div>
                     </div>
@@ -61,7 +71,13 @@
                   <div class="field">
                     <label class="label">電話號碼</label>
                     <div class="control">
-                      <input class="input" type="tel" :value="user.phone || '未提供'" readonly />
+                      <input 
+                        class="input" 
+                        type="tel" 
+                        v-model="editForm.phone" 
+                        :readonly="!isEditing"
+                        placeholder="請輸入電話號碼" 
+                      />
                     </div>
                   </div>
 
@@ -72,11 +88,40 @@
                     </div>
                   </div>
 
-                  <div class="field is-grouped">
-                    <div class="control">
-                      <button class="button is-primary" @click="editProfile">編輯資料</button>
+                  <!-- Success message -->
+                  <div v-if="successMessage" class="notification is-success">
+                    {{ successMessage }}
+                  </div>
+
+                  <!-- Update error message -->
+                  <div v-if="updateError" class="notification is-danger">
+                    {{ updateError }}
+                  </div>
+
+                  <div class="field is-grouped is-grouped-multiline">
+                    <div class="control" v-if="!isEditing">
+                      <button class="button is-primary" @click="startEdit">編輯資料</button>
                     </div>
-                    <div class="control">
+                    <div class="control" v-if="isEditing">
+                      <button 
+                        class="button is-success" 
+                        @click="saveProfile"
+                        :class="{ 'is-loading': isSaving }"
+                        :disabled="isSaving"
+                      >
+                        儲存
+                      </button>
+                    </div>
+                    <div class="control" v-if="isEditing">
+                      <button 
+                        class="button is-light" 
+                        @click="cancelEdit"
+                        :disabled="isSaving"
+                      >
+                        取消
+                      </button>
+                    </div>
+                    <div class="control" v-if="!isEditing && user.userType === 'job_seeker'">
                       <router-link to="/learning-progress" class="button is-info">
                         <span class="icon">
                           <i class="fas fa-chart-line"></i>
@@ -84,7 +129,23 @@
                         <span>學習進度</span>
                       </router-link>
                     </div>
-                    <div class="control">
+                    <div class="control" v-if="!isEditing && user.userType === 'job_seeker'">
+                      <router-link to="/learning-history" class="button is-success">
+                        <span class="icon">
+                          <i class="fas fa-history"></i>
+                        </span>
+                        <span>學習歷程</span>
+                      </router-link>
+                    </div>
+                    <div class="control" v-if="!isEditing && user.userType === 'job_seeker'">
+                      <router-link to="/application-history" class="button is-warning">
+                        <span class="icon">
+                          <i class="fas fa-briefcase"></i>
+                        </span>
+                        <span>求職記錄</span>
+                      </router-link>
+                    </div>
+                    <div class="control" v-if="!isEditing">
                       <button class="button is-light" @click="logout">登出</button>
                     </div>
                   </div>
@@ -110,6 +171,17 @@ const router = useRouter()
 const user = ref<User | null>(null)
 const isLoading = ref(true)
 const errorMessage = ref('')
+const isEditing = ref(false)
+const isSaving = ref(false)
+const successMessage = ref('')
+const updateError = ref('')
+
+// Edit form state
+const editForm = ref({
+  firstName: '',
+  lastName: '',
+  phone: ''
+})
 
 // Format date helper
 const formatDate = (dateString: string): string => {
@@ -132,11 +204,13 @@ const loadProfile = async () => {
     const cachedUser = authService.getCurrentUser()
     if (cachedUser) {
       user.value = cachedUser
+      updateEditForm(cachedUser)
     }
     
     // Then fetch fresh data from API
     const freshUser = await authService.getProfile()
     user.value = freshUser
+    updateEditForm(freshUser)
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '載入用戶資料失敗'
   } finally {
@@ -144,10 +218,66 @@ const loadProfile = async () => {
   }
 }
 
-// Edit profile (placeholder)
-const editProfile = () => {
-  // TODO: Implement profile editing
-  alert('編輯功能將在後續版本中實現')
+// Update edit form with user data
+const updateEditForm = (userData: User) => {
+  editForm.value = {
+    firstName: userData.firstName,
+    lastName: userData.lastName,
+    phone: userData.phone || ''
+  }
+}
+
+// Start editing
+const startEdit = () => {
+  isEditing.value = true
+  successMessage.value = ''
+  updateError.value = ''
+}
+
+// Cancel editing
+const cancelEdit = () => {
+  isEditing.value = false
+  successMessage.value = ''
+  updateError.value = ''
+  // Reset form to current user data
+  if (user.value) {
+    updateEditForm(user.value)
+  }
+}
+
+// Save profile changes
+const saveProfile = async () => {
+  try {
+    isSaving.value = true
+    updateError.value = ''
+    successMessage.value = ''
+
+    // Validate required fields
+    if (!editForm.value.firstName.trim() || !editForm.value.lastName.trim()) {
+      updateError.value = '姓名不能為空'
+      return
+    }
+
+    // Update profile
+    const updatedUser = await authService.updateProfile({
+      firstName: editForm.value.firstName.trim(),
+      lastName: editForm.value.lastName.trim(),
+      phone: editForm.value.phone.trim() || undefined
+    })
+
+    user.value = updatedUser
+    isEditing.value = false
+    successMessage.value = '個人資料更新成功'
+
+    // Clear success message after 3 seconds
+    setTimeout(() => {
+      successMessage.value = ''
+    }, 3000)
+  } catch (error) {
+    updateError.value = error instanceof Error ? error.message : '更新個人資料失敗'
+  } finally {
+    isSaving.value = false
+  }
 }
 
 // Logout

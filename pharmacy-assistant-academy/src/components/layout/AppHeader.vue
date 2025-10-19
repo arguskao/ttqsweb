@@ -54,6 +54,30 @@
               <span>個人資料</span>
             </router-link>
             
+            <router-link
+              v-if="currentUser?.userType === 'job_seeker'"
+              to="/learning-progress"
+              class="navbar-item"
+              @click="closeMenus"
+            >
+              <span class="icon">
+                <i class="fas fa-chart-line"></i>
+              </span>
+              <span>學習進度</span>
+            </router-link>
+            
+            <router-link
+              v-if="currentUser?.userType === 'employer'"
+              to="/employer/jobs"
+              class="navbar-item"
+              @click="closeMenus"
+            >
+              <span class="icon">
+                <i class="fas fa-briefcase"></i>
+              </span>
+              <span>職缺管理</span>
+            </router-link>
+            
             <hr class="navbar-divider" />
             
             <a class="navbar-item" @click="handleLogout">

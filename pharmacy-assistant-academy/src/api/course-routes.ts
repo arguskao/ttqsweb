@@ -46,7 +46,7 @@ class CourseRepository extends BaseRepository<Course> {
         const { courseType, search, page = 1, limit = 10 } = filters
         const offset = (page - 1) * limit
 
-        let whereConditions: string[] = ['is_active = true']
+        const whereConditions: string[] = ['is_active = true']
         const values: any[] = []
         let paramIndex = 1
 
@@ -174,8 +174,8 @@ class CourseEnrollmentRepository extends BaseRepository<CourseEnrollment> {
     ): Promise<CourseEnrollment | null> {
         const { db } = await import('../utils/database')
 
-        let updateFields = ['progress_percentage = $2', 'updated_at = CURRENT_TIMESTAMP']
-        let values: any[] = [enrollmentId, progressPercentage]
+        const updateFields = ['progress_percentage = $2', 'updated_at = CURRENT_TIMESTAMP']
+        const values: any[] = [enrollmentId, progressPercentage]
         let paramIndex = 3
 
         if (status) {
@@ -224,7 +224,9 @@ export function setupCourseRoutes(router: ApiRouter): void {
 
         return {
             success: true,
-            data: result.data,
+            data: {
+                courses: result.data
+            },
             meta: result.meta
         }
     })

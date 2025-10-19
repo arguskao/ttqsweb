@@ -37,9 +37,16 @@ router.get('/api/v1/info', async (req: ApiRequest): Promise<ApiResponse> => {
                 auth: '/api/v1/auth',
                 courses: '/api/v1/courses',
                 jobs: '/api/v1/jobs',
+                instructors: '/api/v1/instructors',
                 users: '/api/v1/users',
                 files: '/api/v1/files',
-                admin: '/api/v1/admin'
+                admin: '/api/v1/admin',
+                analytics: '/api/v1/analytics',
+                groups: '/api/v1/groups',
+                experiences: '/api/v1/experiences',
+                venues: '/api/v1/venues',
+                recommendations: '/api/v1/recommendations',
+                instructorDevelopment: '/api/v1/instructor-development'
             }
         }
     }
@@ -52,6 +59,42 @@ setupAuthRoutes(router)
 // Setup course routes
 import { setupCourseRoutes } from './course-routes'
 setupCourseRoutes(router)
+
+// Setup job routes
+import { setupJobRoutes } from './job-routes'
+setupJobRoutes(router)
+
+// Setup instructor routes
+import { setupInstructorRoutes } from './instructor-routes'
+setupInstructorRoutes(router)
+
+// Setup document routes
+import { setupDocumentRoutes } from './document-routes'
+setupDocumentRoutes(router)
+
+// Setup TTQS routes
+import { setupTTQSRoutes } from './ttqs-routes'
+setupTTQSRoutes(router)
+
+// Setup Evaluation routes
+import { setupEvaluationRoutes } from './evaluation-routes'
+setupEvaluationRoutes(router)
+
+// Setup TTQS Analytics routes
+import { setupTTQSAnalyticsRoutes } from './ttqs-analytics-routes'
+setupTTQSAnalyticsRoutes(router)
+
+// Setup Analytics routes
+import { setupAnalyticsRoutes } from './analytics-routes'
+setupAnalyticsRoutes(router)
+
+// Setup Community routes
+import { setupCommunityRoutes } from './community-routes'
+setupCommunityRoutes(router)
+
+// Setup Support routes
+import { setupSupportRoutes } from './support-routes'
+setupSupportRoutes(router)
 
 export { router }
 export * from './types'

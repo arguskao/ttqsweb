@@ -62,6 +62,19 @@ export const authService = {
         throw new Error(response.error?.message || '獲取用戶資料失敗')
     },
 
+    // Update user profile
+    async updateProfile(data: Partial<{ firstName: string; lastName: string; phone: string }>): Promise<User> {
+        const response = await apiService.put<{ user: User }>('/auth/profile', data)
+
+        if (response.success && response.data) {
+            // Update user in localStorage
+            localStorage.setItem('user', JSON.stringify(response.data.user))
+            return response.data.user
+        }
+
+        throw new Error(response.error?.message || '更新用戶資料失敗')
+    },
+
     // Check if user is authenticated
     isAuthenticated(): boolean {
         const token = localStorage.getItem('auth_token')

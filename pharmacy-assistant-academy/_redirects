@@ -1,0 +1,7 @@
+# Cloudflare Pages redirects configuration
+
+# API routes redirect to Workers
+/api/* https://api.pharmacy-academy.com/:splat 200
+
+# SPA fallback for Vue Router
+/* /index.html 200

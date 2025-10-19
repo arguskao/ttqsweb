@@ -1,0 +1,8 @@
+name = "pharmacy-assistant-academy-api"
+main = "src/workers/simple-api.ts"
+compatibility_date = "2024-10-19"
+compatibility_flags = ["nodejs_compat"]
+
+# Environment variables
+[vars]
+ENVIRONMENT = "production"

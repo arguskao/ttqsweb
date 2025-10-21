@@ -4,7 +4,15 @@ import type { ApiRequest, RouteHandler } from './types'
 // Training Plan Management (PDDRO - Plan)
 export const createTrainingPlan: RouteHandler = async (req: ApiRequest) => {
   try {
-    const { title, description, objectives, target_audience, duration_weeks, start_date, end_date } = req.body as any
+    const {
+      title,
+      description,
+      objectives,
+      target_audience,
+      duration_weeks,
+      start_date,
+      end_date
+    } = req.body as any
 
     if (!title || !objectives) {
       return {
@@ -21,12 +29,21 @@ export const createTrainingPlan: RouteHandler = async (req: ApiRequest) => {
       `INSERT INTO training_plans (title, description, objectives, target_audience, duration_weeks, start_date, end_date, created_by, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'draft')
        RETURNING *`,
-      [title, description, objectives, target_audience, duration_weeks, start_date, end_date, req.user?.id]
+      [
+        title,
+        description,
+        objectives,
+        target_audience,
+        duration_weeks,
+        start_date,
+        end_date,
+        req.user?.id
+      ]
     )
 
     return {
       success: true,
-      data: result.rows[0]
+      data: result[0]
     }
   } catch (error) {
     console.error('Create training plan error:', error)
@@ -69,7 +86,7 @@ export const getTrainingPlans: RouteHandler = async (req: ApiRequest) => {
 
     return {
       success: true,
-      data: result.rows,
+      data: result,
       meta: {
         page,
         limit,
@@ -94,12 +111,9 @@ export const getTrainingPlanById: RouteHandler = async (req: ApiRequest) => {
   try {
     const id = req.params?.id
 
-    const result = await query(
-      'SELECT * FROM training_plans WHERE id = $1',
-      [id]
-    )
+    const result = await query('SELECT * FROM training_plans WHERE id = $1', [id])
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return {
         success: false,
         error: {
@@ -112,7 +126,7 @@ export const getTrainingPlanById: RouteHandler = async (req: ApiRequest) => {
 
     return {
       success: true,
-      data: result.rows[0]
+      data: result[0]
     }
   } catch (error) {
     console.error('Get training plan error:', error)
@@ -130,7 +144,16 @@ export const getTrainingPlanById: RouteHandler = async (req: ApiRequest) => {
 export const updateTrainingPlan: RouteHandler = async (req: ApiRequest) => {
   try {
     const id = req.params?.id
-    const { title, description, objectives, target_audience, duration_weeks, start_date, end_date, status } = req.body as any
+    const {
+      title,
+      description,
+      objectives,
+      target_audience,
+      duration_weeks,
+      start_date,
+      end_date,
+      status
+    } = req.body as any
 
     const result = await query(
       `UPDATE training_plans 
@@ -144,10 +167,20 @@ export const updateTrainingPlan: RouteHandler = async (req: ApiRequest) => {
            status = COALESCE($8, status)
        WHERE id = $9
        RETURNING *`,
-      [title, description, objectives, target_audience, duration_weeks, start_date, end_date, status, id]
+      [
+        title,
+        description,
+        objectives,
+        target_audience,
+        duration_weeks,
+        start_date,
+        end_date,
+        status,
+        id
+      ]
     )
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return {
         success: false,
         error: {
@@ -160,7 +193,7 @@ export const updateTrainingPlan: RouteHandler = async (req: ApiRequest) => {
 
     return {
       success: true,
-      data: result.rows[0]
+      data: result[0]
     }
   } catch (error) {
     console.error('Update training plan error:', error)
@@ -178,7 +211,8 @@ export const updateTrainingPlan: RouteHandler = async (req: ApiRequest) => {
 // Training Execution Tracking (PDDRO - Do)
 export const createTrainingExecution: RouteHandler = async (req: ApiRequest) => {
   try {
-    const { plan_id, course_id, execution_date, instructor_id, attendance_count, notes } = req.body as any
+    const { plan_id, course_id, execution_date, instructor_id, attendance_count, notes } =
+      req.body as any
 
     if (!plan_id || !course_id || !execution_date) {
       return {
@@ -200,7 +234,7 @@ export const createTrainingExecution: RouteHandler = async (req: ApiRequest) => 
 
     return {
       success: true,
-      data: result.rows[0]
+      data: result[0]
     }
   } catch (error) {
     console.error('Create training execution error:', error)
@@ -248,7 +282,7 @@ export const getTrainingExecutions: RouteHandler = async (req: ApiRequest) => {
 
     return {
       success: true,
-      data: result.rows,
+      data: result,
       meta: {
         page,
         limit,
@@ -285,7 +319,7 @@ export const updateTrainingExecution: RouteHandler = async (req: ApiRequest) => 
       [attendance_count, completion_rate, notes, status, id]
     )
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return {
         success: false,
         error: {
@@ -298,7 +332,7 @@ export const updateTrainingExecution: RouteHandler = async (req: ApiRequest) => 
 
     return {
       success: true,
-      data: result.rows[0]
+      data: result[0]
     }
   } catch (error) {
     console.error('Update training execution error:', error)
@@ -316,7 +350,14 @@ export const updateTrainingExecution: RouteHandler = async (req: ApiRequest) => 
 // Improvement Actions (PDDRO - Outcome)
 export const createImprovementAction: RouteHandler = async (req: ApiRequest) => {
   try {
-    const { plan_id, issue_description, root_cause_analysis, action_plan, responsible_person, due_date } = req.body as any
+    const {
+      plan_id,
+      issue_description,
+      root_cause_analysis,
+      action_plan,
+      responsible_person,
+      due_date
+    } = req.body as any
 
     if (!plan_id || !issue_description || !action_plan) {
       return {
@@ -338,7 +379,7 @@ export const createImprovementAction: RouteHandler = async (req: ApiRequest) => 
 
     return {
       success: true,
-      data: result.rows[0]
+      data: result[0]
     }
   } catch (error) {
     console.error('Create improvement action error:', error)
@@ -382,7 +423,7 @@ export const getImprovementActions: RouteHandler = async (req: ApiRequest) => {
 
     return {
       success: true,
-      data: result.rows
+      data: result
     }
   } catch (error) {
     console.error('Get improvement actions error:', error)
@@ -412,7 +453,7 @@ export const updateImprovementAction: RouteHandler = async (req: ApiRequest) => 
       [status, completion_date, effectiveness_rating, id]
     )
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return {
         success: false,
         error: {
@@ -425,7 +466,7 @@ export const updateImprovementAction: RouteHandler = async (req: ApiRequest) => 
 
     return {
       success: true,
-      data: result.rows[0]
+      data: result[0]
     }
   } catch (error) {
     console.error('Update improvement action error:', error)

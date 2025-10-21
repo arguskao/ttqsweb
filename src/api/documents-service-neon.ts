@@ -55,7 +55,7 @@ export class DocumentServiceNeon {
         FROM documents 
         WHERE ${whereClause}
       `
-      const countResult = await neonDb.queryOne<{ count: string }>(countQuery, params)
+      const countResult = await neonDb.queryOne(countQuery, params)
       const total = parseInt(countResult?.count || '0', 10)
 
       // 獲取分頁數據
@@ -66,7 +66,7 @@ export class DocumentServiceNeon {
         ORDER BY created_at DESC
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
       `
-      const documents = await neonDb.queryMany<Document>(dataQuery, [...params, limit, offset])
+      const documents = await neonDb.queryMany(dataQuery, [...params, limit, offset])
 
       return {
         data: documents,
@@ -91,7 +91,7 @@ export class DocumentServiceNeon {
         FROM documents
         WHERE id = $1
       `
-      return await neonDb.queryOne<Document>(query, [id])
+      return await neonDb.queryOne(query, [id])
     } catch (error) {
       console.error('Get document by ID error:', error)
       throw new Error('Failed to fetch document')
@@ -122,7 +122,7 @@ export class DocumentServiceNeon {
         WHERE category IS NOT NULL AND is_public = true
         ORDER BY category
       `
-      const results = await neonDb.queryMany<{ category: string }>(query)
+      const results = await neonDb.queryMany(query)
       return results.map(r => r.category)
     } catch (error) {
       console.error('Get categories error:', error)
@@ -143,7 +143,7 @@ export class DocumentServiceNeon {
         GROUP BY category
         ORDER BY total_downloads DESC
       `
-      return await neonDb.queryMany<any>(query)
+      return await neonDb.queryMany(query)
     } catch (error) {
       console.error('Get download stats error:', error)
       throw new Error('Failed to fetch download statistics')

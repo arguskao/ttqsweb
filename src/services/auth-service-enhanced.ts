@@ -176,7 +176,12 @@ export class AuthServiceEnhanced {
     if (!expiry) return true
 
     // 提前1分鐘刷新
-    return Date.now() >= parseInt(expiry) - 60000
+    const expiryTimestamp = parseInt(expiry, 10)
+    const currentTime = Date.now()
+    const bufferTime = 60 * 1000 // 1 minute buffer
+
+    // Token 過期當且僅當當前時間 >= (過期時間 - 緩衝時間)
+    return currentTime >= expiryTimestamp - bufferTime
   }
 
   // 刷新 access token

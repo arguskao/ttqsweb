@@ -1,6 +1,7 @@
 // 重構的工作路由 - 使用 Neon 數據庫
 import { jobServiceNeon } from './jobs-service-neon'
-import { ValidationError, NotFoundError } from './errors'
+import { ValidationError, NotFoundError, AuthenticationError, AuthorizationError } from './errors'
+import { requireEmployer } from './auth-middleware'
 import type { ApiRouter } from './router'
 import type { ApiRequest, ApiResponse } from './types'
 
@@ -41,6 +42,34 @@ export function setupJobRoutesNeon(router: ApiRouter): void {
     }
   })
 
+  // Get employer's jobs (requires employer authentication) - Must come before /:id route
+  router.get(
+    '/api/v1/jobs/employer',
+    async (req: ApiRequest): Promise<ApiResponse> => {
+      try {
+        if (!req.user) {
+          throw new AuthenticationError('需要登入才能訪問此資源')
+        }
+
+        if ((req.user.userType || req.user.user_type) !== 'employer') {
+          throw new AuthorizationError('只有雇主可以訪問此資源')
+        }
+
+        const jobs = await jobServiceNeon.getJobsByEmployer(req.user.id)
+
+        return {
+          success: true,
+          data: {
+            jobs
+          }
+        }
+      } catch (error) {
+        throw error
+      }
+    },
+    [requireEmployer]
+  )
+
   // 根據 ID 獲取工作
   router.get('/api/v1/jobs/:id', async (req: ApiRequest): Promise<ApiResponse> => {
     try {
@@ -62,7 +91,7 @@ export function setupJobRoutesNeon(router: ApiRouter): void {
       }
     } catch (error) {
       console.error('Get job by ID error:', error)
-      
+
       if (error instanceof ValidationError || error instanceof NotFoundError) {
         return {
           success: false,

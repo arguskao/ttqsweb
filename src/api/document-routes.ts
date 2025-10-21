@@ -38,7 +38,7 @@ class DocumentRepository extends BaseRepository<Document> {
   async search(searchTerm: string): Promise<Document[]> {
     const { db } = await import('../utils/database')
     try {
-      return await db.queryMany<Document>({
+      return await db.queryMany({
         text: `
           SELECT * FROM documents
           WHERE is_public = true
@@ -114,14 +114,14 @@ class DocumentRepository extends BaseRepository<Document> {
 
     try {
       // Get total count
-      const countResult = await db.queryOne<{ count: string }>({
+      const countResult = await db.queryOne({
         text: `SELECT COUNT(*) as count FROM documents ${whereClause}`,
         values
       })
       const total = parseInt(countResult?.count || '0', 10)
 
       // Get paginated data
-      const data = await db.queryMany<Document>({
+      const data = await db.queryMany({
         text: `
           SELECT * FROM documents
           ${whereClause}
@@ -149,7 +149,7 @@ class DocumentRepository extends BaseRepository<Document> {
   async getCategories(): Promise<string[]> {
     const { db } = await import('../utils/database')
     try {
-      const results = await db.queryMany<{ category: string }>({
+      const results = await db.queryMany({
         text: `
           SELECT DISTINCT category
           FROM documents
@@ -167,7 +167,7 @@ class DocumentRepository extends BaseRepository<Document> {
   async getDownloadStats(): Promise<any> {
     const { db } = await import('../utils/database')
     try {
-      return await db.queryMany<any>({
+      return await db.queryMany({
         text: `
           SELECT
             category,

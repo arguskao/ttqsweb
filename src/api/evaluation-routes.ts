@@ -31,13 +31,21 @@ export const createReactionEvaluation: RouteHandler = async (req: ApiRequest) =>
         facility_satisfaction, overall_satisfaction, comments)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [execution_id, req.user?.id, course_satisfaction, instructor_satisfaction, content_satisfaction,
-        facility_satisfaction, overall_satisfaction, comments]
+      [
+        execution_id,
+        req.user?.id,
+        course_satisfaction,
+        instructor_satisfaction,
+        content_satisfaction,
+        facility_satisfaction,
+        overall_satisfaction,
+        comments
+      ]
     )
 
     return {
       success: true,
-      data: result.rows[0]
+      data: result[0]
     }
   } catch (error) {
     console.error('Create reaction evaluation error:', error)
@@ -93,8 +101,8 @@ export const getReactionEvaluations: RouteHandler = async (req: ApiRequest) => {
     return {
       success: true,
       data: {
-        evaluations: result.rows,
-        averages: avgResult.rows[0]
+        evaluations: result,
+        averages: avgResult[0]
       }
     }
   } catch (error) {
@@ -144,7 +152,7 @@ export const createLearningEvaluation: RouteHandler = async (req: ApiRequest) =>
 
     return {
       success: true,
-      data: result.rows[0]
+      data: result[0]
     }
   } catch (error) {
     console.error('Create learning evaluation error:', error)
@@ -200,8 +208,8 @@ export const getLearningEvaluations: RouteHandler = async (req: ApiRequest) => {
     return {
       success: true,
       data: {
-        evaluations: result.rows,
-        statistics: statsResult.rows[0]
+        evaluations: result,
+        statistics: statsResult[0]
       }
     }
   } catch (error) {
@@ -248,13 +256,22 @@ export const createBehaviorEvaluation: RouteHandler = async (req: ApiRequest) =>
         efficiency_score, overall_behavior_score, evaluation_date, comments)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [execution_id, user_id, req.user?.id, skill_application_score, work_quality_score,
-        efficiency_score, overall_behavior_score, evaluation_date, comments]
+      [
+        execution_id,
+        user_id,
+        req.user?.id,
+        skill_application_score,
+        work_quality_score,
+        efficiency_score,
+        overall_behavior_score,
+        evaluation_date,
+        comments
+      ]
     )
 
     return {
       success: true,
-      data: result.rows[0]
+      data: result[0]
     }
   } catch (error) {
     console.error('Create behavior evaluation error:', error)
@@ -313,13 +330,13 @@ export const getBehaviorEvaluations: RouteHandler = async (req: ApiRequest) => {
          WHERE execution_id = $1`,
         [executionId]
       )
-      averages = avgResult.rows[0]
+      averages = avgResult[0]
     }
 
     return {
       success: true,
       data: {
-        evaluations: result.rows,
+        evaluations: result,
         averages
       }
     }
@@ -367,13 +384,21 @@ export const createResultEvaluation: RouteHandler = async (req: ApiRequest) => {
         salary_level, employer_satisfaction, retention_months)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [execution_id, user_id, employment_status, employment_date, job_match_rate,
-        salary_level, employer_satisfaction, retention_months]
+      [
+        execution_id,
+        user_id,
+        employment_status,
+        employment_date,
+        job_match_rate,
+        salary_level,
+        employer_satisfaction,
+        retention_months
+      ]
     )
 
     return {
       success: true,
-      data: result.rows[0]
+      data: result[0]
     }
   } catch (error) {
     console.error('Create result evaluation error:', error)
@@ -430,8 +455,8 @@ export const getResultEvaluations: RouteHandler = async (req: ApiRequest) => {
     return {
       success: true,
       data: {
-        evaluations: result.rows,
-        statistics: statsResult.rows[0]
+        evaluations: result,
+        statistics: statsResult[0]
       }
     }
   } catch (error) {
@@ -469,11 +494,18 @@ export const updateResultEvaluation: RouteHandler = async (req: ApiRequest) => {
            retention_months = COALESCE($6, retention_months)
        WHERE id = $7
        RETURNING *`,
-      [employment_status, employment_date, job_match_rate, salary_level,
-        employer_satisfaction, retention_months, id]
+      [
+        employment_status,
+        employment_date,
+        job_match_rate,
+        salary_level,
+        employer_satisfaction,
+        retention_months,
+        id
+      ]
     )
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return {
         success: false,
         error: {
@@ -486,7 +518,7 @@ export const updateResultEvaluation: RouteHandler = async (req: ApiRequest) => {
 
     return {
       success: true,
-      data: result.rows[0]
+      data: result[0]
     }
   } catch (error) {
     console.error('Update result evaluation error:', error)

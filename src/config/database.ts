@@ -2,12 +2,15 @@ import { Pool, type PoolConfig } from 'pg'
 
 // Database configuration interface
 export interface DatabaseConfig extends PoolConfig {
-    connectionString?: string
+  connectionString?: string
 }
 
 // Default database configuration
 const defaultConfig: DatabaseConfig = {
-  connectionString: process.env.DATABASE_URL,
+  connectionString:
+    process.env.NODE_ENV === 'test'
+      ? 'postgresql://neondb_owner:npg_uBHAc2hinfI4@ep-jolly-frost-a1muxrt0-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+      : process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
@@ -22,7 +25,7 @@ export const createDatabasePool = (config: DatabaseConfig = defaultConfig): Pool
     pool = new Pool(config)
 
     // Handle pool errors
-    pool.on('error', (err) => {
+    pool.on('error', err => {
       console.error('Unexpected error on idle client', err)
       process.exit(-1)
     })

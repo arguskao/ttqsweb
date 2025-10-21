@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import bcrypt from 'bcryptjs'
 
 import { ValidationError, AuthenticationError, ConflictError } from '../api/errors'
 import { getDatabasePool } from '../config/database'
@@ -8,64 +9,76 @@ export type UserType = 'job_seeker' | 'employer'
 
 // Registration data interface
 export interface RegisterData {
-    email: string
-    password: string
-    userType: UserType
-    firstName: string
-    lastName: string
-    phone?: string
+  email: string
+  password: string
+  userType: UserType
+  firstName: string
+  lastName: string
+  phone?: string
 }
 
 // Login data interface
 export interface LoginData {
-    email: string
-    password: string
+  email: string
+  password: string
 }
 
 // User data interface (without password)
 export interface User {
-    id: number
-    email: string
-    userType: UserType
-    firstName: string
-    lastName: string
-    phone?: string
-    createdAt: Date
-    updatedAt: Date
-    isActive: boolean
+  id: number
+  email: string
+  userType: UserType
+  firstName: string
+  lastName: string
+  phone?: string
+  createdAt: Date
+  updatedAt: Date
+  isActive: boolean
 }
 
 // JWT payload interface
 export interface JwtPayload {
-    userId: number
-    email: string
-    userType: UserType
+  userId: number
+  email: string
+  userType: UserType
 }
 
-// Simple password hashing (using built-in crypto for simplicity)
+// Secure password hashing using bcrypt
 const hashPassword = async (password: string): Promise<string> => {
-  // In a real application, use bcrypt or similar
-  // For this implementation, we'll use a simple hash
-  const crypto = await import('crypto')
-  return crypto.createHash('sha256').update(password + process.env.PASSWORD_SALT || 'default_salt').digest('hex')
+  const saltRounds = 12 // High security salt rounds
+  return await bcrypt.hash(password, saltRounds)
 }
 
-// Verify password
+// Verify password using bcrypt
 const verifyPassword = async (password: string, hash: string): Promise<boolean> => {
-  const hashedPassword = await hashPassword(password)
-  return hashedPassword === hash
+  return await bcrypt.compare(password, hash)
 }
 
-// Generate JWT token
+// Generate JWT token with secure configuration
 const generateToken = (payload: JwtPayload): string => {
-  const secret = process.env.JWT_SECRET || 'default_secret'
-  return jwt.sign(payload, secret, { expiresIn: '7d' })
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is required')
+  }
+
+  return jwt.sign(payload, secret, {
+    expiresIn: '24h', // Shorter expiration time for better security
+    issuer: 'pharmacy-assistant-academy',
+    audience: 'pharmacy-assistant-academy-users'
+  })
 }
 
-// Verify JWT token
+// Verify JWT token with secure configuration
 export const verifyToken = (token: string): JwtPayload => {
-  const secret = process.env.JWT_SECRET || 'default_secret'
-  return jwt.verify(token, secret) as JwtPayload
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is required')
+  }
+
+  return jwt.verify(token, secret, {
+    issuer: 'pharmacy-assistant-academy',
+    audience: 'pharmacy-assistant-academy-users'
+  }) as JwtPayload
 }
 
 // Validate email format
@@ -74,10 +87,39 @@ const isValidEmail = (email: string): boolean => {
   return emailRegex.test(email)
 }
 
-// Validate password strength
-const isValidPassword = (password: string): boolean => {
-  // At least 8 characters, contains letters and numbers
-  return password.length >= 8 && /[a-zA-Z]/.test(password) && /[0-9]/.test(password)
+// Enhanced password strength validation
+const isValidPassword = (password: string): { isValid: boolean; message?: string } => {
+  if (password.length < 8) {
+    return { isValid: false, message: '密碼必須至少8個字符' }
+  }
+
+  if (password.length > 128) {
+    return { isValid: false, message: '密碼不能超過128個字符' }
+  }
+
+  if (!/[a-z]/.test(password)) {
+    return { isValid: false, message: '密碼必須包含至少一個小寫字母' }
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    return { isValid: false, message: '密碼必須包含至少一個大寫字母' }
+  }
+
+  if (!/[0-9]/.test(password)) {
+    return { isValid: false, message: '密碼必須包含至少一個數字' }
+  }
+
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    return { isValid: false, message: '密碼必須包含至少一個特殊字符' }
+  }
+
+  // Check for common weak passwords
+  const commonPasswords = ['password', '123456', 'qwerty', 'abc123', 'password123']
+  if (commonPasswords.includes(password.toLowerCase())) {
+    return { isValid: false, message: '密碼過於常見，請選擇更安全的密碼' }
+  }
+
+  return { isValid: true }
 }
 
 // Register new user
@@ -93,8 +135,9 @@ export const registerUser = async (data: RegisterData): Promise<{ user: User; to
     throw new ValidationError('電子郵件格式不正確')
   }
 
-  if (!isValidPassword(password)) {
-    throw new ValidationError('密碼必須至少8個字符，包含字母和數字')
+  const passwordValidation = isValidPassword(password)
+  if (!passwordValidation.isValid) {
+    throw new ValidationError(passwordValidation.message!)
   }
 
   if (!['job_seeker', 'employer'].includes(userType)) {
@@ -106,10 +149,7 @@ export const registerUser = async (data: RegisterData): Promise<{ user: User; to
 
   try {
     // Check if user already exists
-    const existingUser = await client.query(
-      'SELECT id FROM users WHERE email = $1',
-      [email]
-    )
+    const existingUser = await client.query('SELECT id FROM users WHERE email = $1', [email])
 
     if (existingUser.rows.length > 0) {
       throw new ConflictError('此電子郵件已被註冊')

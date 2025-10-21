@@ -1,5 +1,5 @@
 import {
-  db,
+  neonDb as db,
   query as rawQuery,
   queryOne as rawQueryOne,
   queryMany as rawQueryMany
@@ -19,10 +19,7 @@ export abstract class BaseRepository<T> {
   // Find by ID
   async findById(id: number): Promise<T | null> {
     try {
-      return await db.queryOne<T>({
-        text: `SELECT * FROM ${this.tableName} WHERE id = $1`,
-        values: [id]
-      })
+      return await db.queryOne(`SELECT * FROM ${this.tableName} WHERE id = $1`, [id])
     } catch (error) {
       throw new DatabaseError(`查詢 ${this.tableName} 失敗`)
     }
@@ -42,7 +39,7 @@ export abstract class BaseRepository<T> {
         values.push(...Object.values(conditions))
       }
 
-      return await db.queryMany<T>({ text: query, values })
+      return await db.queryMany(query, values)
     } catch (error) {
       throw new DatabaseError(`查詢 ${this.tableName} 列表失敗`)
     }
@@ -56,20 +53,18 @@ export abstract class BaseRepository<T> {
 
     try {
       // Get total count
-      const countResult = await db.queryOne<{ count: string }>({
-        text: `SELECT COUNT(*) as count FROM ${this.tableName}`
-      })
+      const countResult = await db.queryOne(`SELECT COUNT(*) as count FROM ${this.tableName}`)
       const total = parseInt(countResult?.count || '0', 10)
 
       // Get paginated data
-      const data = await db.queryMany<T>({
-        text: `
+      const data = await db.queryMany(
+        `
           SELECT * FROM ${this.tableName}
           ORDER BY ${sortBy} ${sortOrder}
           LIMIT $1 OFFSET $2
         `,
-        values: [limit, offset]
-      })
+        [limit, offset]
+      )
 
       return {
         data,
@@ -93,14 +88,14 @@ export abstract class BaseRepository<T> {
       const placeholders = keys.map((_, index) => `$${index + 1}`).join(', ')
       const columns = keys.join(', ')
 
-      const result = await db.queryOne<T>({
-        text: `
+      const result = await db.queryOne(
+        `
           INSERT INTO ${this.tableName} (${columns})
           VALUES (${placeholders})
           RETURNING *
         `,
         values
-      })
+      )
 
       if (!result) {
         throw new Error('創建記錄失敗')
@@ -124,15 +119,15 @@ export abstract class BaseRepository<T> {
 
       const setClause = keys.map((key, index) => `${key} = $${index + 2}`).join(', ')
 
-      return await db.queryOne<T>({
-        text: `
+      return await db.queryOne(
+        `
           UPDATE ${this.tableName}
           SET ${setClause}
           WHERE id = $1
           RETURNING *
         `,
-        values: [id, ...values]
-      })
+        [id, ...values]
+      )
     } catch (error) {
       throw new DatabaseError(`更新 ${this.tableName} 記錄失敗`)
     }
@@ -141,12 +136,9 @@ export abstract class BaseRepository<T> {
   // Delete record by ID
   async delete(id: number): Promise<boolean> {
     try {
-      const result = await db.query({
-        text: `DELETE FROM ${this.tableName} WHERE id = $1`,
-        values: [id]
-      })
+      const result = await db.query(`DELETE FROM ${this.tableName} WHERE id = $1`, [id])
 
-      return result.rowCount !== null && result.rowCount > 0
+      return result.length > 0
     } catch (error) {
       throw new DatabaseError(`刪除 ${this.tableName} 記錄失敗`)
     }
@@ -155,10 +147,10 @@ export abstract class BaseRepository<T> {
   // Check if record exists
   async exists(id: number): Promise<boolean> {
     try {
-      const result = await db.queryOne<{ exists: boolean }>({
-        text: `SELECT EXISTS(SELECT 1 FROM ${this.tableName} WHERE id = $1)`,
-        values: [id]
-      })
+      const result = await db.queryOne(
+        `SELECT EXISTS(SELECT 1 FROM ${this.tableName} WHERE id = $1)`,
+        [id]
+      )
       return result?.exists || false
     } catch (error) {
       throw new DatabaseError(`檢查 ${this.tableName} 記錄存在性失敗`)
@@ -179,7 +171,7 @@ export abstract class BaseRepository<T> {
         values.push(...Object.values(conditions))
       }
 
-      const result = await db.queryOne<{ count: string }>({ text: query, values })
+      const result = await db.queryOne(query, values)
       return parseInt(result?.count || '0', 10)
     } catch (error) {
       throw new DatabaseError(`統計 ${this.tableName} 記錄數失敗`)
@@ -192,7 +184,7 @@ export const dbUtils = {
   // Execute raw SQL with error handling
   async executeRaw(sql: string, values?: unknown[]): Promise<any> {
     try {
-      return await db.query({ text: sql, values })
+      return await db.query(sql, values || [])
     } catch (error) {
       throw new DatabaseError('執行 SQL 查詢失敗')
     }
@@ -227,8 +219,6 @@ export const dbUtils = {
 }
 
 // Re-export low-level helpers for routes expecting them
-export const query = (text: string, values?: unknown[]) => rawQuery({ text, values })
-export const queryOne = <T = unknown>(text: string, values?: unknown[]) =>
-  rawQueryOne<T>({ text, values })
-export const queryMany = <T = unknown>(text: string, values?: unknown[]) =>
-  rawQueryMany<T>({ text, values })
+export const query = (text: string, values?: unknown[]) => rawQuery(text, values || [])
+export const queryOne = (text: string, values?: unknown[]) => rawQueryOne(text, values || [])
+export const queryMany = (text: string, values?: unknown[]) => rawQueryMany(text, values || [])

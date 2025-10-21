@@ -6,28 +6,28 @@ import type { ApiRequest, ApiResponse } from './types'
 
 // Course type definition
 interface Course {
-    id: number
-    title: string
-    description: string | null
-    course_type: 'basic' | 'advanced' | 'internship'
-    duration_hours: number | null
-    price: number | null
-    instructor_id: number | null
-    is_active: boolean
-    created_at: Date
-    updated_at: Date
+  id: number
+  title: string
+  description: string | null
+  course_type: 'basic' | 'advanced' | 'internship'
+  duration_hours: number | null
+  price: number | null
+  instructor_id: number | null
+  is_active: boolean
+  created_at: Date
+  updated_at: Date
 }
 
 // Course enrollment type
 interface CourseEnrollment {
-    id: number
-    user_id: number
-    course_id: number
-    enrollment_date: Date
-    completion_date: Date | null
-    progress_percentage: number
-    final_score: number | null
-    status: 'enrolled' | 'in_progress' | 'completed' | 'dropped'
+  id: number
+  user_id: number
+  course_id: number
+  enrollment_date: Date
+  completion_date: Date | null
+  progress_percentage: number
+  final_score: number | null
+  status: 'enrolled' | 'in_progress' | 'completed' | 'dropped'
 }
 
 // Course repository
@@ -38,11 +38,11 @@ class CourseRepository extends BaseRepository<Course> {
 
   // Find active courses with filters
   async findActiveWithFilters(filters: {
-        courseType?: string
-        search?: string
-        page?: number
-        limit?: number
-    }): Promise<{ data: Course[]; meta: any }> {
+    courseType?: string
+    search?: string
+    page?: number
+    limit?: number
+  }): Promise<{ data: Course[]; meta: any }> {
     const { courseType, search, page = 1, limit = 10 } = filters
     const offset = (page - 1) * limit
 
@@ -66,25 +66,25 @@ class CourseRepository extends BaseRepository<Course> {
 
     // Get total count
     const { db } = await import('../utils/database')
-    const countResult = await db.queryOne<{ count: string }>({
-      text: `SELECT COUNT(*) as count FROM courses WHERE ${whereClause}`,
+    const countResult = await db.queryOne(
+      `SELECT COUNT(*) as count FROM courses WHERE ${whereClause}`,
       values
-    })
+    )
     const total = parseInt(countResult?.count || '0', 10)
 
     // Get paginated data
-    const data = await db.queryMany<Course>({
-      text: `
+    const data = await db.queryMany(
+      `
                 SELECT * FROM courses
                 WHERE ${whereClause}
                 ORDER BY created_at DESC
                 LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
             `,
-      values: [...values, limit, offset]
-    })
+      [...values, limit, offset]
+    )
 
     return {
-      data,
+      data: data as Course[],
       meta: {
         page,
         limit,
@@ -122,7 +122,7 @@ class CourseEnrollmentRepository extends BaseRepository<CourseEnrollment> {
   // Check if user is enrolled in course
   async isUserEnrolled(userId: number, courseId: number): Promise<boolean> {
     const { db } = await import('../utils/database')
-    const result = await db.queryOne<{ exists: boolean }>({
+    const result = await db.queryOne({
       text: `
                 SELECT EXISTS(
                     SELECT 1 FROM course_enrollments 
@@ -137,7 +137,7 @@ class CourseEnrollmentRepository extends BaseRepository<CourseEnrollment> {
   // Get user's enrollment for a course
   async getUserEnrollment(userId: number, courseId: number): Promise<CourseEnrollment | null> {
     const { db } = await import('../utils/database')
-    return await db.queryOne<CourseEnrollment>({
+    return await db.queryOne({
       text: `
                 SELECT * FROM course_enrollments
                 WHERE user_id = $1 AND course_id = $2
@@ -191,7 +191,7 @@ class CourseEnrollmentRepository extends BaseRepository<CourseEnrollment> {
       values.push('completed')
     }
 
-    return await db.queryOne<CourseEnrollment>({
+    return await db.queryOne({
       text: `
                 UPDATE course_enrollments
                 SET ${updateFields.join(', ')}
@@ -252,128 +252,148 @@ export function setupCourseRoutes(router: ApiRouter): void {
   })
 
   // Enroll in a course (requires authentication)
-  router.post('/api/v1/courses/:id/enroll', async (req: ApiRequest): Promise<ApiResponse> => {
-    const courseId = parseInt(req.params?.id || '0')
-    const userId = req.user?.id
+  router.post(
+    '/api/v1/courses/:id/enroll',
+    async (req: ApiRequest): Promise<ApiResponse> => {
+      const courseId = parseInt(req.params?.id || '0')
+      const userId = req.user?.id
 
-    if (!userId) {
-      throw new UnauthorizedError('請先登入')
-    }
-
-    if (!courseId) {
-      throw new ValidationError('無效的課程 ID')
-    }
-
-    // Check if course exists and is active
-    const course = await courseRepo.findById(courseId)
-    if (!course) {
-      throw new NotFoundError('課程不存在')
-    }
-
-    if (!course.is_active) {
-      throw new ValidationError('此課程目前無法註冊')
-    }
-
-    // Check if already enrolled
-    const isEnrolled = await enrollmentRepo.isUserEnrolled(userId, courseId)
-    if (isEnrolled) {
-      throw new ValidationError('您已經註冊過此課程')
-    }
-
-    // Create enrollment
-    const enrollment = await enrollmentRepo.create({
-      user_id: userId,
-      course_id: courseId,
-      progress_percentage: 0,
-      status: 'enrolled'
-    } as any)
-
-    return {
-      success: true,
-      data: {
-        message: '課程註冊成功',
-        enrollment
+      if (!userId) {
+        throw new UnauthorizedError('請先登入')
       }
-    }
-  }, [requireAuth])
+
+      if (!courseId) {
+        throw new ValidationError('無效的課程 ID')
+      }
+
+      // Check if course exists and is active
+      const course = await courseRepo.findById(courseId)
+      if (!course) {
+        throw new NotFoundError('課程不存在')
+      }
+
+      if (!course.is_active) {
+        throw new ValidationError('此課程目前無法註冊')
+      }
+
+      // Check if already enrolled
+      const isEnrolled = await enrollmentRepo.isUserEnrolled(userId, courseId)
+      if (isEnrolled) {
+        throw new ValidationError('您已經註冊過此課程')
+      }
+
+      // Create enrollment
+      const enrollment = await enrollmentRepo.create({
+        user_id: userId,
+        course_id: courseId,
+        progress_percentage: 0,
+        status: 'enrolled'
+      } as any)
+
+      return {
+        success: true,
+        data: {
+          message: '課程註冊成功',
+          enrollment
+        }
+      }
+    },
+    [requireAuth]
+  )
 
   // Get course progress (requires authentication)
-  router.get('/api/v1/courses/:id/progress', async (req: ApiRequest): Promise<ApiResponse> => {
-    const courseId = parseInt(req.params?.id || '0')
-    const userId = req.user?.id
+  router.get(
+    '/api/v1/courses/:id/progress',
+    async (req: ApiRequest): Promise<ApiResponse> => {
+      const courseId = parseInt(req.params?.id || '0')
+      const userId = req.user?.id
 
-    if (!userId) {
-      throw new UnauthorizedError('請先登入')
-    }
+      if (!userId) {
+        throw new UnauthorizedError('請先登入')
+      }
 
-    if (!courseId) {
-      throw new ValidationError('無效的課程 ID')
-    }
+      if (!courseId) {
+        throw new ValidationError('無效的課程 ID')
+      }
 
-    const enrollment = await enrollmentRepo.getUserEnrollment(userId, courseId)
+      const enrollment = await enrollmentRepo.getUserEnrollment(userId, courseId)
 
-    if (!enrollment) {
-      throw new NotFoundError('您尚未註冊此課程')
-    }
+      if (!enrollment) {
+        throw new NotFoundError('您尚未註冊此課程')
+      }
 
-    return {
-      success: true,
-      data: enrollment
-    }
-  }, [requireAuth])
+      return {
+        success: true,
+        data: enrollment
+      }
+    },
+    [requireAuth]
+  )
 
   // Update course progress (requires authentication)
-  router.post('/api/v1/courses/:id/progress', async (req: ApiRequest): Promise<ApiResponse> => {
-    const courseId = parseInt(req.params?.id || '0')
-    const userId = req.user?.id
-    const { progress_percentage, status } = req.body as any
+  router.post(
+    '/api/v1/courses/:id/progress',
+    async (req: ApiRequest): Promise<ApiResponse> => {
+      const courseId = parseInt(req.params?.id || '0')
+      const userId = req.user?.id
+      const { progress_percentage, status } = req.body as any
 
-    if (!userId) {
-      throw new UnauthorizedError('請先登入')
-    }
-
-    if (!courseId) {
-      throw new ValidationError('無效的課程 ID')
-    }
-
-    if (progress_percentage === undefined || progress_percentage < 0 || progress_percentage > 100) {
-      throw new ValidationError('進度百分比必須在 0-100 之間')
-    }
-
-    const enrollment = await enrollmentRepo.getUserEnrollment(userId, courseId)
-
-    if (!enrollment) {
-      throw new NotFoundError('您尚未註冊此課程')
-    }
-
-    const updatedEnrollment = await enrollmentRepo.updateProgress(
-      enrollment.id,
-      progress_percentage,
-      status
-    )
-
-    return {
-      success: true,
-      data: {
-        message: '學習進度已更新',
-        enrollment: updatedEnrollment
+      if (!userId) {
+        throw new UnauthorizedError('請先登入')
       }
-    }
-  }, [requireAuth])
+
+      if (!courseId) {
+        throw new ValidationError('無效的課程 ID')
+      }
+
+      if (
+        progress_percentage === undefined ||
+        progress_percentage < 0 ||
+        progress_percentage > 100
+      ) {
+        throw new ValidationError('進度百分比必須在 0-100 之間')
+      }
+
+      const enrollment = await enrollmentRepo.getUserEnrollment(userId, courseId)
+
+      if (!enrollment) {
+        throw new NotFoundError('您尚未註冊此課程')
+      }
+
+      const updatedEnrollment = await enrollmentRepo.updateProgress(
+        enrollment.id,
+        progress_percentage,
+        status
+      )
+
+      return {
+        success: true,
+        data: {
+          message: '學習進度已更新',
+          enrollment: updatedEnrollment
+        }
+      }
+    },
+    [requireAuth]
+  )
 
   // Get user's all enrollments (requires authentication)
-  router.get('/api/v1/users/enrollments', async (req: ApiRequest): Promise<ApiResponse> => {
-    const userId = req.user?.id
+  router.get(
+    '/api/v1/users/enrollments',
+    async (req: ApiRequest): Promise<ApiResponse> => {
+      const userId = req.user?.id
 
-    if (!userId) {
-      throw new UnauthorizedError('請先登入')
-    }
+      if (!userId) {
+        throw new UnauthorizedError('請先登入')
+      }
 
-    const enrollments = await enrollmentRepo.getUserEnrollmentsWithCourses(userId)
+      const enrollments = await enrollmentRepo.getUserEnrollmentsWithCourses(userId)
 
-    return {
-      success: true,
-      data: enrollments
-    }
-  }, [requireAuth])
+      return {
+        success: true,
+        data: enrollments
+      }
+    },
+    [requireAuth]
+  )
 }

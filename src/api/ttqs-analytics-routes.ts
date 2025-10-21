@@ -26,7 +26,7 @@ export const uploadTTQSDocument: RouteHandler = async (req: ApiRequest) => {
 
     return {
       success: true,
-      data: result.rows[0]
+      data: result[0]
     }
   } catch (error) {
     console.error('Upload TTQS document error:', error)
@@ -70,7 +70,7 @@ export const getTTQSDocuments: RouteHandler = async (req: ApiRequest) => {
 
     return {
       success: true,
-      data: result.rows
+      data: result
     }
   } catch (error) {
     console.error('Get TTQS documents error:', error)

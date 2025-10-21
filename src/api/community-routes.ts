@@ -113,7 +113,7 @@ class StudentGroupRepository extends BaseRepository<StudentGroup> {
 
   private async executeQuery<T>(query: string, values: any[]): Promise<T[]> {
     const { db } = await import('../utils/database')
-    return await db.queryMany<T>({ text: query, values })
+    return await db.queryMany({ text: query, values })
   }
 }
 
@@ -124,7 +124,7 @@ class GroupMemberRepository extends BaseRepository<GroupMember> {
 
   async isMember(groupId: number, userId: number): Promise<boolean> {
     const { db } = await import('../utils/database')
-    const result = await db.queryOne<{ exists: boolean }>({
+    const result = await db.queryOne({
       text: 'SELECT EXISTS(SELECT 1 FROM group_members WHERE group_id = $1 AND user_id = $2)',
       values: [groupId, userId]
     })
@@ -133,7 +133,7 @@ class GroupMemberRepository extends BaseRepository<GroupMember> {
 
   async getMemberRole(groupId: number, userId: number): Promise<string | null> {
     const { db } = await import('../utils/database')
-    const result = await db.queryOne<{ role: string }>({
+    const result = await db.queryOne({
       text: 'SELECT role FROM group_members WHERE group_id = $1 AND user_id = $2',
       values: [groupId, userId]
     })
@@ -151,7 +151,7 @@ class ForumTopicRepository extends BaseRepository<ForumTopic> {
     const offset = (page - 1) * limit
 
     const { db } = await import('../utils/database')
-    return await db.queryMany<ForumTopic>({
+    return await db.queryMany({
       text: `
                 SELECT * FROM forum_topics 
                 WHERE group_id = $1 
@@ -190,7 +190,7 @@ class ForumReplyRepository extends BaseRepository<ForumReply> {
 
   async findByTopic(topicId: number): Promise<ForumReply[]> {
     const { db } = await import('../utils/database')
-    return await db.queryMany<ForumReply>({
+    return await db.queryMany({
       text: 'SELECT * FROM forum_replies WHERE topic_id = $1 ORDER BY created_at ASC',
       values: [topicId]
     })
@@ -204,7 +204,7 @@ class ExperienceShareRepository extends BaseRepository<ExperienceShare> {
 
   async findFeatured(limit = 10): Promise<ExperienceShare[]> {
     const { db } = await import('../utils/database')
-    return await db.queryMany<ExperienceShare>({
+    return await db.queryMany({
       text: `SELECT * FROM experience_shares 
                    WHERE is_featured = true 
                    ORDER BY created_at DESC 
@@ -245,7 +245,7 @@ class ExperienceCommentRepository extends BaseRepository<ExperienceComment> {
 
   async findByShare(shareId: number): Promise<ExperienceComment[]> {
     const { db } = await import('../utils/database')
-    return await db.queryMany<ExperienceComment>({
+    return await db.queryMany({
       text: 'SELECT * FROM experience_comments WHERE share_id = $1 ORDER BY created_at ASC',
       values: [shareId]
     })

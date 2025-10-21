@@ -66,7 +66,7 @@ class PracticeVenueRepository extends BaseRepository<PracticeVenue> {
 
   async findAvailable(date: Date): Promise<PracticeVenue[]> {
     const { db } = await import('../utils/database')
-    return await db.queryMany<PracticeVenue>({
+    return await db.queryMany({
       text: `
                 SELECT * FROM practice_venues 
                 WHERE is_active = true
@@ -84,7 +84,7 @@ class VenueBookingRepository extends BaseRepository<VenueBooking> {
 
   async findByUser(userId: number): Promise<VenueBooking[]> {
     const { db } = await import('../utils/database')
-    return await db.queryMany<VenueBooking>({
+    return await db.queryMany({
       text: `
                 SELECT * FROM venue_bookings 
                 WHERE user_id = $1 
@@ -96,7 +96,7 @@ class VenueBookingRepository extends BaseRepository<VenueBooking> {
 
   async findByVenueAndDate(venueId: number, date: Date): Promise<VenueBooking[]> {
     const { db } = await import('../utils/database')
-    return await db.queryMany<VenueBooking>({
+    return await db.queryMany({
       text: `
                 SELECT * FROM venue_bookings 
                 WHERE venue_id = $1 AND booking_date = $2 AND status != 'cancelled'
@@ -135,7 +135,7 @@ class VenueBookingRepository extends BaseRepository<VenueBooking> {
       ? [venueId, date, startTime, endTime, excludeId]
       : [venueId, date, startTime, endTime]
 
-    const result = await db.queryOne<{ exists: boolean }>({
+    const result = await db.queryOne({
       text: query,
       values
     })
@@ -150,7 +150,7 @@ class RetrainingRecommendationRepository extends BaseRepository<RetrainingRecomm
 
   async findByUser(userId: number): Promise<RetrainingRecommendation[]> {
     const { db } = await import('../utils/database')
-    return await db.queryMany<RetrainingRecommendation>({
+    return await db.queryMany({
       text: `
                 SELECT rr.*, c.title as course_title, c.description as course_description
                 FROM retraining_recommendations rr
@@ -173,7 +173,7 @@ class RetrainingRecommendationRepository extends BaseRepository<RetrainingRecomm
     const { db } = await import('../utils/database')
 
     // 獲取用戶已完成的課程
-    const completedCourses = await db.queryMany<{ courseId: number }>({
+    const completedCourses = await db.queryMany({
       text: `
                 SELECT course_id FROM course_enrollments 
                 WHERE user_id = $1 AND status = 'completed'
@@ -184,7 +184,7 @@ class RetrainingRecommendationRepository extends BaseRepository<RetrainingRecomm
     const completedCourseIds = completedCourses.map(c => c.courseId)
 
     // 找出用戶尚未學習的進階課程
-    const recommendedCourses = await db.queryMany<{ id: number; title: string }>({
+    const recommendedCourses = await db.queryMany({
       text: `
                 SELECT id, title FROM courses 
                 WHERE course_type = 'advanced' 
@@ -221,7 +221,7 @@ class InstructorDevelopmentRepository extends BaseRepository<InstructorDevelopme
 
   async findByUser(userId: number): Promise<InstructorDevelopment | null> {
     const { db } = await import('../utils/database')
-    return await db.queryOne<InstructorDevelopment>({
+    return await db.queryOne({
       text: 'SELECT * FROM instructor_development WHERE user_id = $1',
       values: [userId]
     })

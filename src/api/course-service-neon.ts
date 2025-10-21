@@ -20,12 +20,14 @@ interface Course {
 // Course service class
 export class CourseServiceNeon {
   // 獲取課程列表（帶分頁和篩選）
-  async getCourses(options: {
-    page?: number
-    limit?: number
-    courseType?: string
-    search?: string
-  } = {}): Promise<{ data: Course[]; meta: any }> {
+  async getCourses(
+    options: {
+      page?: number
+      limit?: number
+      courseType?: string
+      search?: string
+    } = {}
+  ): Promise<{ data: Course[]; meta: any }> {
     const { page = 1, limit = 10, courseType, search } = options
     const offset = (page - 1) * limit
 
@@ -55,7 +57,7 @@ export class CourseServiceNeon {
         FROM courses c 
         WHERE ${whereClause}
       `
-      const countResult = await neonDb.queryOne<{ count: string }>(countQuery, params)
+      const countResult = await neonDb.queryOne(countQuery, params)
       const total = parseInt(countResult?.count || '0', 10)
 
       // 獲取分頁數據
@@ -71,7 +73,7 @@ export class CourseServiceNeon {
         ORDER BY c.created_at DESC
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
       `
-      const courses = await neonDb.queryMany<Course>(dataQuery, [...params, limit, offset])
+      const courses = await neonDb.queryMany(dataQuery, [...params, limit, offset])
 
       return {
         data: courses,
@@ -101,7 +103,7 @@ export class CourseServiceNeon {
         LEFT JOIN users u ON c.instructor_id = u.id
         WHERE c.id = $1
       `
-      return await neonDb.queryOne<Course>(query, [id])
+      return await neonDb.queryOne(query, [id])
     } catch (error) {
       console.error('Get course by ID error:', error)
       throw new Error('Failed to fetch course')
@@ -117,7 +119,7 @@ export class CourseServiceNeon {
           WHERE user_id = $1 AND course_id = $2
         ) as exists
       `
-      const result = await neonDb.queryOne<{ exists: boolean }>(query, [userId, courseId])
+      const result = await neonDb.queryOne(query, [userId, courseId])
       return result?.exists || false
     } catch (error) {
       console.error('Check enrollment error:', error)

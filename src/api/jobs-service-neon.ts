@@ -21,15 +21,17 @@ interface Job {
 // Job service class
 export class JobServiceNeon {
   // 獲取工作列表（帶分頁和篩選）
-  async getJobs(options: {
-    page?: number
-    limit?: number
-    jobType?: string
-    location?: string
-    search?: string
-    salaryMin?: number
-    salaryMax?: number
-  } = {}): Promise<{ data: any[]; meta: any }> {
+  async getJobs(
+    options: {
+      page?: number
+      limit?: number
+      jobType?: string
+      location?: string
+      search?: string
+      salaryMin?: number
+      salaryMax?: number
+    } = {}
+  ): Promise<{ data: any[]; meta: any }> {
     const { page = 1, limit = 9, jobType, location, search, salaryMin, salaryMax } = options
     const offset = (page - 1) * limit
 
@@ -80,7 +82,7 @@ export class JobServiceNeon {
         FROM jobs j 
         WHERE ${whereClause}
       `
-      const countResult = await neonDb.queryOne<{ count: string }>(countQuery, params)
+      const countResult = await neonDb.queryOne(countQuery, params)
       const total = parseInt(countResult?.count || '0', 10)
 
       // 獲取分頁數據
@@ -94,7 +96,7 @@ export class JobServiceNeon {
         ORDER BY j.created_at DESC
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
       `
-      const jobs = await neonDb.queryMany<any>(dataQuery, [...params, limit, offset])
+      const jobs = await neonDb.queryMany(dataQuery, [...params, limit, offset])
 
       // 格式化數據
       const formattedJobs = jobs.map(job => ({
@@ -138,8 +140,8 @@ export class JobServiceNeon {
         LEFT JOIN users u ON j.employer_id = u.id
         WHERE j.id = $1
       `
-      const job = await neonDb.queryOne<any>(query, [id])
-      
+      const job = await neonDb.queryOne(query, [id])
+
       if (!job) return null
 
       return {
@@ -160,6 +162,42 @@ export class JobServiceNeon {
     } catch (error) {
       console.error('Get job by ID error:', error)
       throw new Error('Failed to fetch job')
+    }
+  }
+
+  // 根據雇主 ID 獲取工作
+  async getJobsByEmployer(employerId: number): Promise<any[]> {
+    try {
+      const query = `
+        SELECT 
+          j.*,
+          u.first_name || ' ' || u.last_name as employer_name,
+          u.email as employer_email
+        FROM jobs j
+        LEFT JOIN users u ON j.employer_id = u.id
+        WHERE j.employer_id = $1 AND j.is_active = true
+        ORDER BY j.created_at DESC
+      `
+      const jobs = await neonDb.query(query, [employerId])
+
+      return jobs.map(job => ({
+        id: job.id,
+        title: job.title,
+        description: job.description,
+        location: job.location,
+        salaryMin: job.salary_min,
+        salaryMax: job.salary_max,
+        jobType: job.job_type,
+        requirements: job.requirements,
+        employerName: job.employer_name || 'Unknown Employer',
+        employerEmail: job.employer_email,
+        createdAt: job.created_at,
+        expiresAt: job.expires_at,
+        isActive: job.is_active
+      }))
+    } catch (error) {
+      console.error('Get jobs by employer error:', error)
+      throw new Error('Failed to fetch employer jobs')
     }
   }
 }

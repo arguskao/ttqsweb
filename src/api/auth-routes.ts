@@ -1,11 +1,14 @@
 import { registerUser, loginUser, type RegisterData, type LoginData } from '../services/auth'
+import jwt from 'jsonwebtoken'
 
 import { requireAuth } from './auth-middleware'
 import { ValidationError } from './errors'
 import type { RouteHandler } from './types'
+import { loginRateLimit, registerRateLimit } from './rate-limit'
+import { SessionManager, generateSecureToken } from './session-manager'
 
 // Register endpoint
-export const registerHandler: RouteHandler = async (req) => {
+export const registerHandler: RouteHandler = async req => {
   try {
     const body = req.body as RegisterData
 
@@ -26,11 +29,33 @@ export const registerHandler: RouteHandler = async (req) => {
       phone
     })
 
+    // Create secure session
+    const ipAddress = req.ip || (req.headers['x-forwarded-for'] as string) || 'unknown'
+    const userAgent = req.headers['user-agent'] || 'unknown'
+    const sessionId = SessionManager.createSession(
+      result.user.id,
+      result.user.email,
+      result.user.userType,
+      ipAddress,
+      userAgent
+    )
+
+    // Generate secure token with session
+    const secureToken = generateSecureToken(
+      {
+        userId: result.user.id,
+        email: result.user.email,
+        userType: result.user.userType
+      },
+      sessionId
+    )
+
     return {
       success: true,
       data: {
         user: result.user,
-        token: result.token
+        token: secureToken,
+        sessionId
       }
     }
   } catch (error) {
@@ -39,7 +64,7 @@ export const registerHandler: RouteHandler = async (req) => {
 }
 
 // Login endpoint
-export const loginHandler: RouteHandler = async (req) => {
+export const loginHandler: RouteHandler = async req => {
   try {
     const body = req.body as LoginData
 
@@ -53,11 +78,33 @@ export const loginHandler: RouteHandler = async (req) => {
     // Login user
     const result = await loginUser({ email, password })
 
+    // Create secure session
+    const ipAddress = req.ip || (req.headers['x-forwarded-for'] as string) || 'unknown'
+    const userAgent = req.headers['user-agent'] || 'unknown'
+    const sessionId = SessionManager.createSession(
+      result.user.id,
+      result.user.email,
+      result.user.userType,
+      ipAddress,
+      userAgent
+    )
+
+    // Generate secure token with session
+    const secureToken = generateSecureToken(
+      {
+        userId: result.user.id,
+        email: result.user.email,
+        userType: result.user.userType
+      },
+      sessionId
+    )
+
     return {
       success: true,
       data: {
         user: result.user,
-        token: result.token
+        token: secureToken,
+        sessionId
       }
     }
   } catch (error) {
@@ -66,7 +113,7 @@ export const loginHandler: RouteHandler = async (req) => {
 }
 
 // Get current user profile
-export const profileHandler: RouteHandler = async (req) => {
+export const profileHandler: RouteHandler = async req => {
   try {
     // User is already attached to request by auth middleware
     if (!req.user) {
@@ -75,23 +122,14 @@ export const profileHandler: RouteHandler = async (req) => {
 
     return {
       success: true,
-      data: req.user
-    }
-  } catch (error) {
-    throw error
-  }
-}
-
-// Logout endpoint (client-side token removal)
-export const logoutHandler: RouteHandler = async (req) => {
-  try {
-    // In a stateless JWT system, logout is handled client-side
-    // This endpoint can be used for logging purposes or token blacklisting
-
-    return {
-      success: true,
       data: {
-        message: '登出成功'
+        id: req.user.id,
+        email: req.user.email,
+        userType: req.user.userType || req.user.user_type,
+        firstName: req.user.firstName || req.user.first_name,
+        lastName: req.user.lastName || req.user.last_name,
+        phone: req.user.phone,
+        isActive: req.user.isActive || req.user.is_active
       }
     }
   } catch (error) {
@@ -99,8 +137,48 @@ export const logoutHandler: RouteHandler = async (req) => {
   }
 }
 
+// Logout endpoint
+export const logoutHandler: RouteHandler = async req => {
+  try {
+    // Get token from Authorization header
+    const authHeader = req.headers.authorization || (req.headers.Authorization as string)
+
+    if (authHeader) {
+      const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader
+
+      try {
+        // Verify token to get session info
+        const secret = process.env.JWT_SECRET
+        if (secret) {
+          const payload = jwt.verify(token, secret) as any
+
+          // Blacklist the token
+          if (payload.tokenId) {
+            SessionManager.blacklistToken(payload.tokenId, payload.exp * 1000)
+          }
+
+          // Invalidate session
+          if (payload.sessionId) {
+            SessionManager.invalidateSession(payload.sessionId)
+          }
+        }
+      } catch (error) {
+        // Token might be invalid, but we still want to return success
+        console.warn('Logout with invalid token:', error)
+      }
+    }
+
+    return {
+      success: true,
+      message: '登出成功'
+    }
+  } catch (error) {
+    throw error
+  }
+}
+
 // Update user profile
-export const updateProfileHandler: RouteHandler = async (req) => {
+export const updateProfileHandler: RouteHandler = async req => {
   try {
     // User is already attached to request by auth middleware
     if (!req.user) {
@@ -108,10 +186,10 @@ export const updateProfileHandler: RouteHandler = async (req) => {
     }
 
     const body = req.body as Partial<{
-            firstName: string
-            lastName: string
-            phone: string
-        }>
+      firstName: string
+      lastName: string
+      phone: string
+    }>
 
     if (!body) {
       throw new ValidationError('請求內容不能為空')

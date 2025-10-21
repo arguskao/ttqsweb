@@ -17,30 +17,30 @@ class NeonDatabaseManager {
         throw new Error('DATABASE_URL not configured')
       }
 
+      // Ensure proper PostgreSQL URL format for Neon
+      if (!databaseUrl.startsWith('postgresql://')) {
+        throw new Error('DATABASE_URL must be a valid PostgreSQL connection string')
+      }
+
       this.sql = neon(databaseUrl)
     }
 
     return this.sql
   }
 
-  // 執行查詢 - Neon 風格
-  async query<T = any>(sqlTemplate: string, params: any[] = []): Promise<T[]> {
+  // 執行查詢 - 使用Neon的query方法
+  async query(sql: string, params: any[] = []): Promise<any[]> {
     try {
-      const sql = this.getConnection()
-
-      // 使用 Neon 的查詢方式
-      if (params.length === 0) {
-        return (await sql`${sqlTemplate}`) as T[]
+      const connection = this.getConnection()
+      // 使用Neon的query方法而不是tagged template
+      const result = await connection.query(sql, params)
+      // Neon返回的結果可能是不同的格式，統一處理
+      if (Array.isArray(result)) {
+        return result
+      } else if (result && typeof result === 'object' && 'rows' in result) {
+        return result.rows
       } else {
-        // 對於帶參數的查詢，使用模板字符串
-        const query = sqlTemplate.replace(/\$(\d+)/g, (match, index) => {
-          const paramIndex = parseInt(index) - 1
-          if (paramIndex < params.length) {
-            return `'${params[paramIndex]}'`
-          }
-          return match
-        })
-        return (await sql`${query}`) as T[]
+        return []
       }
     } catch (error) {
       console.error('Neon database query error:', error)
@@ -48,82 +48,74 @@ class NeonDatabaseManager {
     }
   }
 
-  // 執行查詢並返回第一行
-  async queryOne<T = any>(sqlTemplate: string, params: any[] = []): Promise<T | null> {
-    const results = await this.query<T>(sqlTemplate, params)
-    return results.length > 0 ? (results[0] ?? null) : null
+  // 執行單個查詢
+  async queryOne(sql: string, params: any[] = []): Promise<any> {
+    try {
+      const result = await this.query(sql, params)
+      return result[0] || null
+    } catch (error) {
+      console.error('Neon database query error:', error)
+      throw error
+    }
   }
 
-  // 執行查詢並返回所有行
-  async queryMany<T = any>(sqlTemplate: string, params: any[] = []): Promise<T[]> {
-    return await this.query<T>(sqlTemplate, params)
+  // 執行多個查詢
+  async queryMany(sql: string, params: any[] = []): Promise<any[]> {
+    return await this.query(sql, params)
   }
 
-  // 事務處理（Neon 自動處理單連接事務）
-  async transaction<T>(callback: (db: NeonDatabaseManager) => Promise<T>): Promise<T> {
-    return await callback(this)
+  // 執行事務
+  async transaction(callback: (db: NeonDatabaseManager) => Promise<any>): Promise<any> {
+    try {
+      const connection = this.getConnection()
+      // Neon serverless driver 可能不支持事務，直接執行回調
+      return await callback(this)
+    } catch (error) {
+      console.error('Neon database transaction error:', error)
+      throw error
+    }
   }
 
   // 檢查表是否存在
   async tableExists(tableName: string): Promise<boolean> {
-    const result = await this.queryOne<{ exists: boolean }>(
-      `SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = $1
-      )`,
-      [tableName]
-    )
-    return result?.exists || false
+    try {
+      const result = await this.queryOne(
+        `
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_name = $1
+        ) as exists
+      `,
+        [tableName]
+      )
+      return result?.exists || false
+    } catch (error) {
+      console.error('Check table exists error:', error)
+      return false
+    }
   }
 
-  // 獲取表行數
+  // 獲取表的行數
   async getTableRowCount(tableName: string): Promise<number> {
-    const result = await this.queryOne<{ count: string }>(
-      `SELECT COUNT(*) as count FROM ${tableName}`
-    )
-    return parseInt(result?.count || '0', 10)
+    try {
+      const result = await this.queryOne(`SELECT COUNT(*) as count FROM ${tableName}`)
+      return parseInt(result?.count || '0', 10)
+    } catch (error) {
+      console.error('Get table row count error:', error)
+      return 0
+    }
   }
 }
 
-// 創建全局實例
+// 創建單例實例
 export const neonDb = new NeonDatabaseManager()
 
-// 兼容舊的 API 接口
-export interface QueryOptions {
-  text: string
-  values?: unknown[]
-}
+// 導出常用函數
+export const query = neonDb.query.bind(neonDb)
+export const queryOne = neonDb.queryOne.bind(neonDb)
+export const queryMany = neonDb.queryMany.bind(neonDb)
+export const transaction = neonDb.transaction.bind(neonDb)
 
-// 包裝函數以兼容舊的 API
-export const query = async (options: QueryOptions): Promise<{ rows: any[]; rowCount: number }> => {
-  const { text, values = [] } = options
-  const rows = await neonDb.query(text, values)
-  return { rows, rowCount: rows.length }
-}
-
-export const queryOne = async <T>(options: QueryOptions): Promise<T | null> => {
-  const { text, values = [] } = options
-  return await neonDb.queryOne<T>(text, values)
-}
-
-export const queryMany = async <T>(options: QueryOptions): Promise<T[]> => {
-  const { text, values = [] } = options
-  return await neonDb.queryMany<T>(text, values)
-}
-
-export const transaction = async <T>(callback: (db: any) => Promise<T>): Promise<T> => {
-  return await neonDb.transaction(callback)
-}
-
-// 兼容性導出
-export const db = {
-  query: async (options: QueryOptions) => query(options),
-  queryOne: async <T>(options: QueryOptions) => queryOne<T>(options),
-  queryMany: async <T>(options: QueryOptions) => queryMany<T>(options),
-  transaction: async <T>(callback: (db: any) => Promise<T>) => transaction(callback),
-  tableExists: (tableName: string) => neonDb.tableExists(tableName),
-  getTableRowCount: (tableName: string) => neonDb.getTableRowCount(tableName)
-}
-
+// 導出類和實例
+export { NeonDatabaseManager }
 export default neonDb

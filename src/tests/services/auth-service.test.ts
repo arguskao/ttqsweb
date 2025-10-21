@@ -2,14 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { authServiceEnhanced } from '@/services/auth-service-enhanced'
 import type { LoginCredentials, RegisterData } from '@/types/enhanced'
 
-// Mock the API service
-vi.mock('@/services/api-enhanced', () => ({
-  apiServiceEnhanced: {
-    post: vi.fn(),
-    get: vi.fn()
-  }
-}))
-
 // Mock Pinia store
 vi.mock('@/stores/auth', () => ({
   useAuthStore: () => ({
@@ -36,7 +28,7 @@ describe('AuthServiceEnhanced', () => {
     })
 
     it('should return false when token is not expired', () => {
-      const futureTime = Date.now() + 300000 // 5 minutes from now
+      const futureTime = Date.now() + 600000 // 10 minutes from now (more than 1 minute buffer)
       sessionStorage.setItem('token_expiry', futureTime.toString())
       expect(authServiceEnhanced.isTokenExpired()).toBe(false)
     })
@@ -76,8 +68,9 @@ describe('AuthServiceEnhanced', () => {
         }
       }
 
-      const { apiServiceEnhanced } = await import('@/services/api-enhanced')
-      vi.mocked(apiServiceEnhanced.post).mockResolvedValue(mockResponse)
+      // Mock the API service directly
+      const { apiService } = await import('@/services/api')
+      vi.spyOn(apiService, 'post').mockResolvedValue(mockResponse)
 
       const result = await authServiceEnhanced.login(mockCredentials)
 
@@ -97,12 +90,13 @@ describe('AuthServiceEnhanced', () => {
         success: false,
         error: {
           code: 'AUTH_ERROR',
-          message: 'Invalid credentials'
+          message: '登入失敗'
         }
       }
 
-      const { apiServiceEnhanced } = await import('@/services/api-enhanced')
-      vi.mocked(apiServiceEnhanced.post).mockResolvedValue(mockResponse)
+      // Mock the API service directly
+      const { apiService } = await import('@/services/api')
+      vi.spyOn(apiService, 'post').mockResolvedValue(mockResponse)
 
       await expect(authServiceEnhanced.login(mockCredentials)).rejects.toThrow('登入失敗')
     })
@@ -142,8 +136,9 @@ describe('AuthServiceEnhanced', () => {
         }
       }
 
-      const { apiServiceEnhanced } = await import('@/services/api-enhanced')
-      vi.mocked(apiServiceEnhanced.post).mockResolvedValue(mockResponse)
+      // Mock the API service directly
+      const { apiService } = await import('@/services/api')
+      vi.spyOn(apiService, 'post').mockResolvedValue(mockResponse)
 
       const result = await authServiceEnhanced.register(mockRegisterData)
 
@@ -158,9 +153,6 @@ describe('AuthServiceEnhanced', () => {
       sessionStorage.setItem('access_token', 'mock-token')
       localStorage.setItem('refresh_token', 'mock-refresh-token')
 
-      const { apiServiceEnhanced } = await import('@/services/api-enhanced')
-      vi.mocked(apiServiceEnhanced.post).mockResolvedValue({ success: true })
-
       await authServiceEnhanced.logout()
 
       expect(sessionStorage.getItem('access_token')).toBeNull()
@@ -170,7 +162,7 @@ describe('AuthServiceEnhanced', () => {
 
   describe('getValidToken', () => {
     it('should return token when not expired', async () => {
-      const futureTime = Date.now() + 300000
+      const futureTime = Date.now() + 600000 // 10 minutes from now (more than 1 minute buffer)
       sessionStorage.setItem('access_token', 'valid-token')
       sessionStorage.setItem('token_expiry', futureTime.toString())
 

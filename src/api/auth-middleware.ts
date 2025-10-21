@@ -1,22 +1,31 @@
-import { verifyToken, getUserById } from '../services/auth'
-
 import { AuthenticationError } from './errors'
 import type { Middleware } from './types'
+import { getUserById } from '../services/auth'
+import jwt from 'jsonwebtoken'
+
+// JWT token verification
+const verifyToken = (token: string) => {
+  try {
+    const secret = process.env.JWT_SECRET || 'test-secret'
+    const payload = jwt.verify(token, secret) as any
+    return payload
+  } catch (error) {
+    throw new AuthenticationError('認證令牌無效或已過期')
+  }
+}
 
 // Authentication middleware
 export const authMiddleware: Middleware = async (req, next) => {
   try {
     // Get token from Authorization header
-    const authHeader = req.headers.authorization || req.headers.Authorization as string
+    const authHeader = req.headers.authorization || (req.headers.Authorization as string)
 
     if (!authHeader) {
       throw new AuthenticationError('未提供認證令牌')
     }
 
     // Extract token from "Bearer <token>" format
-    const token = authHeader.startsWith('Bearer ')
-      ? authHeader.substring(7)
-      : authHeader
+    const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader
 
     if (!token) {
       throw new AuthenticationError('認證令牌格式錯誤')
@@ -25,8 +34,14 @@ export const authMiddleware: Middleware = async (req, next) => {
     // Verify JWT token
     const payload = verifyToken(token)
 
-    // Get user details from database
-    const user = await getUserById(payload.userId)
+    // Get user from database using the user ID from token
+    const userId = payload.userId || payload.id
+    if (!userId) {
+      throw new AuthenticationError('令牌中缺少用戶ID')
+    }
+
+    // Get user from database
+    const user = await getUserById(userId)
 
     if (!user) {
       throw new AuthenticationError('用戶不存在或已被停用')
@@ -36,7 +51,16 @@ export const authMiddleware: Middleware = async (req, next) => {
     req.user = {
       id: user.id,
       email: user.email,
-      userType: user.userType
+      userType: user.userType,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
+      isActive: user.isActive,
+      // 兼容舊的屬性名稱
+      user_type: user.userType,
+      first_name: user.firstName,
+      last_name: user.lastName,
+      is_active: user.isActive
     }
 
     // Continue to next middleware or route handler
@@ -54,12 +78,10 @@ export const authMiddleware: Middleware = async (req, next) => {
 // Optional authentication middleware (doesn't throw error if no token)
 export const optionalAuthMiddleware: Middleware = async (req, next) => {
   try {
-    const authHeader = req.headers.authorization || req.headers.Authorization as string
+    const authHeader = req.headers.authorization || (req.headers.Authorization as string)
 
     if (authHeader) {
-      const token = authHeader.startsWith('Bearer ')
-        ? authHeader.substring(7)
-        : authHeader
+      const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader
 
       if (token) {
         const payload = verifyToken(token)
@@ -69,7 +91,16 @@ export const optionalAuthMiddleware: Middleware = async (req, next) => {
           req.user = {
             id: user.id,
             email: user.email,
-            userType: user.userType
+            userType: user.userType,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            phone: user.phone,
+            isActive: user.isActive,
+            // 兼容舊的屬性名稱
+            user_type: user.userType,
+            first_name: user.firstName,
+            last_name: user.lastName,
+            is_active: user.isActive
           }
         }
       }
@@ -89,7 +120,7 @@ export const requireRole = (allowedRoles: string[]): Middleware => {
       throw new AuthenticationError('需要登入才能訪問此資源')
     }
 
-    if (!allowedRoles.includes(req.user.userType)) {
+    if (!allowedRoles.includes(req.user.userType || req.user.user_type)) {
       throw new AuthenticationError('沒有權限訪問此資源')
     }
 

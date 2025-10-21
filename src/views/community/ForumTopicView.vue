@@ -229,7 +229,7 @@ const newReply = ref({
 const loadTopic = async () => {
   loading.value = true
   try {
-    const response = await apiService.get<unknown>(`/forum/topics/${topicId}`)
+    const response = await apiService.get<any>(`/forum/topics/${topicId}`)
 
     if (response.success && response.data) {
       // 後端返回的數據結構是直接包含主題和回覆

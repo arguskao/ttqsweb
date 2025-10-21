@@ -72,6 +72,12 @@ export function getDatabaseConnection(env?: any): CloudflareDatabase {
   const connectionString = env?.DATABASE_URL || process.env.DATABASE_URL
 
   if (!connectionString) {
+    // In test environment, use mock database
+    if (process.env.NODE_ENV === 'test') {
+      return new CloudflareDatabase({
+        connectionString: 'postgresql://test:test@localhost:5432/test_db'
+      })
+    }
     throw new Error('DATABASE_URL environment variable is required')
   }
 

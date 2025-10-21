@@ -42,7 +42,7 @@ class InstructorRepository extends BaseRepository<Instructor> {
   // Find instructor by user ID
   async findByUserId(userId: number): Promise<Instructor | null> {
     const { db } = await import('../utils/database')
-    return await db.queryOne<Instructor>({
+    return await db.queryOne({
       text: 'SELECT * FROM instructors WHERE user_id = $1',
       values: [userId]
     })
@@ -97,7 +97,7 @@ class InstructorRepository extends BaseRepository<Instructor> {
 
     // Get total count
     const { db } = await import('../utils/database')
-    const countResult = await db.queryOne<{ count: string }>({
+    const countResult = await db.queryOne({
       text: `SELECT COUNT(*) as count FROM instructors i ${whereClause}`,
       values
     })
@@ -153,7 +153,7 @@ class InstructorRepository extends BaseRepository<Instructor> {
       }
     }
 
-    return await db.queryOne<Instructor>({
+    return await db.queryOne({
       text: `
                 UPDATE instructors
                 SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
@@ -224,7 +224,7 @@ class InstructorRatingRepository extends BaseRepository<InstructorRating> {
   // Check if student has already rated instructor for a course
   async hasRated(studentId: number, instructorId: number, courseId: number): Promise<boolean> {
     const { db } = await import('../utils/database')
-    const result = await db.queryOne<{ exists: boolean }>({
+    const result = await db.queryOne({
       text: `
                 SELECT EXISTS(
                     SELECT 1 FROM instructor_ratings 
@@ -242,7 +242,7 @@ class InstructorRatingRepository extends BaseRepository<InstructorRating> {
     const { db } = await import('../utils/database')
 
     // Get total count
-    const countResult = await db.queryOne<{ count: string }>({
+    const countResult = await db.queryOne({
       text: 'SELECT COUNT(*) as count FROM instructor_ratings WHERE instructor_id = $1',
       values: [instructorId]
     })
@@ -560,13 +560,13 @@ export function setupInstructorRoutes(router: ApiRouter): void {
 
     // Get course count
     const { db } = await import('../utils/database')
-    const courseCount = await db.queryOne<{ count: string }>({
+    const courseCount = await db.queryOne({
       text: 'SELECT COUNT(*) as count FROM courses WHERE instructor_id = $1',
       values: [instructor.user_id]
     })
 
     // Get student count (unique students enrolled in instructor's courses)
-    const studentCount = await db.queryOne<{ count: string }>({
+    const studentCount = await db.queryOne({
       text: `
                 SELECT COUNT(DISTINCT ce.user_id) as count
                 FROM course_enrollments ce

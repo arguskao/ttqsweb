@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- 背景圓形 -->
+  <circle cx="256" cy="256" r="256" fill="#00d1b2"/>
+  
+  <!-- 藥瓶圖示 -->
+  <g transform="translate(256, 256)">
+    <!-- 瓶身 -->
+    <rect x="-50" y="-30" width="100" height="160" fill="white" rx="10"/>
+    <!-- 瓶蓋 -->
+    <rect x="-60" y="-50" width="120" height="40" fill="white" rx="20"/>
+    <!-- 標籤線條 -->
+    <rect x="-40" y="-10" width="80" height="10" fill="#00d1b2"/>
+    <rect x="-40" y="10" width="60" height="8" fill="#00d1b2"/>
+    <rect x="-40" y="28" width="70" height="8" fill="#00d1b2"/>
+    <rect x="-40" y="46" width="50" height="8" fill="#00d1b2"/>
+    <!-- 十字標記 -->
+    <rect x="-6" y="70" width="12" height="40" fill="#ff3860"/>
+    <rect x="-20" y="84" width="40" height="12" fill="#ff3860"/>
+  </g>
+  
+  <!-- 文字 -->
+  <text x="256" y="380" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white">藥助Next</text>
+  <text x="256" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="36" fill="white">學院</text>
+</svg>

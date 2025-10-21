@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+  <!-- 背景 -->
+  <rect width="200" height="60" fill="#00d1b2" rx="8"/>
+  
+  <!-- 藥瓶圖示 -->
+  <g transform="translate(15, 12)">
+    <!-- 瓶身 -->
+    <rect x="8" y="12" width="20" height="28" fill="white" rx="2"/>
+    <!-- 瓶蓋 -->
+    <rect x="6" y="8" width="24" height="8" fill="white" rx="4"/>
+    <!-- 標籤 -->
+    <rect x="10" y="16" width="16" height="3" fill="#00d1b2"/>
+    <rect x="10" y="21" width="12" height="2" fill="#00d1b2"/>
+    <rect x="10" y="25" width="14" height="2" fill="#00d1b2"/>
+    <!-- 十字標記 -->
+    <rect x="18" y="30" width="2" height="6" fill="#ff3860"/>
+    <rect x="16" y="32" width="6" height="2" fill="#ff3860"/>
+  </g>
+  
+  <!-- 文字 -->
+  <text x="55" y="25" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">藥助Next</text>
+  <text x="55" y="42" font-family="Arial, sans-serif" font-size="12" fill="white">學院</text>
+  
+  <!-- 裝飾元素 -->
+  <circle cx="170" cy="20" r="3" fill="white" opacity="0.7"/>
+  <circle cx="180" cy="30" r="2" fill="white" opacity="0.5"/>
+  <circle cx="175" cy="40" r="2.5" fill="white" opacity="0.6"/>
+</svg>

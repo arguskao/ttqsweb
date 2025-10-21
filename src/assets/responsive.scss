@@ -1,0 +1,334 @@
+// 響應式設計變數
+$mobile: 768px;
+$tablet: 1024px;
+$desktop: 1216px;
+$widescreen: 1408px;
+
+// 移動端優先的斷點 mixins
+@mixin mobile {
+  @media (max-width: #{$mobile - 1px}) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (min-width: #{$mobile}) and (max-width: #{$tablet - 1px}) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: #{$tablet}) and (max-width: #{$desktop - 1px}) {
+    @content;
+  }
+}
+
+@mixin widescreen {
+  @media (min-width: #{$desktop}) {
+    @content;
+  }
+}
+
+// 觸摸設備檢測
+@mixin touch-device {
+  @media (hover: none) and (pointer: coarse) {
+    @content;
+  }
+}
+
+// 非觸摸設備檢測
+@mixin non-touch-device {
+  @media (hover: hover) and (pointer: fine) {
+    @content;
+  }
+}
+
+// 高解析度螢幕
+@mixin high-dpi {
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    @content;
+  }
+}
+
+// 深色模式支持
+@mixin dark-mode {
+  @media (prefers-color-scheme: dark) {
+    @content;
+  }
+}
+
+// 減少動畫偏好
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
+
+// 高對比度模式
+@mixin high-contrast {
+  @media (prefers-contrast: high) {
+    @content;
+  }
+}
+
+// 容器查詢支持 (如果瀏覽器支持)
+@mixin container-query($size) {
+  @container (min-width: #{$size}) {
+    @content;
+  }
+}
+
+// 響應式字體大小
+@mixin responsive-font-size($min-size, $max-size, $min-width: $mobile, $max-width: $desktop) {
+  font-size: $min-size;
+  
+  @media (min-width: #{$min-width}) {
+    font-size: calc(#{$min-size} + (#{$max-size} - #{$min-size}) * ((100vw - #{$min-width}) / (#{$max-width} - #{$min-width})));
+  }
+  
+  @media (min-width: #{$max-width}) {
+    font-size: $max-size;
+  }
+}
+
+// 響應式間距
+@mixin responsive-spacing($property, $mobile-value, $desktop-value) {
+  #{$property}: $mobile-value;
+  
+  @include tablet {
+    #{$property}: calc(#{$mobile-value} + (#{$desktop-value} - #{$mobile-value}) * 0.5);
+  }
+  
+  @include desktop {
+    #{$property}: $desktop-value;
+  }
+}
+
+// 觸摸友好的按鈕
+@mixin touch-friendly-button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.75rem 1rem;
+  
+  @include touch-device {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 1rem 1.25rem;
+  }
+}
+
+// 響應式網格
+@mixin responsive-grid($mobile-cols: 1, $tablet-cols: 2, $desktop-cols: 3, $gap: 1rem) {
+  display: grid;
+  gap: $gap;
+  grid-template-columns: repeat(#{$mobile-cols}, 1fr);
+  
+  @include tablet {
+    grid-template-columns: repeat(#{$tablet-cols}, 1fr);
+  }
+  
+  @include desktop {
+    grid-template-columns: repeat(#{$desktop-cols}, 1fr);
+  }
+}
+
+// 響應式卡片
+@mixin responsive-card {
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  @include tablet {
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  @include desktop {
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  }
+}
+
+// 響應式導航
+@mixin responsive-nav {
+  @include mobile {
+    .navbar-menu {
+      position: fixed;
+      top: 0;
+      left: -100%;
+      width: 80%;
+      height: 100vh;
+      background: white;
+      transition: left 0.3s ease;
+      z-index: 1000;
+      padding: 2rem 1rem;
+      
+      &.is-active {
+        left: 0;
+      }
+    }
+    
+    .navbar-burger {
+      display: block;
+    }
+  }
+  
+  @include tablet {
+    .navbar-menu {
+      position: static;
+      width: auto;
+      height: auto;
+      background: transparent;
+      padding: 0;
+    }
+    
+    .navbar-burger {
+      display: none;
+    }
+  }
+}
+
+// 響應式表格
+@mixin responsive-table {
+  @include mobile {
+    .table {
+      display: block;
+      width: 100%;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    
+    .table thead {
+      display: none;
+    }
+    
+    .table tbody {
+      display: block;
+    }
+    
+    .table tr {
+      display: block;
+      margin-bottom: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    
+    .table td {
+      display: block;
+      text-align: right;
+      border: none;
+      padding: 0.5rem 0;
+      
+      &:before {
+        content: attr(data-label) ": ";
+        float: left;
+        font-weight: bold;
+      }
+    }
+  }
+}
+
+// 響應式圖片
+@mixin responsive-image {
+  max-width: 100%;
+  height: auto;
+  
+  @include high-dpi {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+// 響應式視頻
+@mixin responsive-video {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%; // 16:9 比例
+  
+  iframe,
+  video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+// 響應式表單
+@mixin responsive-form {
+  .field {
+    margin-bottom: 1rem;
+    
+    @include mobile {
+      margin-bottom: 1.5rem;
+    }
+  }
+  
+  .input,
+  .textarea,
+  .select select {
+    @include touch-friendly-button;
+    font-size: 16px; // 防止 iOS 縮放
+    
+    @include mobile {
+      font-size: 18px;
+    }
+  }
+  
+  .button {
+    @include touch-friendly-button;
+    width: 100%;
+    
+    @include tablet {
+      width: auto;
+    }
+  }
+}
+
+// 響應式工具類
+.responsive-hidden-mobile {
+  @include mobile {
+    display: none !important;
+  }
+}
+
+.responsive-hidden-tablet {
+  @include tablet {
+    display: none !important;
+  }
+}
+
+.responsive-hidden-desktop {
+  @include desktop {
+    display: none !important;
+  }
+}
+
+.responsive-visible-mobile {
+  display: none !important;
+  
+  @include mobile {
+    display: block !important;
+  }
+}
+
+.responsive-visible-tablet {
+  display: none !important;
+  
+  @include tablet {
+    display: block !important;
+  }
+}
+
+.responsive-visible-desktop {
+  display: none !important;
+  
+  @include desktop {
+    display: block !important;
+  }
+}

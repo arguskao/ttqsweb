@@ -1,0 +1,61 @@
+# 依賴目錄
+node_modules/
+dist/
+dist-ssr/
+coverage/
+
+# 建置文件
+build/
+out/
+
+# 日誌文件
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 運行時數據
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 目錄
+.nuxt
+.output
+.vscode
+.idea
+
+# 系統文件
+.DS_Store
+Thumbs.db
+
+# 臨時文件
+*.tmp
+*.temp
+
+# 其他
+*.tgz
+*.tar.gz
+
+# 不需要格式化的文件
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# 生成的類型文件
+*.d.ts
+
+# 配置文件
+.env*
+wrangler.toml
+wrangler.pages.toml
+
+# 測試覆蓋率
+.nyc_output
+coverage/
+
+# 文檔
+CHANGELOG.md
+LICENSE
+README.md

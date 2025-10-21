@@ -1,0 +1,5 @@
+name = "pharmacy-assistant-academy"
+pages_build_output_dir = "dist"
+
+[vars]
+ENVIRONMENT = "preview"

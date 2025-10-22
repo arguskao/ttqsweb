@@ -41,7 +41,7 @@ export class DatabaseUtils {
   // Execute a query and return all rows
   async queryMany<T = unknown>(queryOptions: QueryOptions): Promise<T[]> {
     const result = await this.query(queryOptions)
-    return (result.rows as T[]) || []
+    return (result.rows as T[]) ?? []
   }
 
   // Execute multiple queries in a transaction

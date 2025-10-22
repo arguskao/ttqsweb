@@ -3,8 +3,8 @@
     <div class="dashboard-header">
       <h1 class="title is-3">性能監控儀表板</h1>
       <div class="dashboard-controls">
-        <button 
-          class="button is-primary" 
+        <button
+          class="button is-primary"
           @click="refreshData"
           :disabled="isLoading"
         >
@@ -13,8 +13,8 @@
           </span>
           <span>刷新數據</span>
         </button>
-        <button 
-          class="button is-info" 
+        <button
+          class="button is-info"
           @click="exportReport"
         >
           <span class="icon">
@@ -45,10 +45,10 @@
                 </div>
               </div>
             </div>
-            <progress 
-              class="progress" 
+            <progress
+              class="progress"
               :class="getMetricClass(metric.value, metric.threshold)"
-              :value="metric.value" 
+              :value="metric.value"
               :max="metric.max"
             >
               {{ metric.value }}%
@@ -134,8 +134,8 @@
         <div class="column is-4">
           <h3 class="subtitle is-5">未使用索引</h3>
           <div class="tags">
-            <span 
-              v-for="index in unusedIndexes" 
+            <span
+              v-for="index in unusedIndexes"
               :key="index.name"
               class="tag is-warning"
             >
@@ -146,8 +146,8 @@
         <div class="column is-4">
           <h3 class="subtitle is-5">低使用率索引</h3>
           <div class="tags">
-            <span 
-              v-for="index in lowUsageIndexes" 
+            <span
+              v-for="index in lowUsageIndexes"
               :key="index.name"
               class="tag is-info"
             >
@@ -158,8 +158,8 @@
         <div class="column is-4">
           <h3 class="subtitle is-5">高使用率索引</h3>
           <div class="tags">
-            <span 
-              v-for="index in highUsageIndexes" 
+            <span
+              v-for="index in highUsageIndexes"
               :key="index.name"
               class="tag is-success"
             >
@@ -173,8 +173,8 @@
     <!-- 性能警報 -->
     <div v-if="alerts.length > 0" class="box">
       <h2 class="title is-4">性能警報</h2>
-      <div class="notification" 
-           v-for="alert in alerts" 
+      <div class="notification"
+           v-for="alert in alerts"
            :key="alert.type"
            :class="getAlertClass(alert.level)"
       >
@@ -209,6 +209,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+
 import { apiService } from '@/services/api-enhanced'
 import type { ApiResponse } from '@/types/enhanced'
 
@@ -266,7 +267,7 @@ const loadPerformanceMetrics = async () => {
       const data = response.data
       performanceMetrics.value = performanceMetrics.value.map(metric => ({
         ...metric,
-        value: data[metric.name] || 0
+        value: data[metric.name] ?? 0
       }))
     }
   } catch (error) {
@@ -300,9 +301,9 @@ const loadIndexUsage = async () => {
   try {
     const response = await apiService.get<Record<string, any>>('/admin/database/index-usage')
     if (response.success && response.data) {
-      unusedIndexes.value = response.data.unused || []
-      lowUsageIndexes.value = response.data.lowUsage || []
-      highUsageIndexes.value = response.data.highUsage || []
+      unusedIndexes.value = response.data.unused ?? []
+      lowUsageIndexes.value = response.data.lowUsage ?? []
+      highUsageIndexes.value = response.data.highUsage ?? []
     }
   } catch (error) {
     console.error('載入索引使用情況失敗:', error)
@@ -384,7 +385,7 @@ const getAlertClass = (level: string) => {
 }
 
 const truncateQuery = (query: string) => {
-  return query.length > 50 ? query.substring(0, 50) + '...' : query
+  return query.length > 50 ? `${query.substring(0, 50)}...` : query
 }
 
 const formatDuration = (duration: string) => {
@@ -403,7 +404,7 @@ let refreshInterval: number | null = null
 onMounted(() => {
   refreshData()
   initCharts()
-  
+
   // 每30秒自動刷新
   refreshInterval = window.setInterval(refreshData, 30000)
 })

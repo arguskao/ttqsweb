@@ -3,7 +3,7 @@
  * 提供結構化錯誤、錯誤分類、錯誤追蹤等功能
  */
 
-import type { ApiRequest, ApiResponse, ApiError, Middleware } from './types'
+import type { ApiResponse, ApiError, Middleware } from './types'
 
 // 錯誤嚴重程度
 export enum ErrorSeverity {
@@ -54,11 +54,11 @@ export class EnhancedError extends Error {
   constructor(
     message: string,
     code: string,
-    statusCode: number = 500,
+    statusCode = 500,
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
     category: ErrorCategory = ErrorCategory.SYSTEM,
     context: ErrorContext = {},
-    isRetryable: boolean = false,
+    isRetryable = false,
     retryAfter?: number,
     details?: Record<string, any>
   ) {
@@ -87,7 +87,7 @@ export class EnhancedError extends Error {
         severity: this.severity,
         category: this.category,
         isRetryable: this.isRetryable.toString(),
-        retryAfter: this.retryAfter?.toString() || undefined,
+        ...(this.retryAfter && { retryAfter: this.retryAfter.toString() }),
         ...this.details
       }
     }
@@ -127,7 +127,7 @@ export class ValidationError extends EnhancedError {
 }
 
 export class AuthenticationError extends EnhancedError {
-  constructor(message: string = '認證失敗', context: ErrorContext = {}) {
+  constructor(message = '認證失敗', context: ErrorContext = {}) {
     super(
       message,
       'AUTHENTICATION_ERROR',
@@ -141,7 +141,7 @@ export class AuthenticationError extends EnhancedError {
 }
 
 export class AuthorizationError extends EnhancedError {
-  constructor(message: string = '權限不足', context: ErrorContext = {}) {
+  constructor(message = '權限不足', context: ErrorContext = {}) {
     super(
       message,
       'AUTHORIZATION_ERROR',
@@ -155,7 +155,7 @@ export class AuthorizationError extends EnhancedError {
 }
 
 export class NotFoundError extends EnhancedError {
-  constructor(message: string = '資源不存在', context: ErrorContext = {}) {
+  constructor(message = '資源不存在', context: ErrorContext = {}) {
     super(
       message,
       'NOT_FOUND_ERROR',
@@ -169,7 +169,7 @@ export class NotFoundError extends EnhancedError {
 }
 
 export class RateLimitError extends EnhancedError {
-  constructor(message: string = '請求過於頻繁', retryAfter?: number, context: ErrorContext = {}) {
+  constructor(message = '請求過於頻繁', retryAfter?: number, context: ErrorContext = {}) {
     super(
       message,
       'RATE_LIMIT_ERROR',
@@ -184,7 +184,7 @@ export class RateLimitError extends EnhancedError {
 }
 
 export class DatabaseError extends EnhancedError {
-  constructor(message: string = '數據庫操作失敗', context: ErrorContext = {}) {
+  constructor(message = '數據庫操作失敗', context: ErrorContext = {}) {
     super(
       message,
       'DATABASE_ERROR',
@@ -199,7 +199,7 @@ export class DatabaseError extends EnhancedError {
 }
 
 export class NetworkError extends EnhancedError {
-  constructor(message: string = '網絡錯誤', context: ErrorContext = {}) {
+  constructor(message = '網絡錯誤', context: ErrorContext = {}) {
     super(
       message,
       'NETWORK_ERROR',
@@ -220,7 +220,7 @@ export class BusinessLogicError extends EnhancedError {
 }
 
 export class SystemError extends EnhancedError {
-  constructor(message: string = '系統錯誤', context: ErrorContext = {}) {
+  constructor(message = '系統錯誤', context: ErrorContext = {}) {
     super(
       message,
       'SYSTEM_ERROR',
@@ -306,7 +306,7 @@ export class ErrorTracker {
       count: number
       severity: ErrorSeverity
     }>
-  } {
+    } {
     const totalErrors = this.errorLog.reduce((sum, entry) => sum + entry.count, 0)
 
     const errorsBySeverity = Object.values(ErrorSeverity).reduce(
@@ -486,6 +486,3 @@ export const errorMonitoringMiddleware = (): Middleware => {
 export const enhancedErrorHandlingMiddlewareChain = (): Middleware[] => {
   return [errorMonitoringMiddleware(), errorRecoveryMiddleware(), enhancedErrorHandlingMiddleware()]
 }
-
-// 導出類型
-export type { ErrorContext }

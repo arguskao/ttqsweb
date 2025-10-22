@@ -102,13 +102,55 @@ export const getTestDatabaseConnection = () => {
     },
 
     queryOne: async (text: string, params?: any[]) => {
-      const result = await this.query(text, params)
-      return result?.rows?.[0] || null
+      const result = await (async (text: string, params?: any[]) => {
+        // Mock query responses for testing
+        if (text.includes('SELECT * FROM users WHERE email')) {
+          return {
+            rows: [
+              {
+                id: 1,
+                email: 'test@example.com',
+                password_hash: '$2b$10$mockhash',
+                user_type: 'job_seeker',
+                first_name: 'Test',
+                last_name: 'User',
+                phone: '0912345678',
+                created_at: new Date(),
+                updated_at: new Date(),
+                is_active: true
+              }
+            ]
+          }
+        }
+        return { rows: [] }
+      })(text, params)
+      return (result as any)?.rows?.[0] || null
     },
 
     queryMany: async (text: string, params?: any[]) => {
-      const result = await this.query(text, params)
-      return result?.rows || []
+      const result = await (async (text: string, params?: any[]) => {
+        // Mock query responses for testing
+        if (text.includes('SELECT * FROM users WHERE email')) {
+          return {
+            rows: [
+              {
+                id: 1,
+                email: 'test@example.com',
+                password_hash: '$2b$10$mockhash',
+                user_type: 'job_seeker',
+                first_name: 'Test',
+                last_name: 'User',
+                phone: '0912345678',
+                created_at: new Date(),
+                updated_at: new Date(),
+                is_active: true
+              }
+            ]
+          }
+        }
+        return { rows: [] }
+      })(text, params)
+      return (result as any)?.rows ?? []
     }
   }
 }

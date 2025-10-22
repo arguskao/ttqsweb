@@ -1,6 +1,6 @@
 import { apiService } from './api'
 
-import type { Course, CourseEnrollment, CourseFilters, ApiResponse } from '@/types'
+import type { Course, CourseEnrollment, CourseFilters } from '@/types'
 
 export interface PaginatedResponse<T> {
   data: T[]
@@ -21,37 +21,37 @@ class CourseService {
         id: 1,
         title: '藥局助理基礎課程',
         description: '學習藥局基本作業流程、藥品管理等基礎知識',
-        courseType: 'basic',
-        durationHours: 40,
+        course_type: 'basic',
+        duration_hours: 40,
         price: 5000,
-        instructorId: 1,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        instructor_id: 1,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
         id: 2,
         title: '進階藥學知識',
         description: '深入學習藥理學、藥物交互作用等進階知識',
-        courseType: 'advanced',
-        durationHours: 60,
+        course_type: 'advanced',
+        duration_hours: 60,
         price: 8000,
-        instructorId: 1,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        instructor_id: 1,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
         id: 3,
         title: '實習實作課程',
         description: '實際藥局工作環境體驗與實務操作',
-        courseType: 'internship',
-        durationHours: 80,
+        course_type: 'internship',
+        duration_hours: 80,
         price: 12000,
-        instructorId: 1,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        instructor_id: 1,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     ]
 
@@ -155,7 +155,7 @@ class CourseService {
   async getUserEnrollments(): Promise<CourseEnrollment[]> {
     const response = await apiService.get<CourseEnrollment[]>('/users/enrollments')
 
-    return response.data || []
+    return response.data ?? []
   }
 }
 

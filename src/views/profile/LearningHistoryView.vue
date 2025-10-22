@@ -133,7 +133,7 @@
                         {{ getCourseTypeLabel(enrollment.courseType) }}
                       </span>
                     </td>
-                    <td>{{ formatDate(enrollment.completionDate || '') }}</td>
+                    <td>{{ formatDate(enrollment.completionDate ?? '') }}</td>
                     <td>
                       <span
                         class="tag is-medium"
@@ -201,7 +201,7 @@ const completedCount = computed(() => completedEnrollments.value.length)
 
 const totalHours = computed(() => {
   return completedEnrollments.value.reduce((sum, e) => {
-    return sum + (e.durationHours || 0)
+    return sum + (e.durationHours ?? 0)
   }, 0)
 })
 
@@ -416,7 +416,7 @@ const downloadCertificate = (enrollment: CourseEnrollment) => {
     <p class="course-name">${enrollment.courseTitle}</p>
     <p>課程類型：${getCourseTypeLabel(enrollment.courseType)}</p>
     
-    <p>已於 ${formatDate(enrollment.completionDate || '')} 完成課程</p>
+    <p>已於 ${formatDate(enrollment.completionDate ?? '')} 完成課程</p>
     
     ${enrollment.finalScore ? `<p class="score">最終成績：${enrollment.finalScore} 分</p>` : ''}
     

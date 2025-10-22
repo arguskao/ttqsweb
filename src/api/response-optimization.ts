@@ -60,7 +60,7 @@ export const compressionMiddleware = (config = defaultConfig.compression): Middl
     }
 
     // 檢查客戶端支持的壓縮算法
-    const acceptEncoding = req.headers['accept-encoding'] || ''
+    const acceptEncoding = req.headers['accept-encoding'] ?? ''
     let compressionAlgorithm: string | null = null
 
     if (acceptEncoding.includes('br') && config.algorithms.includes('brotli')) {
@@ -74,7 +74,7 @@ export const compressionMiddleware = (config = defaultConfig.compression): Middl
     if (compressionAlgorithm) {
       // 在實際環境中，這裡會實現真正的壓縮
       // 目前只是添加壓縮標頭
-      response.headers = response.headers || {}
+      response.headers = response.headers ?? {}
       response.headers['Content-Encoding'] = compressionAlgorithm
       response.headers['Vary'] = 'Accept-Encoding'
 
@@ -123,7 +123,7 @@ export const cacheMiddleware = (config = defaultConfig.cache): Middleware => {
     if (cached && Date.now() < cached.expiry) {
       // 添加緩存命中標頭
       const response = { ...cached.data }
-      response.headers = response.headers || {}
+      response.headers = response.headers ?? {}
       response.headers['X-Cache'] = 'HIT'
       response.headers['X-Cache-TTL'] = Math.round((cached.expiry - Date.now()) / 1000).toString()
 
@@ -143,7 +143,7 @@ export const cacheMiddleware = (config = defaultConfig.cache): Middleware => {
       cache.set(cacheKey, { data: response, expiry })
 
       // 添加緩存標頭
-      response.headers = response.headers || {}
+      response.headers = response.headers ?? {}
       response.headers['X-Cache'] = 'MISS'
       response.headers['Cache-Control'] = `public, max-age=${config.ttl}`
     }
@@ -154,8 +154,8 @@ export const cacheMiddleware = (config = defaultConfig.cache): Middleware => {
 
 // 生成緩存鍵
 function generateCacheKey(req: ApiRequest, varyHeaders: string[]): string {
-  const url = req.url || ''
-  const query = req.query || {}
+  const url = req.url ?? ''
+  const query = req.query ?? {}
   const headers: Record<string, string> = {}
 
   // 只包含影響緩存的請求頭
@@ -181,7 +181,7 @@ export const performanceMiddleware = (): Middleware => {
       const endMemory = process.memoryUsage()
 
       // 添加性能標頭
-      response.headers = response.headers || {}
+      response.headers = response.headers ?? {}
       response.headers['X-Response-Time'] = `${duration}ms`
       response.headers['X-Memory-Usage'] =
         `${Math.round((endMemory.heapUsed - startMemory.heapUsed) / 1024)}KB`
@@ -302,7 +302,7 @@ export const deduplicationMiddleware = (): Middleware => {
       return await next()
     }
 
-    const requestKey = `${req.method}:${req.url}:${req.headers['authorization'] || ''}`
+    const requestKey = `${req.method}:${req.url}:${req.headers['authorization'] ?? ''}`
 
     // 檢查是否有相同的請求正在處理
     const pendingRequest = pendingRequests.get(requestKey)
@@ -316,8 +316,7 @@ export const deduplicationMiddleware = (): Middleware => {
     pendingRequests.set(requestKey, requestPromise)
 
     try {
-      const response = await requestPromise
-      return response
+      return await requestPromise
     } finally {
       // 清理pending請求
       pendingRequests.delete(requestKey)
@@ -371,12 +370,12 @@ export const batchOperationMiddleware = (): Middleware => {
               result.status === 'fulfilled'
                 ? result.value
                 : {
-                    success: false,
-                    error: {
-                      code: 'BATCH_REQUEST_FAILED',
-                      message: '批量請求失敗'
-                    }
+                  success: false,
+                  error: {
+                    code: 'BATCH_REQUEST_FAILED',
+                    message: '批量請求失敗'
                   }
+                }
             ),
             total: batchRequests.length,
             successful: batchResponses.filter(r => r.status === 'fulfilled').length,

@@ -10,13 +10,13 @@ export interface ApiRequest {
   user?: {
     id: number
     email: string
-    userType: 'job_seeker' | 'employer'
+    userType: 'job_seeker' | 'employer' | 'admin'
     firstName?: string
     lastName?: string
     phone?: string
     isActive?: boolean
     // 兼容舊的屬性名稱
-    user_type?: 'job_seeker' | 'employer'
+    user_type?: 'job_seeker' | 'employer' | 'admin'
     first_name?: string
     last_name?: string
     is_active?: boolean
@@ -33,6 +33,13 @@ export interface ApiResponse<T = unknown> {
     limit?: number
     total?: number
     totalPages?: number
+    timestamp?: string
+    duration?: string
+    requestId?: string
+    severity?: string
+    category?: string
+    isRetryable?: string
+    retryAfter?: string
   }
 }
 
@@ -41,6 +48,8 @@ export interface ApiError {
   message: string
   details?: Record<string, string>
   statusCode?: number
+  timestamp?: string
+  requestId?: string
 }
 
 // Route handler type
@@ -48,6 +57,9 @@ export type RouteHandler<T = unknown> = (req: ApiRequest) => Promise<ApiResponse
 
 // Middleware type
 export type Middleware = (req: ApiRequest, next: () => Promise<ApiResponse>) => Promise<ApiResponse>
+
+// Route handler with middleware wrapper
+export type RouteHandlerWithMiddleware = (req: ApiRequest) => Promise<ApiResponse>
 
 // Database query result types
 export interface PaginationOptions {

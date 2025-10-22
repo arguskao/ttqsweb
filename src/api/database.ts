@@ -177,6 +177,40 @@ export abstract class BaseRepository<T> {
       throw new DatabaseError(`統計 ${this.tableName} 記錄數失敗`)
     }
   }
+
+  // Execute raw SQL
+  async executeRaw(sql: string, values?: unknown[]): Promise<any> {
+    try {
+      return await db.query(sql, values ?? [])
+    } catch (error) {
+      throw new DatabaseError(`執行SQL失敗: ${sql}`)
+    }
+  }
+
+  // Expose query methods for subclasses
+  async queryOne(text: string, values?: unknown[]): Promise<any> {
+    try {
+      return await db.queryOne(text, values ?? [])
+    } catch (error) {
+      throw new DatabaseError(`查詢失敗: ${text}`)
+    }
+  }
+
+  async queryMany(text: string, values?: unknown[]): Promise<any[]> {
+    try {
+      return await db.queryMany(text, values ?? [])
+    } catch (error) {
+      throw new DatabaseError(`查詢失敗: ${text}`)
+    }
+  }
+
+  async query(text: string, values?: unknown[]): Promise<any> {
+    try {
+      return await db.query(text, values ?? [])
+    } catch (error) {
+      throw new DatabaseError(`查詢失敗: ${text}`)
+    }
+  }
 }
 
 // Utility functions for common database operations
@@ -184,7 +218,7 @@ export const dbUtils = {
   // Execute raw SQL with error handling
   async executeRaw(sql: string, values?: unknown[]): Promise<any> {
     try {
-      return await db.query(sql, values || [])
+      return await db.query(sql, values ?? [])
     } catch (error) {
       throw new DatabaseError('執行 SQL 查詢失敗')
     }
@@ -219,6 +253,6 @@ export const dbUtils = {
 }
 
 // Re-export low-level helpers for routes expecting them
-export const query = (text: string, values?: unknown[]) => rawQuery(text, values || [])
-export const queryOne = (text: string, values?: unknown[]) => rawQueryOne(text, values || [])
-export const queryMany = (text: string, values?: unknown[]) => rawQueryMany(text, values || [])
+export const query = (text: string, values?: unknown[]) => rawQuery(text, values ?? [])
+export const queryOne = (text: string, values?: unknown[]) => rawQueryOne(text, values ?? [])
+export const queryMany = (text: string, values?: unknown[]) => rawQueryMany(text, values ?? [])

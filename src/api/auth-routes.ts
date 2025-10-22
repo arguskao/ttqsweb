@@ -1,11 +1,11 @@
-import { registerUser, loginUser, type RegisterData, type LoginData } from '../services/auth'
 import jwt from 'jsonwebtoken'
+
+import { registerUser, loginUser, type RegisterData, type LoginData } from '../services/auth'
 
 import { requireAuth } from './auth-middleware'
 import { ValidationError } from './errors'
-import type { RouteHandler } from './types'
-import { loginRateLimit, registerRateLimit } from './rate-limit'
 import { SessionManager, generateSecureToken } from './session-manager'
+import type { RouteHandler } from './types'
 
 // Register endpoint
 export const registerHandler: RouteHandler = async req => {

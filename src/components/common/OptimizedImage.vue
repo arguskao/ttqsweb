@@ -2,7 +2,8 @@
   <div class="optimized-image-container" :class="containerClass">
     <img
       ref="imageRef"
-      class="optimized-image" :class="[{ 'lazy': isLazy, 'loaded': isLoaded }]"
+      class="optimized-image"
+      :class="[{ lazy: isLazy, loaded: isLoaded }]"
       :alt="alt"
       :width="width"
       :height="height"
@@ -48,7 +49,7 @@ const isLazy = computed(() => props.lazy)
 // Generate optimized image sources
 const generateSources = () => {
   const baseSrc = props.src
-  const sources = []
+  const sources: Array<{ srcset: string; type: string }> = []
 
   if (props.webp) {
     // Generate WebP version
@@ -106,19 +107,22 @@ onMounted(() => {
 
     // Add intersection observer for lazy loading
     if (props.lazy && 'IntersectionObserver' in window) {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const image = entry.target as HTMLImageElement
-            if (!image.src) {
-              image.src = props.src
+      const observer = new IntersectionObserver(
+        entries => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const image = entry.target as HTMLImageElement
+              if (!image.src) {
+                image.src = props.src
+              }
+              observer.unobserve(image)
             }
-            observer.unobserve(image)
-          }
-        })
-      }, {
-        rootMargin: '50px'
-      })
+          })
+        },
+        {
+          rootMargin: '50px'
+        }
+      )
 
       observer.observe(img)
     }
@@ -198,8 +202,12 @@ const supportsWebP = (): boolean => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive image styles */

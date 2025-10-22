@@ -1,4 +1,5 @@
 import { apiService } from './api'
+
 import { useAuthStore } from '@/stores/auth'
 import type { User, LoginCredentials, RegisterData } from '@/types'
 
@@ -17,9 +18,9 @@ interface AuthResponse {
 // 認證安全增強服務
 export class AuthServiceEnhanced {
   private refreshPromise: Promise<string> | null = null
-  private refreshTokenKey = 'refresh_token'
-  private accessTokenKey = 'access_token'
-  private tokenExpiryKey = 'token_expiry'
+  private readonly refreshTokenKey = 'refresh_token'
+  private readonly accessTokenKey = 'access_token'
+  private readonly tokenExpiryKey = 'token_expiry'
 
   // 註冊用戶
   async register(data: RegisterData): Promise<{ user: User; token: string }> {
@@ -33,6 +34,8 @@ export class AuthServiceEnhanced {
 
       if (response.success && response.data) {
         this.setTokens(response.data.tokens)
+        // 存儲用戶資料到 sessionStorage
+        sessionStorage.setItem('user', JSON.stringify(response.data.user))
         authStore.setAuth(response.data.user, response.data.tokens.accessToken)
         return { user: response.data.user, token: response.data.tokens.accessToken }
       }
@@ -59,6 +62,8 @@ export class AuthServiceEnhanced {
 
       if (response.success && response.data) {
         this.setTokens(response.data.tokens)
+        // 存儲用戶資料到 sessionStorage
+        sessionStorage.setItem('user', JSON.stringify(response.data.user))
         authStore.setAuth(response.data.user, response.data.tokens.accessToken)
         return { user: response.data.user, token: response.data.tokens.accessToken }
       }
@@ -103,7 +108,12 @@ export class AuthServiceEnhanced {
       authStore.setLoading(true)
       authStore.setError(null)
 
+      console.log('[getProfile] Fetching profile from /auth/profile')
+      console.log('[getProfile] Token:', sessionStorage.getItem(this.accessTokenKey))
+
       const response = await apiService.get<{ user: User }>('/auth/profile')
+
+      console.log('[getProfile] Response:', response)
 
       if (response.success && response.data) {
         authStore.updateUser(response.data.user)
@@ -112,6 +122,7 @@ export class AuthServiceEnhanced {
 
       throw new Error(response.error?.message || '獲取用戶資料失敗')
     } catch (error) {
+      console.error('[getProfile] Error:', error)
       const errorMessage = error instanceof Error ? error.message : '獲取用戶資料失敗'
       authStore.setError(errorMessage)
       throw error
@@ -130,15 +141,27 @@ export class AuthServiceEnhanced {
       authStore.setLoading(true)
       authStore.setError(null)
 
+      console.log('[updateProfile] Updating profile with data:', data)
+
       const response = await apiService.put<{ user: User }>('/auth/profile', data)
 
+      console.log('[updateProfile] Response:', response)
+
       if (response.success && response.data) {
+        // 更新 auth store
         authStore.updateUser(response.data.user)
+
+        // 同時更新 sessionStorage 中的用戶資料
+        sessionStorage.setItem('user', JSON.stringify(response.data.user))
+
+        console.log('[updateProfile] Profile updated successfully')
+
         return response.data.user
       }
 
       throw new Error(response.error?.message || '更新用戶資料失敗')
     } catch (error) {
+      console.error('[updateProfile] Error:', error)
       const errorMessage = error instanceof Error ? error.message : '更新用戶資料失敗'
       authStore.setError(errorMessage)
       throw error
@@ -162,6 +185,7 @@ export class AuthServiceEnhanced {
   private clearTokens(): void {
     sessionStorage.removeItem(this.accessTokenKey)
     sessionStorage.removeItem(this.tokenExpiryKey)
+    sessionStorage.removeItem('user')
     localStorage.removeItem(this.refreshTokenKey)
   }
 
@@ -172,16 +196,44 @@ export class AuthServiceEnhanced {
 
   // 檢查 token 是否過期
   isTokenExpired(): boolean {
-    const expiry = sessionStorage.getItem(this.tokenExpiryKey)
-    if (!expiry) return true
+    // First check sessionStorage
+    const sessionExpiry = sessionStorage.getItem(this.tokenExpiryKey)
+    if (sessionExpiry) {
+      const expiryTimestamp = parseInt(sessionExpiry, 10)
+      const currentTime = Date.now()
+      const bufferTime = 60 * 1000 // 1 minute buffer
+      return currentTime >= expiryTimestamp - bufferTime
+    }
 
-    // 提前1分鐘刷新
-    const expiryTimestamp = parseInt(expiry, 10)
-    const currentTime = Date.now()
-    const bufferTime = 60 * 1000 // 1 minute buffer
+    // Fallback: check token directly from either storage
+    const sessionToken = sessionStorage.getItem(this.accessTokenKey)
+    const localToken = localStorage.getItem('auth_token')
+    const token = sessionToken || localToken
+    
+    if (!token) return true
 
-    // Token 過期當且僅當當前時間 >= (過期時間 - 緩衝時間)
-    return currentTime >= expiryTimestamp - bufferTime
+    try {
+      // 簡單的 JWT 解析 (不驗證簽名)
+      const parts = token.split('.')
+      if (parts.length !== 3) return true
+      
+      const payload = JSON.parse(atob(parts[1] || ''))
+      
+      // 如果沒有 exp 字段，檢查是否是我們的測試 token
+      if (!payload.exp) {
+        console.warn('[Auth] Token 沒有過期時間')
+        // For tokens without expiry, assume they're valid for a reasonable time
+        // or implement your own logic here
+        return false // Don't expire tokens without exp field for now
+      }
+
+      const now = Math.floor(Date.now() / 1000)
+      const bufferTime = 60 // 1 minute buffer in seconds
+      return payload.exp < (now + bufferTime)
+    } catch (error) {
+      console.error('[Auth] Token parsing error:', error)
+      return true
+    }
   }
 
   // 刷新 access token
@@ -254,8 +306,41 @@ export class AuthServiceEnhanced {
   // 檢查用戶是否已認證
   isAuthenticated(): boolean {
     const authStore = useAuthStore()
-    const token = sessionStorage.getItem(this.accessTokenKey)
-    return !!token && !this.isTokenExpired() && !!authStore.user
+    const sessionToken = sessionStorage.getItem(this.accessTokenKey)
+    const localToken = localStorage.getItem('auth_token')
+    const token = sessionToken || localToken
+    const isExpired = this.isTokenExpired()
+    const hasUser = !!authStore.user
+
+    console.log('isAuthenticated check:', {
+      hasSessionToken: !!sessionToken,
+      hasLocalToken: !!localToken,
+      hasToken: !!token,
+      isExpired,
+      hasUser,
+      user: authStore.user
+    })
+
+    // If we have a valid token but no user in store, try to sync
+    if (token && !isExpired && !hasUser) {
+      console.log('Token valid but no user in store, attempting to sync...')
+      const sessionUser = sessionStorage.getItem('user')
+      const localUser = localStorage.getItem('auth_user')
+      const userStr = sessionUser || localUser
+      
+      if (userStr) {
+        try {
+          const userData = JSON.parse(userStr)
+          authStore.setAuth(userData, token)
+          console.log('Auth state synced successfully')
+          return true
+        } catch (error) {
+          console.error('Failed to sync auth state:', error)
+        }
+      }
+    }
+
+    return !!token && !isExpired && !!authStore.user
   }
 
   // 獲取當前用戶
@@ -277,30 +362,30 @@ export class AuthServiceEnhanced {
       // 嘗試從存儲中恢復認證狀態
       const token = sessionStorage.getItem(this.accessTokenKey)
       const refreshToken = this.getRefreshToken()
+      const userDataStr = sessionStorage.getItem('user')
 
-      if (token && refreshToken) {
-        if (this.isTokenExpired()) {
-          // Token 過期，嘗試刷新
-          try {
-            const newToken = await this.refreshToken()
-            // 獲取用戶資料
-            const user = await this.getProfile()
-            authStore.setAuth(user, newToken)
-          } catch {
-            // 刷新失敗，清除認證狀態
-            this.clearTokens()
-            authStore.clearAuth()
+      if (token && refreshToken && userDataStr) {
+        try {
+          const userData = JSON.parse(userDataStr)
+
+          if (this.isTokenExpired()) {
+            // Token 過期，嘗試刷新
+            try {
+              const newToken = await this.refreshToken()
+              authStore.setAuth(userData, newToken)
+            } catch {
+              // 刷新失敗，清除認證狀態
+              this.clearTokens()
+              authStore.clearAuth()
+            }
+          } else {
+            // Token 有效，直接使用存儲的用戶資料
+            authStore.setAuth(userData, token)
           }
-        } else {
-          // Token 有效，獲取用戶資料
-          try {
-            const user = await this.getProfile()
-            authStore.setAuth(user, token)
-          } catch {
-            // 獲取用戶資料失敗，清除認證狀態
-            this.clearTokens()
-            authStore.clearAuth()
-          }
+        } catch (error) {
+          console.error('Failed to parse user data:', error)
+          this.clearTokens()
+          authStore.clearAuth()
         }
       }
     } catch (error) {

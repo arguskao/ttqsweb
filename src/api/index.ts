@@ -11,43 +11,37 @@
 // Setup TTQS routes
 
 // Setup Evaluation routes
-import { setupEvaluationRoutes } from './evaluation-routes'
 
 // Setup TTQS Analytics routes
-import { setupTTQSAnalyticsRoutes } from './ttqs-analytics-routes'
 
 // Setup Analytics routes
 import { setupAnalyticsRoutes } from './analytics-routes'
+import { setupApiDocumentationRoutes, initializePredefinedEndpoints } from './api-docs-routes'
 import { setupAuthRoutes } from './auth-routes'
 
 // Setup Community routes
 import { setupCommunityRoutes } from './community-routes'
-import { setupCourseRoutes } from './course-routes'
 import { setupCourseRoutesNeon } from './course-routes-neon'
-import { setupDocumentRoutes } from './document-routes'
 import { setupDocumentRoutesNeon } from './documents-routes-neon'
+import { enhancedErrorHandlingMiddlewareChain } from './enhanced-error-handling'
+import { setupEvaluationRoutes } from './evaluation-routes'
 import { setupInstructorRoutes } from './instructor-routes'
-import { setupJobRoutes } from './job-routes'
 import { setupJobRoutesNeon } from './jobs-routes-neon'
 import {
-  corsMiddleware,
-  loggingMiddleware,
-  errorHandlingMiddleware,
-  rateLimitMiddleware
+  loggingMiddleware
 } from './middleware'
-import { securityHeadersMiddleware, secureCorsMiddleware } from './security-headers'
 import { generalApiRateLimit } from './rate-limit'
+import { responseOptimizationMiddleware } from './response-optimization'
 import { router } from './router'
 
 // 導入新的優化中間件
-import { responseOptimizationMiddleware } from './response-optimization'
-import { enhancedErrorHandlingMiddlewareChain } from './enhanced-error-handling'
+import { securityHeadersMiddleware, secureCorsMiddleware } from './security-headers'
 
 // 導入API文檔功能
-import { setupApiDocumentationRoutes, initializePredefinedEndpoints } from './api-docs-routes'
 
 // Setup Support routes
 import { setupSupportRoutes } from './support-routes'
+import { setupTTQSAnalyticsRoutes } from './ttqs-analytics-routes'
 import { setupTTQSRoutes } from './ttqs-routes'
 import type { ApiRequest, ApiResponse } from './types'
 

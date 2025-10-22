@@ -37,11 +37,11 @@ export class JobServiceNeon {
 
     try {
       // 構建 WHERE 條件
-      let whereConditions = [
+      const whereConditions = [
         'j.is_active = true',
         '(j.expires_at IS NULL OR j.expires_at > CURRENT_TIMESTAMP)'
       ]
-      let params: any[] = []
+      const params: any[] = []
       let paramIndex = 1
 
       if (jobType) {

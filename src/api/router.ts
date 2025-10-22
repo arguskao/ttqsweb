@@ -34,25 +34,65 @@ export class ApiRouter {
     })
   }
 
-  // HTTP method shortcuts
-  get(path: string, handler: RouteHandler, middlewares: Middleware[] = []): void {
-    this.addRoute('GET', path, handler, middlewares)
+  // HTTP method shortcuts with overloads for flexible middleware passing
+  get(path: string, handler: RouteHandler): void
+  get(path: string, middleware: Middleware, handler: RouteHandler): void
+  get(path: string, middlewares: Middleware[], handler: RouteHandler): void
+  get(path: string, ...args: any[]): void {
+    this.handleRouteArgs('GET', path, ...args)
   }
 
-  post(path: string, handler: RouteHandler, middlewares: Middleware[] = []): void {
-    this.addRoute('POST', path, handler, middlewares)
+  post(path: string, handler: RouteHandler): void
+  post(path: string, middleware: Middleware, handler: RouteHandler): void
+  post(path: string, middlewares: Middleware[], handler: RouteHandler): void
+  post(path: string, ...args: any[]): void {
+    this.handleRouteArgs('POST', path, ...args)
   }
 
-  put(path: string, handler: RouteHandler, middlewares: Middleware[] = []): void {
-    this.addRoute('PUT', path, handler, middlewares)
+  put(path: string, handler: RouteHandler): void
+  put(path: string, middleware: Middleware, handler: RouteHandler): void
+  put(path: string, middlewares: Middleware[], handler: RouteHandler): void
+  put(path: string, ...args: any[]): void {
+    this.handleRouteArgs('PUT', path, ...args)
   }
 
-  delete(path: string, handler: RouteHandler, middlewares: Middleware[] = []): void {
-    this.addRoute('DELETE', path, handler, middlewares)
+  delete(path: string, handler: RouteHandler): void
+  delete(path: string, middleware: Middleware, handler: RouteHandler): void
+  delete(path: string, middlewares: Middleware[], handler: RouteHandler): void
+  delete(path: string, ...args: any[]): void {
+    this.handleRouteArgs('DELETE', path, ...args)
   }
 
-  patch(path: string, handler: RouteHandler, middlewares: Middleware[] = []): void {
-    this.addRoute('PATCH', path, handler, middlewares)
+  patch(path: string, handler: RouteHandler): void
+  patch(path: string, middleware: Middleware, handler: RouteHandler): void
+  patch(path: string, middlewares: Middleware[], handler: RouteHandler): void
+  patch(path: string, ...args: any[]): void {
+    this.handleRouteArgs('PATCH', path, ...args)
+  }
+
+  // Helper method to handle different argument patterns
+  private handleRouteArgs(method: string, path: string, ...args: any[]): void {
+    let handler: RouteHandler
+    let middlewares: Middleware[] = []
+
+    if (args.length === 1) {
+      // Only handler provided
+      handler = args[0] as RouteHandler
+    } else if (args.length === 2) {
+      // Middleware(s) and handler provided
+      const first = args[0]
+      handler = args[1] as RouteHandler
+
+      if (Array.isArray(first)) {
+        middlewares = first as Middleware[]
+      } else {
+        middlewares = [first as Middleware]
+      }
+    } else {
+      throw new Error(`Invalid arguments for ${method} route: ${path}`)
+    }
+
+    this.addRoute(method, path, handler, middlewares)
   }
 
   // Find matching route
@@ -122,7 +162,7 @@ export class ApiRouter {
   // Handle incoming request
   async handleRequest(req: ApiRequest): Promise<ApiResponse> {
     // Strip query parameters from URL for route matching
-    const urlWithoutQuery = (req.url || '').split('?')[0]
+    const urlWithoutQuery = (req.url ?? '').split('?')[0]
 
     // Find matching route
     const httpMethod = (req.method || 'GET').toString()
@@ -130,7 +170,7 @@ export class ApiRouter {
 
     if (!match) {
       const methodStr = String(req.method || 'GET')
-      const urlStr = String(req.url || '')
+      const urlStr = String(req.url ?? '')
       throw new NotFoundError(`路由不存在: ${methodStr} ${urlStr}`)
     }
 

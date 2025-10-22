@@ -2,19 +2,22 @@
  * API文檔端點和自動掃描功能
  */
 
-import { apiDocGenerator } from './api-documentation'
+import { ApiDocumentationGenerator } from './documentation/generator'
 import type { ApiRouter } from './router'
 import type { ApiRequest, ApiResponse } from './types'
+
+// 全局生成器實例
+const generator = new ApiDocumentationGenerator()
 
 // 設置API文檔路由
 export function setupApiDocumentationRoutes(router: ApiRouter): void {
   // 自動掃描並註冊所有路由
-  apiDocGenerator.extractFromRouter(router)
+  generator.extractFromRouter(router)
 
   // OpenAPI JSON 端點
   router.get('/api/v1/docs/openapi.json', async (req: ApiRequest): Promise<ApiResponse> => {
     try {
-      const spec = apiDocGenerator.generateOpenAPISpec()
+      const spec = generator.generateOpenAPISpec()
 
       return {
         success: true,
@@ -39,7 +42,7 @@ export function setupApiDocumentationRoutes(router: ApiRouter): void {
   // Swagger UI 端點
   router.get('/api/v1/docs', async (req: ApiRequest): Promise<ApiResponse> => {
     try {
-      const html = apiDocGenerator.generateSwaggerUI()
+      const html = generator.generateSwaggerUI()
 
       return {
         success: true,
@@ -64,7 +67,7 @@ export function setupApiDocumentationRoutes(router: ApiRouter): void {
   // Markdown 文檔端點
   router.get('/api/v1/docs/markdown', async (req: ApiRequest): Promise<ApiResponse> => {
     try {
-      const markdown = apiDocGenerator.generateMarkdown()
+      const markdown = generator.generateMarkdown()
 
       return {
         success: true,
@@ -89,15 +92,15 @@ export function setupApiDocumentationRoutes(router: ApiRouter): void {
   // API文檔統計端點
   router.get('/api/v1/docs/stats', async (req: ApiRequest): Promise<ApiResponse> => {
     try {
-      const stats = apiDocGenerator.getStats()
+      const stats = generator.getStats()
 
       return {
         success: true,
         data: {
           ...stats,
           lastUpdated: new Date().toISOString(),
-          totalSchemas: apiDocGenerator['schemas'].size,
-          totalTags: apiDocGenerator['tags'].size
+          totalSchemas: generator['schemas'].size,
+          totalTags: generator['tags'].size
         }
       }
     } catch (error) {
@@ -116,12 +119,12 @@ export function setupApiDocumentationRoutes(router: ApiRouter): void {
   router.post('/api/v1/docs/rescan', async (req: ApiRequest): Promise<ApiResponse> => {
     try {
       // 清空現有端點
-      apiDocGenerator['endpoints'].clear()
+      generator['endpoints'].clear()
 
       // 重新掃描
-      apiDocGenerator.extractFromRouter(router)
+      generator.extractFromRouter(router)
 
-      const stats = apiDocGenerator.getStats()
+      const stats = generator.getStats()
 
       return {
         success: true,
@@ -155,7 +158,7 @@ export function setupApiDocumentationRoutes(router: ApiRouter): void {
         parameters?: any[]
       }> = []
 
-      apiDocGenerator['endpoints'].forEach((metadata, key) => {
+      generator['endpoints'].forEach((metadata, key) => {
         endpoints.push({
           path: metadata.path,
           method: metadata.method,
@@ -209,7 +212,7 @@ export function registerApiEndpoint(metadata: {
   responses?: any
   examples?: any
 }): void {
-  apiDocGenerator.registerEndpoint(metadata)
+  generator.registerEndpoint(metadata)
 }
 
 // 批量註冊端點
@@ -227,7 +230,7 @@ export function registerApiEndpoints(
   }>
 ): void {
   endpoints.forEach(endpoint => {
-    apiDocGenerator.registerEndpoint(endpoint)
+    generator.registerEndpoint(endpoint)
   })
 }
 

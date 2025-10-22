@@ -19,13 +19,23 @@ export interface Course {
   id: number
   title: string
   description: string
-  courseType: 'basic' | 'advanced' | 'internship'
-  durationHours: number
+  course_type: 'basic' | 'advanced' | 'internship'
+  duration_hours?: number
   price: number
-  instructorId: number
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
+  instructor_id: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  // Legacy camelCase for backward compatibility
+  courseType?: 'basic' | 'advanced' | 'internship'
+  durationHours?: number
+  maxStudents?: number
+  prerequisites?: string[]
+  learningObjectives?: string[]
+  instructorId?: number
+  isActive?: boolean
+  createdAt?: string
+  updatedAt?: string
   instructorFirstName?: string
   instructorLastName?: string
   instructorEmail?: string

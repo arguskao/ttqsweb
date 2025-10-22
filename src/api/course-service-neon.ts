@@ -1,7 +1,7 @@
 // 重構的課程服務 - 使用 Neon 數據庫
 import { neonDb } from '../utils/neon-database'
+
 import { ValidationError, NotFoundError } from './errors'
-import type { ApiRequest, ApiResponse } from './types'
 
 // Course interface
 interface Course {
@@ -33,8 +33,8 @@ export class CourseServiceNeon {
 
     try {
       // 構建 WHERE 條件
-      let whereConditions = ['c.is_active = true']
-      let params: any[] = []
+      const whereConditions = ['c.is_active = true']
+      const params: any[] = []
       let paramIndex = 1
 
       if (courseType) {

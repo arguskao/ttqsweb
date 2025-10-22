@@ -50,26 +50,26 @@
                 <div class="column is-3">
                   <div class="box has-text-centered">
                     <p class="heading">平均評分</p>
-                    <p class="title">{{ (instructor.average_rating || 0).toFixed(1) }}/5.0</p>
-                    <p class="subtitle is-6">({{ instructor.total_ratings || 0 }} 評價)</p>
+                    <p class="title">{{ (instructor.average_rating ?? 0).toFixed(1) }}/5.0</p>
+                    <p class="subtitle is-6">({{ instructor.total_ratings ?? 0 }} 評價)</p>
                   </div>
                 </div>
                 <div class="column is-3">
                   <div class="box has-text-centered">
                     <p class="heading">百分制評分</p>
-                    <p class="title">{{ ((instructor.average_rating || 0) * 20).toFixed(0) }}/100</p>
+                    <p class="title">{{ ((instructor.average_rating ?? 0) * 20).toFixed(0) }}/100</p>
                   </div>
                 </div>
                 <div class="column is-3">
                   <div class="box has-text-centered">
                     <p class="heading">授課數量</p>
-                    <p class="title">{{ stats?.total_courses || 0 }}</p>
+                    <p class="title">{{ stats?.total_courses ?? 0 }}</p>
                   </div>
                 </div>
                 <div class="column is-3">
                   <div class="box has-text-centered">
                     <p class="heading">學員人數</p>
-                    <p class="title">{{ stats?.total_students || 0 }}</p>
+                    <p class="title">{{ stats?.total_students ?? 0 }}</p>
                   </div>
                 </div>
               </div>
@@ -108,7 +108,7 @@
                     </div>
                     <div class="field">
                       <label class="label">工作年資</label>
-                      <p>{{ instructor.years_of_experience || 0 }} 年</p>
+                      <p>{{ instructor.years_of_experience ?? 0 }} 年</p>
                     </div>
                   </div>
 
@@ -419,10 +419,10 @@ const cancelEdit = () => {
   // Reset form
   if (instructor.value) {
     editForm.value = {
-      bio: instructor.value.bio || '',
-      qualifications: instructor.value.qualifications || '',
-      specialization: instructor.value.specialization || '',
-      years_of_experience: instructor.value.years_of_experience || 0
+      bio: instructor.value.bio ?? '',
+      qualifications: instructor.value.qualifications ?? '',
+      specialization: instructor.value.specialization ?? '',
+      years_of_experience: instructor.value.years_of_experience ?? 0
     }
   }
 }

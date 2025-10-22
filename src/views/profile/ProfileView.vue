@@ -201,18 +201,21 @@ const loadProfile = async () => {
     isLoading.value = true
     errorMessage.value = ''
 
-    // First try to get user from localStorage
+    // 先顯示緩存的用戶資料（如果有）
     const cachedUser = authService.getCurrentUser()
     if (cachedUser) {
       user.value = cachedUser
       updateEditForm(cachedUser)
     }
 
-    // Then fetch fresh data from API
+    // 從 API 獲取最新的用戶資料
+    console.log('Fetching profile from API...')
     const freshUser = await authService.getProfile()
+    console.log('Profile fetched successfully:', freshUser)
     user.value = freshUser
     updateEditForm(freshUser)
   } catch (error) {
+    console.error('Failed to load profile:', error)
     errorMessage.value = error instanceof Error ? error.message : '載入用戶資料失敗'
   } finally {
     isLoading.value = false
@@ -224,7 +227,7 @@ const updateEditForm = (userData: User) => {
   editForm.value = {
     firstName: userData.firstName,
     lastName: userData.lastName,
-    phone: userData.phone || ''
+    phone: userData.phone ?? ''
   }
 }
 
@@ -259,12 +262,20 @@ const saveProfile = async () => {
       return
     }
 
+    console.log('Saving profile with data:', {
+      firstName: editForm.value.firstName.trim(),
+      lastName: editForm.value.lastName.trim(),
+      phone: editForm.value.phone.trim() || undefined
+    })
+
     // Update profile
     const updatedUser = await authService.updateProfile({
       firstName: editForm.value.firstName.trim(),
       lastName: editForm.value.lastName.trim(),
       phone: editForm.value.phone.trim() || undefined
     })
+
+    console.log('Profile updated successfully:', updatedUser)
 
     user.value = updatedUser
     isEditing.value = false
@@ -275,6 +286,7 @@ const saveProfile = async () => {
       successMessage.value = ''
     }, 3000)
   } catch (error) {
+    console.error('Failed to save profile:', error)
     updateError.value = error instanceof Error ? error.message : '更新個人資料失敗'
   } finally {
     isSaving.value = false

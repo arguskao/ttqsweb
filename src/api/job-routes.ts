@@ -1,6 +1,9 @@
+import { validateIntParam } from '../utils/param-validation'
+
 import { requireEmployer } from './auth-middleware'
 import { BaseRepository } from './database'
 import { ValidationError, NotFoundError } from './errors'
+import { withAuth } from './middleware-helpers'
 import type { ApiRouter } from './router'
 import type { ApiRequest, ApiResponse } from './types'
 
@@ -93,7 +96,7 @@ class JobRepository extends BaseRepository<Job> {
       text: `SELECT COUNT(*) as count FROM jobs WHERE ${whereClause}`,
       values
     })
-    const total = parseInt(countResult?.count || '0', 10)
+    const total = parseInt((countResult as any)?.count || '0', 10)
 
     // Get paginated data
     const data = await db.queryMany({
@@ -107,7 +110,7 @@ class JobRepository extends BaseRepository<Job> {
     })
 
     return {
-      data,
+      data: data as Job[],
       meta: {
         page,
         limit,
@@ -146,7 +149,7 @@ export function setupJobRoutes(router: ApiRouter): void {
       salary_min,
       salary_max,
       search
-    } = req.query || {}
+    } = req.query ?? {}
 
     const filters = {
       jobType: job_type,
@@ -172,7 +175,7 @@ export function setupJobRoutes(router: ApiRouter): void {
   // Get employer's jobs (requires employer authentication) - Must come before /:id route
   router.get(
     '/api/v1/jobs/employer',
-    async (req: ApiRequest): Promise<ApiResponse> => {
+    withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       if ((req.user?.userType || req.user?.user_type) !== 'employer') {
         throw new ValidationError('只有雇主可以訪問此端點')
       }
@@ -185,17 +188,12 @@ export function setupJobRoutes(router: ApiRouter): void {
           jobs
         }
       }
-    },
-    [requireEmployer]
+    })
   )
 
   // Get job by ID
   router.get('/api/v1/jobs/:id', async (req: ApiRequest): Promise<ApiResponse> => {
-    const jobId = parseInt(req.params?.id || '0')
-
-    if (!jobId) {
-      throw new ValidationError('無效的職缺 ID')
-    }
+    const jobId = validateIntParam(req.params?.id, 'id')
 
     const job = await jobRepo.findById(jobId)
 

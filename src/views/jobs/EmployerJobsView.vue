@@ -51,549 +51,343 @@
         </div>
 
         <!-- Jobs List -->
-        <div v-else>
-          <div v-for="job in jobs" :key="job.id" class="box">
-            <div class="columns is-vcentered">
-              <div class="column">
-                <h3 class="title is-5">{{ job.title }}</h3>
-                <div class="tags">
-                  <span class="tag" :class="job.isActive ? 'is-success' : 'is-danger'">
-                    {{ job.isActive ? '啟用中' : '已關閉' }}
-                  </span>
-                  <span v-if="job.jobType" class="tag is-info">
-                    {{ getJobTypeLabel(job.jobType) }}
-                  </span>
-                  <span v-if="job.location" class="tag is-light">
-                    <span class="icon is-small">
-                      <i class="fas fa-map-marker-alt"></i>
-                    </span>
-                    <span>{{ job.location }}</span>
-                  </span>
-                </div>
-                <p class="has-text-grey">
-                  <span class="icon-text">
-                    <span class="icon">
-                      <i class="fas fa-users"></i>
-                    </span>
-                    <span>{{ job.applicationCount }} 個申請</span>
-                  </span>
-                  <span class="ml-4"> 發布於 {{ formatDate(job.createdAt) }} </span>
-                </p>
-              </div>
-              <div class="column is-narrow">
-                <div class="buttons">
-                  <button class="button is-info" @click="viewApplications(job.id)">
-                    <span class="icon">
-                      <i class="fas fa-users"></i>
-                    </span>
-                    <span>查看申請</span>
-                  </button>
-                  <button class="button is-light" @click="editJob(job)">
-                    <span class="icon">
-                      <i class="fas fa-edit"></i>
-                    </span>
-                    <span>編輯</span>
-                  </button>
-                  <button
-                    class="button"
-                    :class="job.isActive ? 'is-warning' : 'is-success'"
-                    @click="toggleJobStatus(job)"
-                  >
-                    <span class="icon">
-                      <i :class="job.isActive ? 'fas fa-pause' : 'fas fa-play'"></i>
-                    </span>
-                    <span>{{ job.isActive ? '關閉' : '啟用' }}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <JobsList
+          v-else
+          :jobs="jobs"
+          :search-query="searchQuery"
+          :status-filter="statusFilter"
+          :sort-by="sortBy"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :loading="loading"
+          @update:search-query="searchQuery = $event"
+          @update:status-filter="statusFilter = $event"
+          @update:sort-by="sortBy = $event"
+          @reset-filters="resetFilters"
+          @edit-job="handleEditJob"
+          @view-applications="handleViewApplications"
+          @duplicate-job="handleDuplicateJob"
+          @delete-job="handleDeleteJob"
+          @change-page="handlePageChange"
+        />
       </div>
     </section>
 
     <!-- Create/Edit Job Modal -->
-    <div class="modal" :class="{ 'is-active': showCreateModal || showEditModal }">
-      <div class="modal-background" @click="closeModal"></div>
-      <div class="modal-card">
-        <header class="modal-card-head">
-          <p class="modal-card-title">{{ showEditModal ? '編輯職缺' : '發布新職缺' }}</p>
-          <button class="delete" @click="closeModal"></button>
-        </header>
-        <section class="modal-card-body">
-          <form @submit.prevent="submitJob">
-            <div class="field">
-              <label class="label">職缺標題 *</label>
-              <div class="control">
-                <input
-                  v-model="jobForm.title"
-                  class="input"
-                  type="text"
-                  placeholder="例如：藥局助理"
-                  required
-                />
-              </div>
-            </div>
-
-            <div class="field">
-              <label class="label">職缺描述</label>
-              <div class="control">
-                <textarea
-                  v-model="jobForm.description"
-                  class="textarea"
-                  placeholder="詳細描述職缺內容..."
-                  rows="4"
-                ></textarea>
-              </div>
-            </div>
-
-            <div class="columns">
-              <div class="column">
-                <div class="field">
-                  <label class="label">工作類型</label>
-                  <div class="control">
-                    <div class="select is-fullwidth">
-                      <select v-model="jobForm.jobType">
-                        <option value="">請選擇</option>
-                        <option value="full_time">全職</option>
-                        <option value="part_time">兼職</option>
-                        <option value="internship">實習</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="column">
-                <div class="field">
-                  <label class="label">地區</label>
-                  <div class="control">
-                    <input
-                      v-model="jobForm.location"
-                      class="input"
-                      type="text"
-                      placeholder="例如：台北市"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="columns">
-              <div class="column">
-                <div class="field">
-                  <label class="label">最低薪資 (NT$)</label>
-                  <div class="control">
-                    <input
-                      v-model.number="jobForm.salaryMin"
-                      class="input"
-                      type="number"
-                      placeholder="30000"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div class="column">
-                <div class="field">
-                  <label class="label">最高薪資 (NT$)</label>
-                  <div class="control">
-                    <input
-                      v-model.number="jobForm.salaryMax"
-                      class="input"
-                      type="number"
-                      placeholder="50000"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="field">
-              <label class="label">職缺要求</label>
-              <div class="control">
-                <textarea
-                  v-model="jobForm.requirements"
-                  class="textarea"
-                  placeholder="列出職缺的要求和條件..."
-                  rows="4"
-                ></textarea>
-              </div>
-            </div>
-
-            <div class="field">
-              <label class="label">截止日期</label>
-              <div class="control">
-                <input v-model="jobForm.expiresAt" class="input" type="date" />
-              </div>
-            </div>
-
-            <div v-if="formError" class="notification is-danger is-light">
-              {{ formError }}
-            </div>
-          </form>
-        </section>
-        <footer class="modal-card-foot">
-          <button
-            class="button is-primary"
-            @click="submitJob"
-            :class="{ 'is-loading': submitting }"
-            :disabled="submitting"
-          >
-            {{ showEditModal ? '更新職缺' : '發布職缺' }}
-          </button>
-          <button class="button" @click="closeModal">取消</button>
-        </footer>
-      </div>
-    </div>
+    <JobModal
+      :is-visible="showCreateModal || showEditModal"
+      :is-editing="showEditModal"
+      :job-data="editingJob"
+      :is-submitting="isSubmitting"
+      @close="closeModals"
+      @submit="handleJobSubmit"
+    />
 
     <!-- Applications Modal -->
-    <div class="modal" :class="{ 'is-active': showApplicationsModal }">
-      <div class="modal-background" @click="closeApplicationsModal"></div>
-      <div class="modal-card" style="width: 90%; max-width: 1200px">
-        <header class="modal-card-head">
-          <p class="modal-card-title">申請者列表</p>
-          <button class="delete" @click="closeApplicationsModal"></button>
-        </header>
-        <section class="modal-card-body">
-          <div v-if="loadingApplications" class="has-text-centered py-4">
-            <button class="button is-loading is-white"></button>
-          </div>
-
-          <div v-else-if="applications.length === 0" class="has-text-centered py-4">
-            <p class="has-text-grey">目前沒有申請者</p>
-          </div>
-
-          <div v-else>
-            <div v-for="app in applications" :key="app.id" class="box">
-              <div class="columns">
-                <div class="column">
-                  <h4 class="title is-6">{{ app.applicantName }}</h4>
-                  <p class="has-text-grey">
-                    <span class="icon-text">
-                      <span class="icon">
-                        <i class="fas fa-envelope"></i>
-                      </span>
-                      <span>{{ app.applicantEmail }}</span>
-                    </span>
-                  </p>
-                  <p v-if="app.applicantPhone" class="has-text-grey">
-                    <span class="icon-text">
-                      <span class="icon">
-                        <i class="fas fa-phone"></i>
-                      </span>
-                      <span>{{ app.applicantPhone }}</span>
-                    </span>
-                  </p>
-                  <p class="mt-2">
-                    <span class="tag" :class="getStatusClass(app.status)">
-                      {{ getStatusLabel(app.status) }}
-                    </span>
-                  </p>
-                  <p class="has-text-grey mt-2">
-                    <small>申請於 {{ formatDate(app.applicationDate) }}</small>
-                  </p>
-                </div>
-                <div class="column">
-                  <p class="has-text-weight-semibold">求職信：</p>
-                  <p class="content">{{ app.coverLetter || '未提供' }}</p>
-                  <p v-if="app.resumeUrl" class="mt-2">
-                    <a :href="app.resumeUrl" target="_blank" class="button is-small is-link">
-                      <span class="icon">
-                        <i class="fas fa-file-pdf"></i>
-                      </span>
-                      <span>查看履歷</span>
-                    </a>
-                  </p>
-                </div>
-                <div class="column is-narrow">
-                  <div class="buttons is-flex-direction-column">
-                    <button
-                      class="button is-success is-small"
-                      @click="updateApplicationStatus(app.id, 'accepted')"
-                      :disabled="app.status === 'accepted'"
-                    >
-                      錄取
-                    </button>
-                    <button
-                      class="button is-danger is-small"
-                      @click="updateApplicationStatus(app.id, 'rejected')"
-                      :disabled="app.status === 'rejected'"
-                    >
-                      拒絕
-                    </button>
-                    <button
-                      class="button is-info is-small"
-                      @click="updateApplicationStatus(app.id, 'reviewed')"
-                      :disabled="app.status === 'reviewed'"
-                    >
-                      已審核
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-        <footer class="modal-card-foot">
-          <button class="button" @click="closeApplicationsModal">關閉</button>
-        </footer>
-      </div>
-    </div>
+    <ApplicationsModal
+      :is-visible="showApplicationsModal"
+      :job-title="selectedJob?.title ?? ''"
+      :applications="applications"
+      :status-filter="applicationStatusFilter"
+      :search-query="applicationSearchQuery"
+      @close="showApplicationsModal = false"
+      @update:status-filter="applicationStatusFilter = $event"
+      @update:search-query="applicationSearchQuery = $event"
+      @reset-filters="resetApplicationFilters"
+      @view-resume="handleViewResume"
+      @accept-application="handleAcceptApplication"
+      @reject-application="handleRejectApplication"
+      @contact-applicant="handleContactApplicant"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 
-import api from '@/services/api'
+import ApplicationsModal from '@/components/jobs/ApplicationsModal.vue'
+import JobModal from '@/components/jobs/JobModal.vue'
+import JobsList from '@/components/jobs/JobsList.vue'
 
-interface Job {
-  id: number
-  title: string
-  description?: string | null
-  location?: string | null
-  salaryMin?: number | null
-  salaryMax?: number | null
-  jobType?: 'full_time' | 'part_time' | 'internship' | null
-  requirements?: string | null
-  isActive: boolean
-  createdAt: string
-  expiresAt?: string | null
-  applicationCount: number
-}
-
-interface Application {
-  id: number
-  jobId: number
-  applicantId: number
-  applicantName: string
-  applicantEmail: string
-  applicantPhone?: string
-  applicationDate: string
-  status: 'pending' | 'reviewed' | 'accepted' | 'rejected'
-  coverLetter?: string | null
-  resumeUrl?: string | null
-}
-
-const router = useRouter()
-
-const jobs = ref<Job[]>([])
-const applications = ref<Application[]>([])
+// 響應式數據
 const loading = ref(false)
-const loadingApplications = ref(false)
+const isSubmitting = ref(false)
 const error = ref<string | null>(null)
-const formError = ref<string | null>(null)
-const submitting = ref(false)
 
+// 職缺相關
+const jobs = ref<any[]>([])
+const searchQuery = ref('')
+const statusFilter = ref('')
+const sortBy = ref('created_at')
+const currentPage = ref(1)
+const totalPages = ref(1)
+
+// 模態框狀態
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const showApplicationsModal = ref(false)
-const currentJobId = ref<number | null>(null)
+const editingJob = ref<any>(null)
+const selectedJob = ref<any>(null)
 
-const jobForm = ref({
-  title: '',
-  description: '',
-  location: '',
-  salaryMin: null as number | null,
-  salaryMax: null as number | null,
-  jobType: '',
-  requirements: '',
-  expiresAt: '' as string
-})
+// 申請者相關
+const applications = ref<any[]>([])
+const applicationStatusFilter = ref('')
+const applicationSearchQuery = ref('')
 
-const fetchJobs = async () => {
+// 載入職缺列表
+const loadJobs = async () => {
   loading.value = true
   error.value = null
 
   try {
-    const response = await api.get('/employer/jobs')
+    // 模擬API調用
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
-    if (response.data.success) {
-      jobs.value = response.data.data
-    }
-  } catch (err: any) {
-    error.value = err.response?.data?.error?.message || '載入職缺失敗'
-    console.error('Failed to fetch jobs:', err)
+    // 模擬數據
+    jobs.value = [
+      {
+        id: 1,
+        title: '藥局助理',
+        description: '協助藥師處理日常事務，包括藥品管理、客戶服務等。需要具備基本的藥品知識和良好的溝通能力。',
+        location: '台北市信義區',
+        salary: 30000,
+        employmentType: 'full_time',
+        status: 'active',
+        applicationCount: 15,
+        createdAt: '2024-01-15T10:00:00Z',
+        expiresAt: '2024-02-15T23:59:59Z'
+      },
+      {
+        id: 2,
+        title: '藥品管理專員',
+        description: '負責藥品庫存管理、進貨驗收、品質控制等工作。需要有相關工作經驗。',
+        location: '新北市板橋區',
+        salary: 35000,
+        employmentType: 'full_time',
+        status: 'active',
+        applicationCount: 8,
+        createdAt: '2024-01-10T14:30:00Z',
+        expiresAt: '2024-02-10T23:59:59Z'
+      },
+      {
+        id: 3,
+        title: '藥局實習生',
+        description: '學習藥局基本操作，協助藥師工作。適合藥學相關科系學生。',
+        location: '桃園市中壢區',
+        salary: null,
+        employmentType: 'internship',
+        status: 'paused',
+        applicationCount: 23,
+        createdAt: '2024-01-05T09:15:00Z',
+        expiresAt: null
+      }
+    ]
+
+    totalPages.value = 1
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '載入職缺時發生錯誤'
   } finally {
     loading.value = false
   }
 }
 
-const submitJob = async () => {
-  formError.value = null
-  submitting.value = true
-
+// 載入申請者列表
+const loadApplications = async (jobId: number) => {
   try {
-    const payload = {
-      ...jobForm.value,
-      salaryMin: jobForm.value.salaryMin || null,
-      salaryMax: jobForm.value.salaryMax || null,
-      jobType: jobForm.value.jobType || null,
-      expiresAt: jobForm.value.expiresAt || null
-    }
+    // 模擬API調用
+    await new Promise(resolve => setTimeout(resolve, 500))
 
-    if (showEditModal.value && currentJobId.value) {
-      await api.put(`/jobs/${currentJobId.value}`, payload)
-    } else {
-      await api.post('/jobs', payload)
-    }
-
-    closeModal()
-    fetchJobs()
-  } catch (err: any) {
-    formError.value = err.response?.data?.error?.message || '操作失敗'
-    console.error('Failed to submit job:', err)
-  } finally {
-    submitting.value = false
+    // 模擬數據
+    applications.value = [
+      {
+        id: 1,
+        applicantName: '張小明',
+        applicantEmail: 'zhang@example.com',
+        appliedAt: '2024-01-20T10:00:00Z',
+        status: 'pending',
+        message: '我對這個職位很感興趣，希望能有機會面試。',
+        resumeFileName: '張小明_履歷.pdf'
+      },
+      {
+        id: 2,
+        applicantName: '李美華',
+        applicantEmail: 'li@example.com',
+        appliedAt: '2024-01-19T15:30:00Z',
+        status: 'accepted',
+        message: '我有相關工作經驗，希望能為貴公司貢獻所長。',
+        resumeFileName: '李美華_履歷.pdf'
+      },
+      {
+        id: 3,
+        applicantName: '王大偉',
+        applicantEmail: 'wang@example.com',
+        appliedAt: '2024-01-18T11:45:00Z',
+        status: 'rejected',
+        message: '雖然沒有相關經驗，但我學習能力強，希望能給我機會。',
+        resumeFileName: null
+      }
+    ]
+  } catch (err) {
+    error.value = '載入申請者時發生錯誤'
   }
 }
 
-const editJob = (job: Job) => {
-  currentJobId.value = job.id
-  jobForm.value = {
-    title: job.title,
-    description: job.description || '',
-    location: job.location || '',
-    salaryMin: job.salaryMin ?? null,
-    salaryMax: job.salaryMax ?? null,
-    jobType: job.jobType ?? '',
-    requirements: job.requirements ?? '',
-    expiresAt: (job.expiresAt ? job.expiresAt.split('T')[0] : '') as string
-  }
+// 事件處理
+const handleEditJob = (job: any) => {
+  editingJob.value = job
   showEditModal.value = true
 }
 
-const toggleJobStatus = async (job: Job) => {
-  try {
-    await api.put(`/jobs/${job.id}`, {
-      isActive: !job.isActive
-    })
-    fetchJobs()
-  } catch (err: any) {
-    error.value = err.response?.data?.error?.message || '更新職缺狀態失敗'
-    console.error('Failed to toggle job status:', err)
-  }
-}
-
-const viewApplications = async (jobId: number) => {
-  currentJobId.value = jobId
+const handleViewApplications = async (job: any) => {
+  selectedJob.value = job
+  await loadApplications(job.id)
   showApplicationsModal.value = true
-  loadingApplications.value = true
+}
+
+const handleDuplicateJob = (job: any) => {
+  editingJob.value = { ...job, id: null, title: `${job.title} (複製)` }
+  showEditModal.value = true
+}
+
+const handleDeleteJob = async (job: any) => {
+  if (confirm(`確定要刪除職缺「${job.title}」嗎？`)) {
+    try {
+      // 模擬API調用
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      jobs.value = jobs.value.filter(j => j.id !== job.id)
+    } catch (err) {
+      error.value = '刪除職缺時發生錯誤'
+    }
+  }
+}
+
+const handleJobSubmit = async (jobData: any) => {
+  isSubmitting.value = true
 
   try {
-    const response = await api.get(`/jobs/${jobId}/applications`)
+    // 模擬API調用
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
-    if (response.data.success) {
-      applications.value = response.data.data
+    if (showEditModal.value && editingJob.value) {
+      // 更新職缺
+      const index = jobs.value.findIndex(j => j.id === editingJob.value.id)
+      if (index !== -1) {
+        jobs.value[index] = { ...jobs.value[index], ...jobData }
+      }
+    } else {
+      // 創建新職缺
+      const newJob = {
+        id: Date.now(),
+        ...jobData,
+        status: 'active',
+        applicationCount: 0,
+        createdAt: new Date().toISOString()
+      }
+      jobs.value.unshift(newJob)
     }
-  } catch (err: any) {
-    console.error('Failed to fetch applications:', err)
+
+    closeModals()
+  } catch (err) {
+    error.value = '儲存職缺時發生錯誤'
   } finally {
-    loadingApplications.value = false
+    isSubmitting.value = false
   }
 }
 
-const updateApplicationStatus = async (applicationId: number, status: string) => {
-  try {
-    await api.patch(`/applications/${applicationId}/status`, { status })
-
-    // Update local state
-    const app = applications.value.find(a => a.id === applicationId)
-    if (app) {
-      app.status = status as any
-    }
-  } catch (err: any) {
-    alert(err.response?.data?.error?.message || '更新申請狀態失敗')
-    console.error('Failed to update application status:', err)
-  }
+const handlePageChange = (page: number) => {
+  currentPage.value = page
+  loadJobs()
 }
 
-const closeModal = () => {
+const closeModals = () => {
   showCreateModal.value = false
   showEditModal.value = false
-  currentJobId.value = null
-  formError.value = null
-  jobForm.value = {
-    title: '',
-    description: '',
-    location: '',
-    salaryMin: null,
-    salaryMax: null,
-    jobType: '',
-    requirements: '',
-    expiresAt: ''
+  editingJob.value = null
+}
+
+const resetFilters = () => {
+  searchQuery.value = ''
+  statusFilter.value = ''
+  sortBy.value = 'created_at'
+  currentPage.value = 1
+  loadJobs()
+}
+
+const resetApplicationFilters = () => {
+  applicationStatusFilter.value = ''
+  applicationSearchQuery.value = ''
+}
+
+const handleViewResume = (application: any) => {
+  // 實現查看履歷邏輯
+  console.log('查看履歷:', application)
+}
+
+const handleAcceptApplication = async (application: any) => {
+  try {
+    // 模擬API調用
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    application.status = 'accepted'
+  } catch (err) {
+    error.value = '更新申請狀態時發生錯誤'
   }
 }
 
-const closeApplicationsModal = () => {
-  showApplicationsModal.value = false
-  applications.value = []
-}
+const handleRejectApplication = async (application: any) => {
+  try {
+    // 模擬API調用
+    await new Promise(resolve => setTimeout(resolve, 500))
 
-const getJobTypeLabel = (type: string) => {
-  const labels: Record<string, string> = {
-    full_time: '全職',
-    part_time: '兼職',
-    internship: '實習'
+    application.status = 'rejected'
+  } catch (err) {
+    error.value = '更新申請狀態時發生錯誤'
   }
-  return labels[type] || type
 }
 
-const getStatusLabel = (status: string) => {
-  const labels: Record<string, string> = {
-    pending: '待審核',
-    reviewed: '已審核',
-    accepted: '已錄取',
-    rejected: '已拒絕'
-  }
-  return labels[status] || status
+const handleContactApplicant = (application: any) => {
+  // 實現聯絡申請者邏輯
+  console.log('聯絡申請者:', application)
 }
 
-const getStatusClass = (status: string) => {
-  const classes: Record<string, string> = {
-    pending: 'is-warning',
-    reviewed: 'is-info',
-    accepted: 'is-success',
-    rejected: 'is-danger'
-  }
-  return classes[status] || ''
-}
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('zh-TW', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
-}
-
+// 組件掛載時載入數據
 onMounted(() => {
-  fetchJobs()
+  loadJobs()
 })
 </script>
 
 <style scoped>
 .employer-jobs-view {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: #f8f9fa;
 }
 
-.py-6 {
-  padding-top: 3rem;
-  padding-bottom: 3rem;
+.hero {
+  margin-bottom: 0;
 }
 
-.icon-text {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+.section {
+  padding-top: 2rem;
 }
 
-.buttons.is-flex-direction-column {
-  flex-direction: column;
+.level {
+  margin-bottom: 2rem;
 }
 
-.buttons.is-flex-direction-column .button {
-  width: 100%;
+.notification {
+  margin-bottom: 2rem;
+}
+
+.empty-state {
+  margin: 2rem 0;
+}
+
+.title {
+  color: #363636;
+}
+
+.subtitle {
+  color: #666;
 }
 </style>

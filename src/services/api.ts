@@ -38,7 +38,7 @@ export const setErrorHandler = (handler: ErrorHandler): void => {
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? '',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -87,7 +87,7 @@ api.interceptors.response.use(
     // 重試機制
     if (config && !config.__isRetryRequest && error.response?.status >= 500) {
       config.__isRetryRequest = true
-      config.__retryCount = (config.__retryCount || 0) + 1
+      config.__retryCount = (config.__retryCount ?? 0) + 1
 
       if (config.__retryCount <= 3) {
         // 指數退避延遲

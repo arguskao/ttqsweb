@@ -88,9 +88,9 @@
                           <span class="icon has-text-warning">
                             <i class="fas fa-star"></i>
                           </span>
-                          <span>{{ (instructor.average_rating || 0).toFixed(1) }}/5.0</span>
+                          <span>{{ (instructor.average_rating ?? 0).toFixed(1) }}/5.0</span>
                         </span>
-                        <span class="ml-2">({{ instructor.total_ratings || 0 }})</span>
+                        <span class="ml-2">({{ instructor.total_ratings ?? 0 }})</span>
                       </p>
                     </div>
                   </div>
@@ -210,7 +210,7 @@ const loadInstructors = async () => {
     }
 
     const response = await api.get('/instructors', { params })
-    instructors.value = response.data?.data || []
+    instructors.value = response.data?.data ?? []
 
     if (response.data?.meta) {
       meta.value = response.data.meta

@@ -232,6 +232,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+
 import { apiService } from '@/services/api-enhanced'
 
 interface Topic {
@@ -361,7 +362,7 @@ const getCategoryClass = (category: string) => {
     announcement: 'is-warning',
     resource: 'is-success'
   }
-  return classes[category] || ''
+  return classes[category] ?? ''
 }
 
 const formatDate = (date: string) => {

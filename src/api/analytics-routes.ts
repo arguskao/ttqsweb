@@ -1,30 +1,30 @@
 import { db } from '../utils/cloudflare-database'
 
-import { requireAuth } from './auth-middleware'
 import { ValidationError } from './errors'
+import { withAuth } from './middleware-helpers'
 import type { ApiRouter } from './router'
 import type { ApiRequest, ApiResponse } from './types'
 
 export function setupAnalyticsRoutes(router: ApiRouter): void {
   // 學員學習統計 API
-  router.get('/api/v1/analytics/learning-stats', getLearningStats, [requireAuth])
+  router.get('/api/v1/analytics/learning-stats', withAuth(getLearningStats))
 
   // 就業媒合成功率統計 API
-  router.get('/api/v1/analytics/job-matching-stats', getJobMatchingStats, [requireAuth])
+  router.get('/api/v1/analytics/job-matching-stats', withAuth(getJobMatchingStats))
 
   // 課程滿意度統計 API
-  router.get('/api/v1/analytics/course-satisfaction-stats', getCourseSatisfactionStats, [requireAuth])
+  router.get('/api/v1/analytics/course-satisfaction-stats', withAuth(getCourseSatisfactionStats))
 
   // 綜合統計儀表板數據
-  router.get('/api/v1/analytics/dashboard', getDashboardStats, [requireAuth])
+  router.get('/api/v1/analytics/dashboard', withAuth(getDashboardStats))
 
   // 匯出報告
-  router.get('/api/v1/analytics/export', exportReport, [requireAuth])
+  router.get('/api/v1/analytics/export', withAuth(exportReport))
 }
 
 // 學員學習統計
 async function getLearningStats(req: ApiRequest): Promise<ApiResponse> {
-  const { startDate, endDate, courseType } = req.query || {}
+  const { startDate, endDate, courseType } = req.query ?? {}
 
   try {
     // 基礎查詢條件
@@ -38,9 +38,8 @@ async function getLearningStats(req: ApiRequest): Promise<ApiResponse> {
 
     let courseTypeFilter = ''
     if (courseType) {
-      courseTypeFilter = params.length > 0
-        ? `AND c.course_type = $${params.length + 1}`
-        : 'AND c.course_type = $1'
+      courseTypeFilter =
+        params.length > 0 ? `AND c.course_type = $${params.length + 1}` : 'AND c.course_type = $1'
       params.push(courseType)
     }
 
@@ -146,7 +145,7 @@ async function getLearningStats(req: ApiRequest): Promise<ApiResponse> {
 
 // 就業媒合成功率統計
 async function getJobMatchingStats(req: ApiRequest): Promise<ApiResponse> {
-  const { startDate, endDate } = req.query || {}
+  const { startDate, endDate } = req.query ?? {}
 
   try {
     let dateFilter = ''
@@ -265,7 +264,7 @@ async function getJobMatchingStats(req: ApiRequest): Promise<ApiResponse> {
 
 // 課程滿意度統計
 async function getCourseSatisfactionStats(req: ApiRequest): Promise<ApiResponse> {
-  const { startDate, endDate, courseId } = req.query || {}
+  const { startDate, endDate, courseId } = req.query ?? {}
 
   try {
     let dateFilter = ''
@@ -278,9 +277,8 @@ async function getCourseSatisfactionStats(req: ApiRequest): Promise<ApiResponse>
 
     let courseFilter = ''
     if (courseId) {
-      courseFilter = params.length > 0
-        ? `AND e.course_id = $${params.length + 1}`
-        : 'AND e.course_id = $1'
+      courseFilter =
+        params.length > 0 ? `AND e.course_id = $${params.length + 1}` : 'AND e.course_id = $1'
       params.push(courseId)
     }
 
@@ -324,7 +322,7 @@ async function getCourseSatisfactionStats(req: ApiRequest): Promise<ApiResponse>
 
     const courseStatsResult = await db.query({
       text: courseStatsQuery,
-      values: courseFilter ? params : (params.length > 0 ? params.slice(0, 2) : [])
+      values: courseFilter ? params : params.length > 0 ? params.slice(0, 2) : []
     })
 
     // 按講師統計滿意度
@@ -449,13 +447,15 @@ async function getDashboardStats(req: ApiRequest): Promise<ApiResponse> {
 
 // 匯出報告
 async function exportReport(req: ApiRequest): Promise<ApiResponse> {
-  const { reportType, format, startDate, endDate } = req.query || {}
+  const { reportType, format, startDate, endDate } = req.query ?? {}
 
   if (!reportType) {
     throw new ValidationError('報告類型為必填項')
   }
 
-  if (!['learning', 'job-matching', 'satisfaction', 'comprehensive'].includes(reportType as string)) {
+  if (
+    !['learning', 'job-matching', 'satisfaction', 'comprehensive'].includes(reportType as string)
+  ) {
     throw new ValidationError('無效的報告類型')
   }
 

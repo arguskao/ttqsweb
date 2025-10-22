@@ -243,12 +243,12 @@ const loadTopic = async () => {
         authorName: response.data.author_name || '匿名用戶',
         createdAt: response.data.created_at,
         updatedAt: response.data.updated_at,
-        viewCount: response.data.view_count || 0,
-        replyCount: response.data.replies?.length || 0,
+        viewCount: response.data.view_count ?? 0,
+        replyCount: response.data.replies?.length ?? 0,
         isPinned: response.data.is_pinned || false,
         isLocked: response.data.is_locked || false
       }
-      replies.value = response.data.replies || []
+      replies.value = response.data.replies ?? []
     }
   } catch (error) {
     console.error('載入討論主題失敗:', error)
@@ -317,7 +317,7 @@ const getCategoryClass = (category: string) => {
     announcement: 'is-warning',
     resource: 'is-success'
   }
-  return classes[category] || ''
+  return classes[category] ?? ''
 }
 
 const formatDate = (date: string) => {

@@ -3,10 +3,17 @@ import { apiService } from './api'
 import { useAuthStore } from '@/stores/auth'
 import type { User, LoginCredentials, RegisterData } from '@/types'
 
+// Token response interface
+interface TokenResponse {
+  accessToken: string
+  refreshToken: string
+  expiresIn: number
+}
+
 // Authentication response interface
 interface AuthResponse {
-    user: User
-    token: string
+  user: User
+  tokens: TokenResponse
 }
 
 // Authentication service
@@ -23,7 +30,7 @@ export const authService = {
 
       if (response.success && response.data) {
         // 使用 Pinia store 管理狀態
-        authStore.setAuth(response.data.user, response.data.token)
+        authStore.setAuth(response.data.user, response.data.tokens.accessToken)
         return response.data
       }
 
@@ -49,7 +56,7 @@ export const authService = {
 
       if (response.success && response.data) {
         // 使用 Pinia store 管理狀態
-        authStore.setAuth(response.data.user, response.data.token)
+        authStore.setAuth(response.data.user, response.data.tokens.accessToken)
         return response.data
       }
 

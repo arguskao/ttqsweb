@@ -25,6 +25,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+
 import type { Course } from '@/types'
 
 interface Props {
@@ -44,7 +45,8 @@ const courseTypeText = computed(() => {
     advanced: '進階課程',
     internship: '實習課程'
   }
-  return typeMap[props.course.courseType] || props.course.courseType
+  const courseType = props.course.courseType || props.course.course_type
+  return typeMap[courseType as keyof typeof typeMap] || courseType || '未知課程'
 })
 
 const tagClass = computed(() => {
@@ -53,7 +55,8 @@ const tagClass = computed(() => {
     advanced: 'advanced',
     internship: 'internship'
   }
-  return classMap[props.course.courseType] || 'basic'
+  const courseType = props.course.courseType || props.course.course_type
+  return classMap[courseType as keyof typeof classMap] || 'basic'
 })
 
 const viewDetails = () => {

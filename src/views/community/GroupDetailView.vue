@@ -174,6 +174,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+
 import { apiService } from '@/services/api-enhanced'
 
 interface Group {
@@ -284,7 +285,7 @@ const getGroupTypeClass = (type: string) => {
     alumni: 'is-warning',
     study: 'is-primary'
   }
-  return classes[type] || ''
+  return classes[type] ?? ''
 }
 
 const getCategoryLabel = (category: string) => {
@@ -304,7 +305,7 @@ const getCategoryClass = (category: string) => {
     announcement: 'is-warning',
     resource: 'is-success'
   }
-  return classes[category] || ''
+  return classes[category] ?? ''
 }
 
 const getRoleLabel = (role: string) => {
@@ -322,7 +323,7 @@ const getRoleClass = (role: string) => {
     moderator: 'is-warning',
     member: 'is-info'
   }
-  return classes[role] || ''
+  return classes[role] ?? ''
 }
 
 const formatDate = (date: string) => {
@@ -349,4 +350,3 @@ onMounted(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 </style>
-

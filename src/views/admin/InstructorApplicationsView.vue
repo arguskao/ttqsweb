@@ -79,14 +79,14 @@
                     <div class="column">
                       <p><strong>專業領域：</strong>{{ application.specialization || '未提供' }}</p>
                       <p>
-                        <strong>工作年資：</strong>{{ application.years_of_experience || 0 }} 年
+                        <strong>工作年資：</strong>{{ application.years_of_experience ?? 0 }} 年
                       </p>
                     </div>
                     <div class="column">
                       <p>
                         <strong>平均評分：</strong
-                        >{{ (application.average_rating || 0).toFixed(1) }}/5.0 ({{
-                          application.total_ratings || 0
+                        >{{ (application.average_rating ?? 0).toFixed(1) }}/5.0 ({{
+                          application.total_ratings ?? 0
                         }}
                         評價)
                       </p>
@@ -236,7 +236,7 @@ const loadApplications = async () => {
     }
 
     const response = await api.get('/instructors', { params })
-    applications.value = response.data?.data || []
+    applications.value = response.data?.data ?? []
 
     if (response.data?.meta) {
       meta.value = response.data.meta

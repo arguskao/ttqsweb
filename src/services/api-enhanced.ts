@@ -1,4 +1,5 @@
-import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
+import axios, { type AxiosRequestConfig } from 'axios'
+
 import { useAuthStore } from '@/stores/auth'
 import type { ApiResponse } from '@/types'
 
@@ -179,7 +180,7 @@ api.interceptors.response.use(
     // 重試機制 - 處理 5xx 錯誤
     if (!originalRequest.__isRetryRequest && error.response?.status >= 500) {
       originalRequest.__isRetryRequest = true
-      originalRequest.__retryCount = (originalRequest.__retryCount || 0) + 1
+      originalRequest.__retryCount = (originalRequest.__retryCount ?? 0) + 1
 
       if (originalRequest.__retryCount <= 3) {
         // 指數退避延遲

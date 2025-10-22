@@ -87,7 +87,7 @@ export const trackWebVitals = () => {
     // Send to analytics
     if (window.gtag) {
       window.gtag('event', 'LCP', {
-        value: Math.round((lastEntry as any).startTime || 0),
+        value: Math.round((lastEntry as any).startTime ?? 0),
         event_category: 'Web Vitals'
       })
     }

@@ -9,7 +9,7 @@ interface SEOData {
 }
 
 export function useSEO(initialData?: SEOData) {
-  const seoData = ref<SEOData>(initialData || {})
+  const seoData = ref<SEOData>(initialData ?? {})
 
   const updateSEO = (data: Partial<SEOData>) => {
     seoData.value = { ...seoData.value, ...data }

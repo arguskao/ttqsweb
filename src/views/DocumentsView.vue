@@ -66,7 +66,7 @@
             <div v-for="stat in downloadStats" :key="stat.category" class="column is-3">
               <div class="has-text-centered">
                 <p class="heading">{{ stat.category || '其他' }}</p>
-                <p class="title is-4">{{ stat.total_downloads || 0 }}</p>
+                <p class="title is-4">{{ stat.total_downloads ?? 0 }}</p>
                 <p class="subtitle is-6">{{ stat.document_count }} 個文件</p>
               </div>
             </div>
@@ -173,7 +173,7 @@
                 <li v-if="previewDocument.fileSize">
                   <strong>檔案大小：</strong>{{ formatFileSize(previewDocument.fileSize) }}
                 </li>
-                <li><strong>下載次數：</strong>{{ previewDocument.downloadCount || 0 }}</li>
+                <li><strong>下載次數：</strong>{{ previewDocument.downloadCount ?? 0 }}</li>
               </ul>
             </div>
 
@@ -323,7 +323,7 @@ const fetchDocuments = async () => {
       // API直接返回文檔數組在data中
       const docs = Array.isArray(response.data.data)
         ? response.data.data
-        : response.data.data.documents || []
+        : response.data.data.documents ?? []
       documents.value = docs.map((doc: any) => ({
         id: doc.id,
         title: doc.title,
@@ -332,7 +332,7 @@ const fetchDocuments = async () => {
         fileType: doc.file_type,
         fileSize: doc.file_size,
         category: doc.category,
-        downloadCount: doc.download_count || 0,
+        downloadCount: doc.download_count ?? 0,
         createdAt: doc.created_at
       }))
 
@@ -449,7 +449,7 @@ const isPdfFile = (document: Document): boolean => {
 }
 
 const isImageFile = (document: Document): boolean => {
-  const type = document.fileType?.toLowerCase() || ''
+  const type = document.fileType?.toLowerCase() ?? ''
   return (
     type.includes('image') || type.includes('png') || type.includes('jpg') || type.includes('jpeg')
   )

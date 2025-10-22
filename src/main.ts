@@ -6,6 +6,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import { setErrorHandler, apiService, api } from './services/api'
+import { authServiceEnhanced } from './services/auth-service-enhanced'
 import { container, SERVICE_KEYS } from './services/container'
 import { customErrorHandler } from './services/error-handler'
 import { analytics } from './utils/analytics'
@@ -43,6 +44,17 @@ const routePreloader = setupRoutePreloading(router)
 
 // Mount app
 app.mount('#app')
+
+// 初始化認證狀態 (從 sessionStorage 和 localStorage 恢復)
+authServiceEnhanced
+  .initializeAuth()
+  .then(() => {
+    ;(window as any).__authInitialized = true
+  })
+  .catch(error => {
+    console.error('Failed to initialize auth:', error)
+    ;(window as any).__authInitialized = true // 即使失敗也標記為已初始化
+  })
 
 // 開始預加載關鍵路由
 routePreloader.preloadCriticalRoutes()

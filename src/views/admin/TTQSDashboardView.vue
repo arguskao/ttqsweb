@@ -35,25 +35,25 @@
       <div class="column is-3">
         <div class="box has-background-info-light">
           <p class="heading">訓練計劃總數</p>
-          <p class="title">{{ dashboardData.overview?.total_plans || 0 }}</p>
+          <p class="title">{{ dashboardData.overview?.total_plans ?? 0 }}</p>
         </div>
       </div>
       <div class="column is-3">
         <div class="box has-background-success-light">
           <p class="heading">進行中計劃</p>
-          <p class="title">{{ dashboardData.overview?.active_plans || 0 }}</p>
+          <p class="title">{{ dashboardData.overview?.active_plans ?? 0 }}</p>
         </div>
       </div>
       <div class="column is-3">
         <div class="box has-background-primary-light">
           <p class="heading">已完成計劃</p>
-          <p class="title">{{ dashboardData.overview?.completed_plans || 0 }}</p>
+          <p class="title">{{ dashboardData.overview?.completed_plans ?? 0 }}</p>
         </div>
       </div>
       <div class="column is-3">
         <div class="box has-background-warning-light">
           <p class="heading">執行次數</p>
-          <p class="title">{{ dashboardData.execution?.total_executions || 0 }}</p>
+          <p class="title">{{ dashboardData.execution?.total_executions ?? 0 }}</p>
         </div>
       </div>
     </div>
@@ -74,7 +74,7 @@
                   {{ dashboardData.satisfaction?.avg_satisfaction?.toFixed(2) || 'N/A' }} / 5.0
                 </p>
                 <p class="has-text-centered">
-                  回應數: {{ dashboardData.satisfaction?.total_responses || 0 }}
+                  回應數: {{ dashboardData.satisfaction?.total_responses ?? 0 }}
                 </p>
               </div>
             </div>
@@ -93,7 +93,7 @@
                   {{ dashboardData.learning?.avg_test_score?.toFixed(1) || 'N/A' }} 分
                 </p>
                 <p class="has-text-centered">
-                  通過率: {{ dashboardData.learning?.pass_rate?.toFixed(1) || 0 }}%
+                  通過率: {{ dashboardData.learning?.pass_rate?.toFixed(1) ?? 0 }}%
                   <span
                     class="tag ml-2"
                     :class="getPassRateClass(dashboardData.learning?.pass_rate)"
@@ -118,7 +118,7 @@
                   {{ dashboardData.behavior?.avg_behavior_score?.toFixed(2) || 'N/A' }} / 5.0
                 </p>
                 <p class="has-text-centered">
-                  評估數: {{ dashboardData.behavior?.total_evaluations || 0 }}
+                  評估數: {{ dashboardData.behavior?.total_evaluations ?? 0 }}
                 </p>
               </div>
             </div>
@@ -162,11 +162,11 @@
       <div class="columns">
         <div class="column is-4">
           <p class="heading">總行動數</p>
-          <p class="title is-5">{{ dashboardData.improvement?.total_actions || 0 }}</p>
+          <p class="title is-5">{{ dashboardData.improvement?.total_actions ?? 0 }}</p>
         </div>
         <div class="column is-4">
           <p class="heading">已完成</p>
-          <p class="title is-5">{{ dashboardData.improvement?.completed_actions || 0 }}</p>
+          <p class="title is-5">{{ dashboardData.improvement?.completed_actions ?? 0 }}</p>
         </div>
         <div class="column is-4">
           <p class="heading">平均效果評分</p>

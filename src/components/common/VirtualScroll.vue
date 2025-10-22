@@ -1,11 +1,11 @@
 <template>
-  <div 
-    ref="containerRef" 
+  <div
+    ref="containerRef"
     class="virtual-scroll-container"
     :style="{ height: containerHeight + 'px' }"
     @scroll="handleScroll"
   >
-    <div 
+    <div
       class="virtual-scroll-content"
       :style="{ height: totalHeight + 'px' }"
     >
@@ -13,7 +13,7 @@
         v-for="item in visibleItems"
         :key="item.index"
         class="virtual-scroll-item"
-        :style="{ 
+        :style="{
           position: 'absolute',
           top: item.top + 'px',
           height: itemHeight + 'px',
@@ -23,13 +23,13 @@
         <slot :item="item.data" :index="item.index" />
       </div>
     </div>
-    
+
     <!-- 加載指示器 -->
     <div v-if="isLoading" class="virtual-scroll-loading">
       <div class="loader"></div>
       <p>載入中...</p>
     </div>
-    
+
     <!-- 空狀態 -->
     <div v-if="!isLoading && items.length === 0" class="virtual-scroll-empty">
       <div class="empty-icon">
@@ -41,7 +41,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch } from 'vue'
+
 import { useVirtualScroll } from '@/composables/usePerformance'
 
 // Props
@@ -83,10 +84,10 @@ const handleScroll = (event: Event) => {
   const scrollTop = target.scrollTop
   const scrollHeight = target.scrollHeight
   const clientHeight = target.clientHeight
-  
+
   // 觸發滾動事件
   emit('scroll', scrollTop)
-  
+
   // 檢查是否需要加載更多
   if (scrollTop + clientHeight >= scrollHeight - 100) {
     emit('load-more')
@@ -123,14 +124,14 @@ const scrollToBottom = () => {
 // 獲取可見範圍
 const getVisibleRange = () => {
   if (!containerRef.value) return { start: 0, end: 0 }
-  
+
   const scrollTop = containerRef.value.scrollTop
   const start = Math.floor(scrollTop / props.itemHeight)
   const end = Math.min(
     start + Math.ceil(props.containerHeight / props.itemHeight),
     props.items.length
   )
-  
+
   return { start, end }
 }
 
@@ -238,11 +239,11 @@ defineExpose({
   .virtual-scroll-item {
     padding: 0.75rem 0.5rem;
   }
-  
+
   .empty-icon {
     font-size: 2rem;
   }
-  
+
   .empty-text {
     font-size: 1rem;
   }
@@ -253,11 +254,11 @@ defineExpose({
   .virtual-scroll-container {
     border-color: #000;
   }
-  
+
   .virtual-scroll-item {
     border-bottom-color: #000;
   }
-  
+
   .virtual-scroll-loading {
     background: #fff;
     border: 1px solid #000;
@@ -269,7 +270,7 @@ defineExpose({
   .loader {
     animation: none;
   }
-  
+
   .virtual-scroll-container {
     scroll-behavior: auto;
   }

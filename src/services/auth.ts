@@ -1,5 +1,5 @@
-import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
 
 import { ValidationError, AuthenticationError, ConflictError } from '../api/errors'
 import { getDatabasePool } from '../config/database'

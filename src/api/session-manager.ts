@@ -1,5 +1,6 @@
 // Session management for enhanced security
 import jwt from 'jsonwebtoken'
+
 import { AuthenticationError } from './errors'
 
 interface SessionData {
@@ -201,3 +202,4 @@ export const verifySecureToken = (token: string): any => {
 
   return payload
 }
+

@@ -1,18 +1,17 @@
 import { registerUser, loginUser, type RegisterData, type LoginData } from '../services/auth'
+
 import { requireAuth } from './auth-middleware'
 import { ValidationError } from './errors'
-import type { RouteHandler } from './types'
 
 // 導入安全中間件
 import {
   loginRateLimit,
   registerRateLimit,
   passwordResetRateLimit,
-  strictRateLimit,
-  csrfProtection,
-  generateCSRFToken
+  strictRateLimit
 } from './rate-limit-middleware'
-import { securityMiddleware, authSecurityMiddleware } from './security-middleware'
+import { generateCSRFToken, securityHeaders, csrfProtection } from './security-middleware'
+import type { RouteHandler } from './types'
 
 // 生成 CSRF token 端點
 export const csrfTokenHandler: RouteHandler = async req => {
@@ -45,7 +44,7 @@ export const registerHandler: RouteHandler = async req => {
       throw new ValidationError('請求內容不能為空')
     }
 
-    const { email, password, userType, firstName, lastName, phone, confirmPassword } = body
+    const { email, password, userType, firstName, lastName, phone } = body
 
     // 驗證必填欄位
     if (!email || !password || !userType || !firstName || !lastName) {
@@ -53,6 +52,7 @@ export const registerHandler: RouteHandler = async req => {
     }
 
     // 驗證密碼確認
+    const { confirmPassword } = req.body as { confirmPassword?: string }
     if (password !== confirmPassword) {
       throw new ValidationError('密碼確認不一致')
     }
@@ -89,8 +89,8 @@ export const registerHandler: RouteHandler = async req => {
         user: result.user,
         tokens: {
           accessToken: result.token,
-          refreshToken: result.refreshToken || '',
-          expiresIn: result.expiresIn || 3600
+          refreshToken: '',
+          expiresIn: 3600
         }
       }
     }
@@ -131,8 +131,8 @@ export const loginHandler: RouteHandler = async req => {
         user: result.user,
         tokens: {
           accessToken: result.token,
-          refreshToken: result.refreshToken || '',
-          expiresIn: result.expiresIn || 3600
+          refreshToken: '',
+          expiresIn: 3600
         }
       }
     }
@@ -144,7 +144,7 @@ export const loginHandler: RouteHandler = async req => {
 // Token 刷新端點
 export const refreshTokenHandler: RouteHandler = async req => {
   try {
-    const { refreshToken } = req.body
+    const { refreshToken } = req.body as { refreshToken: string }
 
     if (!refreshToken) {
       throw new ValidationError('缺少 refresh token')
@@ -191,7 +191,7 @@ export const profileHandler: RouteHandler = async req => {
 // 登出端點
 export const logoutHandler: RouteHandler = async req => {
   try {
-    const { refreshToken } = req.body
+    const { refreshToken } = req.body as { refreshToken?: string }
 
     // 如果有 refresh token，嘗試撤銷它
     if (refreshToken) {
@@ -304,7 +304,7 @@ export const updateProfileHandler: RouteHandler = async req => {
 // 密碼重置請求端點
 export const passwordResetRequestHandler: RouteHandler = async req => {
   try {
-    const { email } = req.body
+    const { email } = req.body as { email: string }
 
     if (!email) {
       throw new ValidationError('請提供電子郵件地址')
@@ -333,7 +333,11 @@ export const passwordResetRequestHandler: RouteHandler = async req => {
 // 密碼重置端點
 export const passwordResetHandler: RouteHandler = async req => {
   try {
-    const { token, newPassword, confirmPassword } = req.body
+    const { token, newPassword, confirmPassword } = req.body as {
+      token: string
+      newPassword: string
+      confirmPassword: string
+    }
 
     if (!token || !newPassword || !confirmPassword) {
       throw new ValidationError('請提供所有必要信息')
@@ -393,49 +397,46 @@ async function resetPassword(token: string, newPassword: string) {
 // 設置認證路由
 export const setupAuthRoutes = (router: any) => {
   // 公開路由 - 應用安全中間件
-  router.get('/api/v1/auth/csrf-token', csrfTokenHandler, ...securityMiddleware)
+  router.get('/api/v1/auth/csrf-token', csrfTokenHandler, securityHeaders)
   router.post(
     '/api/v1/auth/register',
     registerHandler,
     registerRateLimit,
-    ...authSecurityMiddleware
+    csrfProtection,
+    securityHeaders
   )
-  router.post('/api/v1/auth/login', loginHandler, loginRateLimit, ...authSecurityMiddleware)
-  router.post('/api/v1/auth/logout', logoutHandler, ...authSecurityMiddleware)
-  router.post('/api/v1/auth/refresh', refreshTokenHandler, ...authSecurityMiddleware)
+  router.post('/api/v1/auth/login', loginHandler, loginRateLimit, csrfProtection, securityHeaders)
+  router.post('/api/v1/auth/logout', logoutHandler, csrfProtection, securityHeaders)
+  router.post('/api/v1/auth/refresh', refreshTokenHandler, csrfProtection, securityHeaders)
   router.post(
     '/api/v1/auth/password-reset-request',
     passwordResetRequestHandler,
     passwordResetRateLimit,
-    ...authSecurityMiddleware
+    csrfProtection,
+    securityHeaders
   )
   router.post(
     '/api/v1/auth/password-reset',
     passwordResetHandler,
     passwordResetRateLimit,
-    ...authSecurityMiddleware
+    csrfProtection,
+    securityHeaders
   )
 
   // 受保護的路由 - 應用嚴格安全中間件
-  router.get(
-    '/api/v1/auth/profile',
-    profileHandler,
-    requireAuth,
-    strictRateLimit,
-    ...authSecurityMiddleware
-  )
+  router.get('/api/v1/auth/profile', profileHandler, requireAuth, strictRateLimit, securityHeaders)
   router.put(
     '/api/v1/auth/profile',
     updateProfileHandler,
     requireAuth,
     strictRateLimit,
-    ...authSecurityMiddleware
+    securityHeaders
   )
   router.put(
     '/api/v1/users/profile',
     updateProfileHandler,
     requireAuth,
     strictRateLimit,
-    ...authSecurityMiddleware
+    securityHeaders
   )
 }

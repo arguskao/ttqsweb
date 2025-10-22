@@ -252,7 +252,7 @@ const getEvaluationDescription = (): string => {
     3: '請評估學員在工作中的行為表現（1-5星）',
     4: '請記錄學員的就業成效'
   }
-  return descriptions[props.level] || ''
+  return descriptions[props.level] ?? ''
 }
 
 const calculateImprovement = (): string => {

@@ -131,7 +131,7 @@ export interface QueryOptions {
 
 // Cloudflare 兼容的數據庫工具類
 export class CloudflareDatabaseUtils {
-  private sql: ReturnType<typeof neon>
+  private readonly sql: ReturnType<typeof neon>
 
   constructor() {
     this.sql = getDatabaseConnection()!
@@ -143,7 +143,7 @@ export class CloudflareDatabaseUtils {
       const { text, values = [] } = queryOptions
 
       // 將 PostgreSQL 風格的參數占位符轉換為 Neon 格式
-      let processedQuery = text
+      const processedQuery = text
       const processedValues: unknown[] = []
 
       if (values.length > 0) {
@@ -178,7 +178,7 @@ export class CloudflareDatabaseUtils {
   // 執行查詢並返回所有行
   async queryMany<T = unknown>(queryOptions: QueryOptions): Promise<T[]> {
     const result = await this.query(queryOptions)
-    return (result.rows as T[]) || []
+    return (result.rows as T[]) ?? []
   }
 
   // 簡化的事務處理（Neon 自動處理）

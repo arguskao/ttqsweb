@@ -1,14 +1,15 @@
+import jwt from 'jsonwebtoken'
+
+import { getUserById } from '../services/auth'
+
 import { AuthenticationError } from './errors'
 import type { Middleware } from './types'
-import { getUserById } from '../services/auth'
-import jwt from 'jsonwebtoken'
 
 // JWT token verification
 const verifyToken = (token: string) => {
   try {
     const secret = process.env.JWT_SECRET || 'test-secret'
-    const payload = jwt.verify(token, secret) as any
-    return payload
+    return jwt.verify(token, secret) as any
   } catch (error) {
     throw new AuthenticationError('認證令牌無效或已過期')
   }

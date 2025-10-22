@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 
 /**
  * 測試數據庫初始化腳本
@@ -6,7 +5,6 @@
  */
 
 import { neon } from '@neondatabase/serverless'
-import { getDatabasePool } from '../src/config/database'
 
 // 檢查是否在測試環境
 if (process.env.NODE_ENV !== 'test') {
@@ -18,11 +16,11 @@ const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://test:test@localho
 
 async function setupTestDatabase() {
   console.log('🚀 開始設置測試數據庫...')
-  
+
   try {
     // 使用Neon serverless連接
     const sql = neon(DATABASE_URL)
-    
+
     // 創建表
     console.log('📋 創建測試表...')
     await sql`
@@ -98,7 +96,7 @@ async function setupTestDatabase() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `
-    
+
     // 插入測試數據
     console.log('📊 插入測試數據...')
     await sql`
@@ -136,23 +134,23 @@ async function setupTestDatabase() {
       ('課程大綱', '課程詳細大綱', 'https://example.com/syllabus.pdf', 'application/pdf', 512, 'course', 2)
       ON CONFLICT DO NOTHING;
     `
-    
+
     console.log('✅ 測試數據庫設置完成！')
-    
+
     // 驗證數據
     const userCount = await sql`SELECT COUNT(*) FROM users WHERE email LIKE '%@example.com'`
     const courseCount = await sql`SELECT COUNT(*) FROM courses`
     const jobCount = await sql`SELECT COUNT(*) FROM jobs`
     const instructorCount = await sql`SELECT COUNT(*) FROM instructors`
     const documentCount = await sql`SELECT COUNT(*) FROM documents`
-    
-    console.log(`📈 測試數據統計:`)
+
+    console.log('📈 測試數據統計:')
     console.log(`   - 用戶: ${userCount[0].count}`)
     console.log(`   - 課程: ${courseCount[0].count}`)
     console.log(`   - 職缺: ${jobCount[0].count}`)
     console.log(`   - 講師: ${instructorCount[0].count}`)
     console.log(`   - 文件: ${documentCount[0].count}`)
-    
+
   } catch (error) {
     console.error('❌ 測試數據庫設置失敗:', error)
     process.exit(1)
@@ -161,10 +159,10 @@ async function setupTestDatabase() {
 
 async function cleanupTestDatabase() {
   console.log('🧹 清理測試數據庫...')
-  
+
   try {
     const sql = neon(DATABASE_URL)
-    
+
     await sql`
       DELETE FROM documents WHERE uploaded_by IN (SELECT id FROM users WHERE email LIKE '%@example.com');
       DELETE FROM courses WHERE instructor_id IN (SELECT id FROM instructors WHERE email LIKE '%@example.com');
@@ -172,7 +170,7 @@ async function cleanupTestDatabase() {
       DELETE FROM instructors WHERE email LIKE '%@example.com';
       DELETE FROM users WHERE email LIKE '%@example.com';
     `
-    
+
     console.log('✅ 測試數據庫清理完成！')
   } catch (error) {
     console.error('❌ 測試數據庫清理失敗:', error)
@@ -188,3 +186,4 @@ if (command === 'cleanup') {
 } else {
   setupTestDatabase()
 }
+

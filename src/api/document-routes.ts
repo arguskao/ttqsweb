@@ -1,22 +1,25 @@
+import { validateIntParam } from '../utils/param-validation'
+
 import { authMiddleware } from './auth-middleware'
 import { BaseRepository } from './database'
 import { ValidationError, NotFoundError, AuthorizationError } from './errors'
+import { withAuth } from './middleware-helpers'
 import type { ApiRouter } from './router'
 import type { ApiRequest, ApiResponse } from './types'
 
 // Document interface
 interface Document {
-    id: number
-    title: string
-    description: string | null
-    file_url: string
-    file_type: string | null
-    file_size: number | null
-    category: string | null
-    is_public: boolean
-    uploaded_by: number | null
-    download_count: number
-    created_at: Date
+  id: number
+  title: string
+  description: string | null
+  file_url: string
+  file_type: string | null
+  file_size: number | null
+  category: string | null
+  is_public: boolean
+  uploaded_by: number | null
+  download_count: number
+  created_at: Date
 }
 
 // Document repository
@@ -71,20 +74,14 @@ class DocumentRepository extends BaseRepository<Document> {
 
   // Get documents with pagination and filters
   async findWithFilters(options: {
-        page?: number
-        limit?: number
-        category?: string
-        searchTerm?: string
-        isPublic?: boolean
-    }): Promise<{ data: Document[]; meta: any }> {
+    page?: number
+    limit?: number
+    category?: string
+    searchTerm?: string
+    isPublic?: boolean
+  }): Promise<{ data: Document[]; meta: any }> {
     const { db } = await import('../utils/database')
-    const {
-      page = 1,
-      limit = 10,
-      category,
-      searchTerm,
-      isPublic = true
-    } = options
+    const { page = 1, limit = 10, category, searchTerm, isPublic = true } = options
 
     const offset = (page - 1) * limit
     const conditions: string[] = []
@@ -118,7 +115,7 @@ class DocumentRepository extends BaseRepository<Document> {
         text: `SELECT COUNT(*) as count FROM documents ${whereClause}`,
         values
       })
-      const total = parseInt(countResult?.count || '0', 10)
+      const total = parseInt((countResult as any)?.count || '0', 10)
 
       // Get paginated data
       const data = await db.queryMany({
@@ -132,7 +129,7 @@ class DocumentRepository extends BaseRepository<Document> {
       })
 
       return {
-        data,
+        data: data as any[],
         meta: {
           page,
           limit,
@@ -157,7 +154,7 @@ class DocumentRepository extends BaseRepository<Document> {
           ORDER BY category
         `
       })
-      return results.map(r => r.category)
+      return results.map((r: any) => r.category)
     } catch (error) {
       throw error
     }
@@ -192,12 +189,7 @@ export function setupDocumentRoutes(router: ApiRouter): void {
   // Get all documents with filters and pagination
   router.get('/api/v1/documents', async (req: ApiRequest): Promise<ApiResponse> => {
     try {
-      const {
-        page = '1',
-        limit = '10',
-        category,
-        search
-      } = req.query || {}
+      const { page = '1', limit = '10', category, search } = req.query ?? {}
 
       const result = await documentRepo.findWithFilters({
         page: parseInt(page as string, 10),
@@ -222,11 +214,7 @@ export function setupDocumentRoutes(router: ApiRouter): void {
   // Get document by ID
   router.get('/api/v1/documents/:id', async (req: ApiRequest): Promise<ApiResponse> => {
     try {
-      const id = parseInt(req.params?.id || '0', 10)
-
-      if (!id) {
-        throw new ValidationError('無效的文件 ID')
-      }
+      const id = validateIntParam(req.params?.id, 'id')
 
       const document = await documentRepo.findById(id)
 
@@ -250,11 +238,7 @@ export function setupDocumentRoutes(router: ApiRouter): void {
   // Download document (increment counter)
   router.get('/api/v1/documents/:id/download', async (req: ApiRequest): Promise<ApiResponse> => {
     try {
-      const id = parseInt(req.params?.id || '0', 10)
-
-      if (!id) {
-        throw new ValidationError('無效的文件 ID')
-      }
+      const id = validateIntParam(req.params?.id, 'id')
 
       const document = await documentRepo.findById(id)
 
@@ -311,125 +295,121 @@ export function setupDocumentRoutes(router: ApiRouter): void {
   })
 
   // Upload document (requires authentication)
-  router.post('/api/v1/documents', async (req: ApiRequest): Promise<ApiResponse> => {
-    try {
-      if (!req.user) {
-        throw new AuthorizationError('需要登入才能上傳文件')
+  router.post(
+    '/api/v1/documents',
+    withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
+      try {
+        if (!req.user) {
+          throw new AuthorizationError('需要登入才能上傳文件')
+        }
+
+        const {
+          title,
+          description,
+          file_url,
+          file_type,
+          file_size,
+          category,
+          is_public = true
+        } = req.body as any
+
+        // Validate required fields
+        if (!title || !file_url) {
+          throw new ValidationError('標題和文件 URL 為必填項')
+        }
+
+        const document = await documentRepo.create({
+          title,
+          description: description || null,
+          file_url,
+          file_type: file_type || null,
+          file_size: file_size || null,
+          category: category || null,
+          is_public,
+          uploaded_by: req.user.id,
+          download_count: 0
+        } as any)
+
+        return {
+          success: true,
+          data: document
+        }
+      } catch (error) {
+        throw error
       }
-
-      const {
-        title,
-        description,
-        file_url,
-        file_type,
-        file_size,
-        category,
-        is_public = true
-      } = req.body as any
-
-      // Validate required fields
-      if (!title || !file_url) {
-        throw new ValidationError('標題和文件 URL 為必填項')
-      }
-
-      const document = await documentRepo.create({
-        title,
-        description: description || null,
-        file_url,
-        file_type: file_type || null,
-        file_size: file_size || null,
-        category: category || null,
-        is_public,
-        uploaded_by: req.user.id,
-        download_count: 0
-      } as any)
-
-      return {
-        success: true,
-        data: document
-      }
-    } catch (error) {
-      throw error
-    }
-  }, [authMiddleware])
+    })
+  )
 
   // Update document (requires authentication and ownership)
-  router.put('/api/v1/files/:id', async (req: ApiRequest): Promise<ApiResponse> => {
-    try {
-      if (!req.user) {
-        throw new AuthorizationError('需要登入才能更新文件')
+  router.put(
+    '/api/v1/files/:id',
+    withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
+      try {
+        if (!req.user) {
+          throw new AuthorizationError('需要登入才能更新文件')
+        }
+
+        const id = validateIntParam(req.params?.id, 'id')
+
+        const document = await documentRepo.findById(id)
+
+        if (!document) {
+          throw new NotFoundError('文件不存在')
+        }
+
+        if (document.uploaded_by !== req.user.id) {
+          throw new AuthorizationError('無權限更新此文件')
+        }
+
+        const { title, description, category, is_public } = req.body as any
+
+        const updatedDocument = await documentRepo.update(id, {
+          title,
+          description,
+          category,
+          is_public
+        })
+
+        return {
+          success: true,
+          data: updatedDocument
+        }
+      } catch (error) {
+        throw error
       }
-
-      const id = parseInt(req.params?.id || '0', 10)
-
-      if (!id) {
-        throw new ValidationError('無效的文件 ID')
-      }
-
-      const document = await documentRepo.findById(id)
-
-      if (!document) {
-        throw new NotFoundError('文件不存在')
-      }
-
-      if (document.uploaded_by !== req.user.id) {
-        throw new AuthorizationError('無權限更新此文件')
-      }
-
-      const {
-        title,
-        description,
-        category,
-        is_public
-      } = req.body as any
-
-      const updatedDocument = await documentRepo.update(id, {
-        title,
-        description,
-        category,
-        is_public
-      })
-
-      return {
-        success: true,
-        data: updatedDocument
-      }
-    } catch (error) {
-      throw error
-    }
-  }, [authMiddleware])
+    })
+  )
 
   // Delete document (requires authentication and ownership)
-  router.delete('/api/v1/files/:id', async (req: ApiRequest): Promise<ApiResponse> => {
-    try {
-      if (!req.user) {
-        throw new AuthorizationError('需要登入才能刪除文件')
+  router.delete(
+    '/api/v1/files/:id',
+    withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
+      try {
+        if (!req.user) {
+          throw new AuthorizationError('需要登入才能刪除文件')
+        }
+
+        const id = validateIntParam(req.params?.id, 'id')
+
+        const document = await documentRepo.findById(id)
+
+        if (!document) {
+          throw new NotFoundError('文件不存在')
+        }
+
+        if (document.uploaded_by !== req.user.id) {
+          throw new AuthorizationError('無權限刪除此文件')
+        }
+
+        await documentRepo.delete(id)
+
+        return {
+          success: true,
+          data: { message: '文件已刪除' }
+        }
+      } catch (error) {
+        throw error
       }
-
-      const id = parseInt(req.params?.id || '0', 10)
-
-      if (!id) {
-        throw new ValidationError('無效的文件 ID')
-      }
-
-      const document = await documentRepo.findById(id)
-
-      if (!document) {
-        throw new NotFoundError('文件不存在')
-      }
-
-      if (document.uploaded_by !== req.user.id) {
-        throw new AuthorizationError('無權限刪除此文件')
-      }
-
-      await documentRepo.delete(id)
-
-      return {
-        success: true,
-        data: { message: '文件已刪除' }
-      }
-    } catch (error) {
-      throw error
-    }
-  }, [authMiddleware])
+    })
+  )
 }

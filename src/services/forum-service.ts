@@ -1,5 +1,4 @@
 import { apiService } from './api-enhanced'
-import type { ApiResponse } from '@/types/enhanced'
 
 // 類型定義
 export interface ForumTopic {
@@ -337,4 +336,3 @@ export const forumService = {
 }
 
 export default forumService
-

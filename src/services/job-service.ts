@@ -1,5 +1,6 @@
 import { apiService } from './api'
-import type { Job, ApiResponse } from '@/types'
+
+import type { Job } from '@/types'
 
 export interface JobFilters {
   jobType?: string

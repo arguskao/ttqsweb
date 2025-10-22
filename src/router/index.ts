@@ -3,7 +3,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import HomeView from '../views/HomeView.vue'
 
-import { authServiceEnhanced as authService } from '@/services/auth-service-enhanced'
+import { authServiceEnhanced, authService } from '@/services/auth-service-enhanced'
+import { useAuthStore } from '@/stores/auth'
 
 // 加載組件
 const LoadingSpinner = defineAsyncComponent(() => import('@/components/common/LoadingSpinner.vue'))
@@ -271,12 +272,88 @@ const router = createRouter({
 })
 
 // Navigation guards
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
+  // 等待認證初始化完成
+  if (!(window as any).__authInitialized) {
+    try {
+      await authServiceEnhanced.initializeAuth()
+      ;(window as any).__authInitialized = true
+    } catch (error) {
+      console.error('Auth initialization failed in router guard:', error)
+    }
+  }
+
   const isAuthenticated = authService.isAuthenticated()
   const user = authService.getCurrentUser()
 
+  // 調試日誌 - Enhanced debugging
+  console.log('Router guard check:', {
+    to: to.path,
+    requiresAuth: to.meta.requiresAuth,
+    isAuthenticated,
+    user,
+    sessionToken: sessionStorage.getItem('access_token'),
+    localToken: localStorage.getItem('auth_token'),
+    sessionUser: sessionStorage.getItem('user'),
+    localUser: localStorage.getItem('auth_user'),
+    storeUser: authService.getCurrentUser(),
+    storeToken: authService.getToken()
+  })
+
+  // Sync storage if there's a mismatch
+  if (!isAuthenticated) {
+    const sessionToken = sessionStorage.getItem('access_token')
+    const localToken = localStorage.getItem('auth_token')
+    const sessionUser = sessionStorage.getItem('user')
+    const localUser = localStorage.getItem('auth_user')
+    
+    // Try to recover authentication state from either storage
+    if (sessionToken && sessionUser) {
+      console.log('Recovering auth from sessionStorage')
+      try {
+        const userData = JSON.parse(sessionUser)
+        // Update the auth store
+        const authStore = useAuthStore()
+        authStore.setAuth(userData, sessionToken)
+        // Sync to localStorage
+        localStorage.setItem('auth_token', sessionToken)
+        localStorage.setItem('auth_user', sessionUser)
+        // Re-check authentication
+        if (authService.isAuthenticated()) {
+          console.log('Auth recovered successfully')
+          next()
+          return
+        }
+      } catch (error) {
+        console.error('Failed to recover auth from sessionStorage:', error)
+      }
+    } else if (localToken && localUser) {
+      console.log('Recovering auth from localStorage')
+      try {
+        const userData = JSON.parse(localUser)
+        // Update the auth store
+        const authStore = useAuthStore()
+        authStore.setAuth(userData, localToken)
+        // Sync to sessionStorage
+        sessionStorage.setItem('access_token', localToken)
+        sessionStorage.setItem('user', localUser)
+        const expiryTime = Date.now() + (60 * 60 * 1000) // 1 hour default
+        sessionStorage.setItem('token_expiry', expiryTime.toString())
+        // Re-check authentication
+        if (authService.isAuthenticated()) {
+          console.log('Auth recovered successfully')
+          next()
+          return
+        }
+      } catch (error) {
+        console.error('Failed to recover auth from localStorage:', error)
+      }
+    }
+  }
+
   // Check if route requires authentication
   if (to.meta.requiresAuth && !isAuthenticated) {
+    console.log('Redirecting to login because not authenticated')
     next({ name: 'login', query: { redirect: to.fullPath } })
     return
   }

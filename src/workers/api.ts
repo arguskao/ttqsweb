@@ -1,12 +1,12 @@
 // Cloudflare Worker for API endpoints
-import { handleApiRequest } from '../api'
+import { handleApiRequest } from '../api/index'
 import type { ApiRequest } from '../api/types'
 
 // Cloudflare Worker environment interface
 interface Env {
-    DATABASE_URL: string
-    JWT_SECRET: string
-    ENVIRONMENT: string
+  DATABASE_URL: string
+  JWT_SECRET: string
+  ENVIRONMENT: string
 }
 
 // CORS headers
@@ -98,16 +98,11 @@ export default {
         params: {}
       }
 
-                // Add environment to request context (for database access)
-                ; (apiRequest as any).env = env
+      // Add environment to request context (for database access)
+      ;(apiRequest as any).env = env
 
       // Handle API request
-      const apiResponse = await handleApiRequest(
-        request.method,
-        pathname,
-        headers,
-        body
-      )
+      const apiResponse = await handleApiRequest(request.method, pathname, headers, body)
 
       // Return response
       const statusCode = apiResponse.error?.statusCode || (apiResponse.success ? 200 : 500)
@@ -119,7 +114,6 @@ export default {
           ...corsHeaders
         }
       })
-
     } catch (error) {
       console.error('Worker error:', error)
 

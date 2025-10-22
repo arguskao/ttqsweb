@@ -31,8 +31,8 @@ export class DocumentServiceNeon {
 
     try {
       // 構建 WHERE 條件
-      let whereConditions = ['is_public = $1']
-      let params: any[] = [isPublic]
+      const whereConditions = ['is_public = $1']
+      const params: any[] = [isPublic]
       let paramIndex = 2
 
       if (category) {

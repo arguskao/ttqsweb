@@ -22,7 +22,7 @@ async function createSimpleServer() {
     }
 
     try {
-      const url = new URL(req.url || '', `http://localhost:${PORT}`)
+      const url = new URL(req.url ?? '', `http://localhost:${PORT}`)
       const pathname = url.pathname
 
       // Simple health check

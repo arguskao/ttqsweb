@@ -1,0 +1,177 @@
+
+> pharmacy-assistant-academy@0.0.0 type-check
+> vue-tsc --noEmit -p tsconfig.app.json
+
+src/api/auth-routes-enhanced.ts(12,3): error TS2305: Module '"./rate-limit-middleware"' has no exported member 'csrfProtection'.
+src/api/auth-routes-enhanced.ts(13,3): error TS2305: Module '"./rate-limit-middleware"' has no exported member 'generateCSRFToken'.
+src/api/auth-routes-enhanced.ts(15,10): error TS2305: Module '"./security-middleware"' has no exported member 'securityMiddleware'.
+src/api/auth-routes-enhanced.ts(15,30): error TS2305: Module '"./security-middleware"' has no exported member 'authSecurityMiddleware'.
+src/api/auth-routes-enhanced.ts(48,68): error TS2339: Property 'confirmPassword' does not exist on type 'RegisterData'.
+src/api/auth-routes-enhanced.ts(92,32): error TS2339: Property 'refreshToken' does not exist on type '{ user: User; token: string; }'.
+src/api/auth-routes-enhanced.ts(93,29): error TS2339: Property 'expiresIn' does not exist on type '{ user: User; token: string; }'.
+src/api/auth-routes-enhanced.ts(134,32): error TS2339: Property 'refreshToken' does not exist on type '{ user: User; token: string; }'.
+src/api/auth-routes-enhanced.ts(135,29): error TS2339: Property 'expiresIn' does not exist on type '{ user: User; token: string; }'.
+src/api/auth-routes-enhanced.ts(147,13): error TS2339: Property 'refreshToken' does not exist on type '{}'.
+src/api/auth-routes-enhanced.ts(194,13): error TS2339: Property 'refreshToken' does not exist on type '{}'.
+src/api/auth-routes-enhanced.ts(307,13): error TS2339: Property 'email' does not exist on type '{}'.
+src/api/auth-routes-enhanced.ts(336,13): error TS2339: Property 'token' does not exist on type '{}'.
+src/api/auth-routes-enhanced.ts(336,20): error TS2339: Property 'newPassword' does not exist on type '{}'.
+src/api/auth-routes-enhanced.ts(336,33): error TS2339: Property 'confirmPassword' does not exist on type '{}'.
+src/api/course/management.ts(230,38): error TS2554: Expected 1 arguments, but got 0.
+src/api/document-routes.ts(307,10): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(path: string, middleware: Middleware, handler: RouteHandler): void', gave the following error.
+    Argument of type 'Middleware[]' is not assignable to parameter of type 'RouteHandler'.
+      Type 'Middleware[]' provides no match for the signature '(req: ApiRequest): Promise<ApiResponse<unknown>>'.
+  Overload 2 of 3, '(path: string, middlewares: Middleware[], handler: RouteHandler): void', gave the following error.
+    Argument of type '(req: ApiRequest) => Promise<ApiResponse>' is not assignable to parameter of type 'Middleware[]'.
+src/api/document-routes.ts(350,10): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(path: string, middleware: Middleware, handler: RouteHandler): void', gave the following error.
+    Argument of type 'Middleware[]' is not assignable to parameter of type 'RouteHandler'.
+      Type 'Middleware[]' provides no match for the signature '(req: ApiRequest): Promise<ApiResponse<unknown>>'.
+  Overload 2 of 3, '(path: string, middlewares: Middleware[], handler: RouteHandler): void', gave the following error.
+    Argument of type '(req: ApiRequest) => Promise<ApiResponse>' is not assignable to parameter of type 'Middleware[]'.
+src/api/document-routes.ts(392,10): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(path: string, middleware: Middleware, handler: RouteHandler): void', gave the following error.
+    Argument of type 'Middleware[]' is not assignable to parameter of type 'RouteHandler'.
+      Type 'Middleware[]' provides no match for the signature '(req: ApiRequest): Promise<ApiResponse<unknown>>'.
+  Overload 2 of 3, '(path: string, middlewares: Middleware[], handler: RouteHandler): void', gave the following error.
+    Argument of type '(req: ApiRequest) => Promise<ApiResponse>' is not assignable to parameter of type 'Middleware[]'.
+src/api/documentation/extractor.ts(19,16): error TS2488: Type 'Route' must have a '[Symbol.iterator]()' method that returns an iterator.
+src/api/documentation/extractor.ts(19,40): error TS2341: Property 'routes' is private and only accessible within class 'ApiRouter'.
+src/api/documentation/extractor.ts(211,13): error TS2353: Object literal may only specify known properties, and '$ref' does not exist in type 'ApiSchema'.
+src/api/documentation/extractor.ts(275,15): error TS2353: Object literal may only specify known properties, and '$ref' does not exist in type 'ApiSchema'.
+src/api/documentation/extractor.ts(285,15): error TS2353: Object literal may only specify known properties, and '$ref' does not exist in type 'ApiSchema'.
+src/api/documentation/extractor.ts(295,15): error TS2353: Object literal may only specify known properties, and '$ref' does not exist in type 'ApiSchema'.
+src/api/documentation/extractor.ts(305,15): error TS2353: Object literal may only specify known properties, and '$ref' does not exist in type 'ApiSchema'.
+src/api/documentation/extractor.ts(319,15): error TS2353: Object literal may only specify known properties, and '$ref' does not exist in type 'ApiSchema'.
+src/api/documentation/extractor.ts(332,42): error TS2304: Cannot find name 'ApiSecurity'.
+src/api/documentation/formatter.ts(63,7): error TS2322: Type '{ schemas: { [x: string]: ApiSchema; }; securitySchemes: { bearerAuth: { type: string; scheme: string; bearerFormat: string; }; }; responses: { '200': { description: string; content: { 'application/json': { ...; }; }; }; ... 4 more ...; '500': { ...; }; }; }' is not assignable to type 'ApiComponents'.
+  Types of property 'responses' are incompatible.
+    Type '{ '200': { description: string; content: { 'application/json': { schema: { $ref: string; }; }; }; }; '400': { description: string; content: { 'application/json': { schema: { $ref: string; }; }; }; }; '401': { description: string; content: { ...; }; }; '403': { ...; }; '404': { ...; }; '500': { ...; }; }' is not assignable to type 'Record<string, ApiResponse>'.
+      Property ''200'' is incompatible with index signature.
+        Type '{ description: string; content: { 'application/json': { schema: { $ref: string; }; }; }; }' is not assignable to type 'ApiResponse'.
+          Types of property 'content' are incompatible.
+            Type '{ 'application/json': { schema: { $ref: string; }; }; }' is not assignable to type 'Record<string, ApiContent>'.
+              Property ''application/json'' is incompatible with index signature.
+                Type '{ schema: { $ref: string; }; }' is not assignable to type 'ApiContent'.
+                  Types of property 'schema' are incompatible.
+                    Type '{ $ref: string; }' has no properties in common with type 'ApiSchema'.
+src/api/documents/downloads.ts(218,17): error TS2339: Property 'documentIds' does not exist on type '{}'.
+src/api/documents/management.ts(103,13): error TS2740: Type '{}' is missing the following properties from type 'CreateDocumentRequest': title, file_name, file_path, file_size, and 2 more.
+src/api/documents/management.ts(183,51): error TS2339: Property 'description' does not exist on type 'Partial<Document>'.
+src/api/documents/management.ts(184,48): error TS2339: Property 'category' does not exist on type 'Partial<Document>'.
+src/api/documents/management.ts(185,49): error TS2339: Property 'is_public' does not exist on type 'Partial<Document>'.
+src/api/enhanced-error-handling.ts(491,15): error TS2484: Export declaration conflicts with exported declaration of 'ErrorContext'.
+src/api/instructor-routes.ts(7,10): error TS2440: Import declaration conflicts with local declaration of 'setupInstructorRoutes'.
+src/api/instructor/applications.ts(23,13): error TS2739: Type '{}' is missing the following properties from type 'CreateApplicationRequest': bio, qualifications, specialization, years_of_experience
+src/api/instructor/applications.ts(93,17): error TS2345: Argument of type 'string' is not assignable to parameter of type 'string[]'.
+src/api/instructor/applications.ts(107,17): error TS2345: Argument of type 'string' is not assignable to parameter of type 'string[]'.
+src/api/instructor/applications.ts(121,17): error TS2345: Argument of type 'string' is not assignable to parameter of type 'string[]'.
+src/api/instructor/applications.ts(125,13): error TS2741: Property 'status' is missing in type '{}' but required in type 'ReviewApplicationRequest'.
+src/api/instructor/applications.ts(178,17): error TS2345: Argument of type 'string' is not assignable to parameter of type 'string[]'.
+src/api/instructor/applications.ts(237,17): error TS2345: Argument of type 'string' is not assignable to parameter of type 'string[]'.
+src/api/instructor/applications.ts(263,13): error TS2739: Type '{}' is missing the following properties from type 'CreateApplicationRequest': bio, qualifications, specialization, years_of_experience
+src/api/instructor/management.ts(74,11): error TS2739: Type '{}' is missing the following properties from type 'CreateInstructorRequest': bio, qualifications, specialization, years_of_experience
+src/api/instructor/ratings.ts(47,13): error TS2739: Type '{}' is missing the following properties from type 'CreateRatingRequest': instructor_id, course_id, rating
+src/api/instructor/ratings.ts(93,13): error TS2339: Property 'rating' does not exist on type '{}'.
+src/api/instructor/ratings.ts(93,21): error TS2339: Property 'comment' does not exist on type '{}'.
+src/api/job-routes.ts(97,41): error TS2339: Property 'count' does not exist on type 'unknown'.
+src/api/job-routes.ts(111,7): error TS2322: Type 'unknown[]' is not assignable to type 'Job[]'.
+  Type '{}' is missing the following properties from type 'Job': id, employer_id, title, description, and 9 more.
+src/api/job-routes.ts(174,10): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(path: string, middleware: Middleware, handler: RouteHandler): void', gave the following error.
+    Argument of type 'Middleware[]' is not assignable to parameter of type 'RouteHandler'.
+      Type 'Middleware[]' provides no match for the signature '(req: ApiRequest): Promise<ApiResponse<unknown>>'.
+  Overload 2 of 3, '(path: string, middlewares: Middleware[], handler: RouteHandler): void', gave the following error.
+    Argument of type '(req: ApiRequest) => Promise<ApiResponse>' is not assignable to parameter of type 'Middleware[]'.
+src/api/jobs/applications.ts(33,15): error TS2741: Property 'job_id' is missing in type '{}' but required in type 'CreateJobApplicationRequest'.
+src/api/jobs/management.ts(159,13): error TS2739: Type '{}' is missing the following properties from type 'CreateJobRequest': title, description, company_name, location, job_type
+src/api/support-routes.ts(7,10): error TS2440: Import declaration conflicts with local declaration of 'setupSupportRoutes'.
+src/api/support/bookings.ts(83,53): error TS2339: Property 'notes' does not exist on type 'CreateBookingRequest'.
+src/api/support/bookings.ts(102,53): error TS2339: Property 'findConflictingBookings' does not exist on type 'VenueBookingRepository'.
+src/api/support/bookings.ts(123,48): error TS2345: Argument of type '{ venueId: number; userId: number; startTime: Date; endTime: Date; purpose: string; notes: any; status: string; createdAt: Date; updatedAt: Date; }' is not assignable to parameter of type 'Omit<VenueBooking, "id" | "createdAt" | "updatedAt">'.
+  Property 'bookingDate' is missing in type '{ venueId: number; userId: number; startTime: Date; endTime: Date; purpose: string; notes: any; status: string; createdAt: Date; updatedAt: Date; }' but required in type 'Omit<VenueBooking, "id" | "createdAt" | "updatedAt">'.
+src/api/support/bookings.ts(139,44): error TS2339: Property 'notes' does not exist on type 'UpdateBookingRequest'.
+src/api/support/bookings.ts(154,55): error TS2339: Property 'findConflictingBookings' does not exist on type 'VenueBookingRepository'.
+src/api/support/bookings.ts(169,33): error TS2339: Property 'notes' does not exist on type 'VenueBooking'.
+src/api/support/bookings.ts(174,66): error TS2345: Argument of type '{ startTime: string | Date; endTime: string | Date; purpose: string; notes: any; status: "completed" | "pending" | "cancelled" | "confirmed"; updatedAt: Date; }' is not assignable to parameter of type 'Partial<Omit<VenueBooking, "id" | "createdAt">>'.
+  Types of property 'startTime' are incompatible.
+    Type 'string | Date' is not assignable to type 'string'.
+      Type 'Date' is not assignable to type 'string'.
+src/api/support/bookings.ts(211,66): error TS2345: Argument of type '{ status: string; updatedAt: Date; }' is not assignable to parameter of type 'Partial<Omit<VenueBooking, "id" | "createdAt">>'.
+  Types of property 'status' are incompatible.
+    Type 'string' is not assignable to type '"completed" | "pending" | "cancelled" | "confirmed"'.
+src/api/support/bookings.ts(268,44): error TS2339: Property 'getVenueAvailability' does not exist on type 'VenueBookingRepository'.
+src/api/support/bookings.ts(280,39): error TS2339: Property 'getBookingStats' does not exist on type 'VenueBookingRepository'.
+src/api/support/developments.ts(91,9): error TS2339: Property 'objectives' does not exist on type 'CreateDevelopmentRequest'.
+src/api/support/developments.ts(94,9): error TS2339: Property 'resources' does not exist on type 'CreateDevelopmentRequest'.
+src/api/support/developments.ts(95,9): error TS2339: Property 'milestones' does not exist on type 'CreateDevelopmentRequest'.
+src/api/support/developments.ts(117,56): error TS2345: Argument of type '{ userId: number; developmentType: "training" | "certification" | "mentorship" | "research"; title: string; description: string; objectives: any; startDate: Date; endDate: Date; ... 4 more ...; updatedAt: Date; }' is not assignable to parameter of type 'Omit<InstructorDevelopment, "id" | "createdAt" | "updatedAt">'.
+  Type '{ userId: number; developmentType: "training" | "certification" | "mentorship" | "research"; title: string; description: string; objectives: any; startDate: Date; endDate: Date; ... 4 more ...; updatedAt: Date; }' is missing the following properties from type 'Omit<InstructorDevelopment, "id" | "createdAt" | "updatedAt">': cost, fundingSource
+src/api/support/developments.ts(136,9): error TS2339: Property 'objectives' does not exist on type 'UpdateDevelopmentRequest'.
+src/api/support/developments.ts(139,9): error TS2339: Property 'resources' does not exist on type 'UpdateDevelopmentRequest'.
+src/api/support/developments.ts(140,9): error TS2339: Property 'milestones' does not exist on type 'UpdateDevelopmentRequest'.
+src/api/support/developments.ts(156,47): error TS2339: Property 'objectives' does not exist on type 'InstructorDevelopment'.
+src/api/support/developments.ts(159,45): error TS2339: Property 'resources' does not exist on type 'InstructorDevelopment'.
+src/api/support/developments.ts(160,47): error TS2339: Property 'milestones' does not exist on type 'InstructorDevelopment'.
+src/api/support/developments.ts(199,45): error TS2339: Property 'milestones' does not exist on type 'InstructorDevelopment'.
+src/api/support/developments.ts(260,78): error TS2345: Argument of type '{ status: string; completionNotes: string; completedAt: Date; updatedAt: Date; }' is not assignable to parameter of type 'Partial<Omit<InstructorDevelopment, "id" | "createdAt">>'.
+  Types of property 'status' are incompatible.
+    Type 'string' is not assignable to type '"in_progress" | "completed" | "cancelled" | "planned"'.
+src/api/support/developments.ts(299,43): error TS2339: Property 'getDevelopmentStats' does not exist on type 'InstructorDevelopmentRepository'.
+src/api/support/recommendations.ts(86,33): error TS2339: Property 'reason' does not exist on type 'CreateRecommendationRequest'.
+src/api/support/recommendations.ts(86,51): error TS2339: Property 'deadline' does not exist on type 'CreateRecommendationRequest'.
+src/api/support/recommendations.ts(86,61): error TS2339: Property 'notes' does not exist on type 'CreateRecommendationRequest'.
+src/api/support/recommendations.ts(105,62): error TS2345: Argument of type '{ userId: number; courseId: number; reason: any; priority: "medium" | "high" | "low"; deadline: Date; notes: any; status: string; createdAt: Date; updatedAt: Date; }' is not assignable to parameter of type 'Omit<RetrainingRecommendation, "id" | "createdAt" | "updatedAt">'.
+  Type '{ userId: number; courseId: number; reason: any; priority: "medium" | "high" | "low"; deadline: Date; notes: any; status: string; createdAt: Date; updatedAt: Date; }' is missing the following properties from type 'Omit<RetrainingRecommendation, "id" | "createdAt" | "updatedAt">': expiresAt, recommendationReason, recommendedAt
+src/api/support/recommendations.ts(121,15): error TS2339: Property 'reason' does not exist on type 'UpdateRecommendationRequest'.
+src/api/support/recommendations.ts(121,23): error TS2339: Property 'priority' does not exist on type 'UpdateRecommendationRequest'.
+src/api/support/recommendations.ts(121,33): error TS2339: Property 'deadline' does not exist on type 'UpdateRecommendationRequest'.
+src/api/support/recommendations.ts(121,43): error TS2339: Property 'notes' does not exist on type 'UpdateRecommendationRequest'.
+src/api/support/recommendations.ts(134,42): error TS2339: Property 'reason' does not exist on type 'RetrainingRecommendation'.
+src/api/support/recommendations.ts(136,66): error TS2339: Property 'deadline' does not exist on type 'RetrainingRecommendation'.
+src/api/support/recommendations.ts(137,40): error TS2339: Property 'notes' does not exist on type 'RetrainingRecommendation'.
+src/api/support/recommendations.ts(184,87): error TS2345: Argument of type '{ status: string; acceptedAt: Date; updatedAt: Date; }' is not assignable to parameter of type 'Partial<Omit<RetrainingRecommendation, "id" | "createdAt">>'.
+  Types of property 'status' are incompatible.
+    Type 'string' is not assignable to type '"completed" | "pending" | "accepted" | "declined"'.
+src/api/support/recommendations.ts(228,87): error TS2345: Argument of type '{ status: string; rejectionReason: string; rejectedAt: Date; updatedAt: Date; }' is not assignable to parameter of type 'Partial<Omit<RetrainingRecommendation, "id" | "createdAt">>'.
+  Types of property 'status' are incompatible.
+    Type 'string' is not assignable to type '"completed" | "pending" | "accepted" | "declined"'.
+src/api/support/recommendations.ts(267,46): error TS2339: Property 'getRecommendationStats' does not exist on type 'RetrainingRecommendationRepository'.
+src/api/support/venues.ts(78,9): error TS2339: Property 'hourlyRate' does not exist on type 'CreateVenueRequest'.
+src/api/support/venues.ts(79,9): error TS2339: Property 'isActive' does not exist on type 'CreateVenueRequest'.
+src/api/support/venues.ts(98,44): error TS2345: Argument of type '{ name: string; location: string; capacity: number; facilities: string[]; description: string; hourlyRate: any; isActive: any; createdAt: Date; updatedAt: Date; }' is not assignable to parameter of type 'Omit<PracticeVenue, "id" | "createdAt" | "updatedAt">'.
+  Property 'availableHours' is missing in type '{ name: string; location: string; capacity: number; facilities: string[]; description: string; hourlyRate: any; isActive: any; createdAt: Date; updatedAt: Date; }' but required in type 'Omit<PracticeVenue, "id" | "createdAt" | "updatedAt">'.
+src/api/support/venues.ts(120,9): error TS2339: Property 'hourlyRate' does not exist on type 'UpdateVenueRequest'.
+src/api/support/venues.ts(139,67): error TS2339: Property 'hourlyRate' does not exist on type 'PracticeVenue'.
+src/api/support/venues.ts(214,37): error TS2339: Property 'getVenueStats' does not exist on type 'PracticeVenueRepository'.
+src/api/ttqs/analytics.ts(59,51): error TS2339: Property 'getPerformanceMetrics' does not exist on type 'TTQSAnalyticsRepository'.
+src/api/ttqs/analytics.ts(96,53): error TS2339: Property 'getTrainingEffectiveness' does not exist on type 'TTQSAnalyticsRepository'.
+src/api/ttqs/analytics.ts(116,52): error TS2339: Property 'getSatisfactionAnalysis' does not exist on type 'TTQSAnalyticsRepository'.
+src/api/ttqs/analytics.ts(136,50): error TS2339: Property 'getEmploymentSuccessRate' does not exist on type 'TTQSAnalyticsRepository'.
+src/api/ttqs/analytics.ts(156,44): error TS2339: Property 'getCostEffectivenessAnalysis' does not exist on type 'TTQSAnalyticsRepository'.
+src/api/ttqs/analytics.ts(183,47): error TS2339: Property 'getComparisonAnalysis' does not exist on type 'TTQSAnalyticsRepository'.
+src/api/ttqs/analytics.ts(207,48): error TS2339: Property 'getForecastAnalysis' does not exist on type 'TTQSAnalyticsRepository'.
+src/api/ttqs/analytics.ts(235,48): error TS2339: Property 'generateCustomReport' does not exist on type 'TTQSAnalyticsRepository'.
+src/api/ttqs/documents.ts(61,44): error TS2339: Property 'searchDocuments' does not exist on type 'TTQSDocumentRepository'.
+src/api/ttqs/documents.ts(183,26): error TS2339: Property 'incrementDownloadCount' does not exist on type 'TTQSDocumentRepository'.
+src/api/ttqs/documents.ts(200,40): error TS2339: Property 'getDocumentStats' does not exist on type 'TTQSDocumentRepository'.
+src/api/ttqs/reports.ts(63,15): error TS2339: Property 'plan_id' does not exist on type 'ReportGenerationParams'.
+src/api/ttqs/reports.ts(63,24): error TS2339: Property 'report_type' does not exist on type 'ReportGenerationParams'.
+src/api/ttqs/reports.ts(72,60): error TS2322: Type '{ start: string; end: string; } | "12m"' is not assignable to type '"daily" | "weekly" | "monthly" | "yearly"'.
+  Type '{ start: string; end: string; }' is not assignable to type '"daily" | "weekly" | "monthly" | "yearly"'.
+src/api/ttqs/reports.ts(73,51): error TS2339: Property 'getPerformanceMetrics' does not exist on type 'TTQSAnalyticsRepository'.
+src/api/ttqs/reports.ts(81,9): error TS2322: Type 'string | { start: string; end: string; }' is not assignable to type '{ start: Date; end: Date; }'.
+  Type 'string' is not assignable to type '{ start: Date; end: Date; }'.
+src/api/ttqs/reports.ts(85,11): error TS2353: Object literal may only specify known properties, and 'total_trainees' does not exist in type '{ totalPlans: number; activePlans: number; completedPlans: number; totalDocuments: number; complianceRate: number; }'.
+src/api/ttqs/reports.ts(85,41): error TS2339: Property 'total_trainees' does not exist on type 'TTQSDashboardData'.
+src/api/ttqs/reports.ts(86,42): error TS2339: Property 'completion_rate' does not exist on type 'TTQSDashboardData'.
+src/api/ttqs/reports.ts(87,45): error TS2339: Property 'satisfaction_score' does not exist on type 'TTQSDashboardData'.
+src/api/ttqs/reports.ts(88,42): error TS2339: Property 'employment_rate' does not exist on type 'TTQSDashboardData'.
+src/api/ttqs/reports.ts(92,9): error TS2739: Type 'TTQSCompliance[]' is missing the following properties from type '{ compliant: number; nonCompliant: number; pending: number; }': compliant, nonCompliant, pending
+src/api/ttqs/reports.ts(95,29): error TS2339: Property 'satisfaction_score' does not exist on type 'TTQSDashboardData'.
+src/api/ttqs/reports.ts(96,29): error TS2339: Property 'completion_rate' does not exist on type 'TTQSDashboardData'.
+src/api/ttqs/reports.ts(97,29): error TS2339: Property 'employment_rate' does not exist on type 'TTQSDashboardData'.
+src/api/ttqs/reports.ts(98,29): error TS2339: Property 'performance_score' does not exist on type 'TTQSDashboardData'.
+src/utils/test-database.ts(105,28): error TS2532: Object is possibly 'undefined'.
+src/utils/test-database.ts(110,28): error TS2532: Object is possibly 'undefined'.

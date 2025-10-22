@@ -7,8 +7,8 @@ interface PreloadConfig {
 }
 
 class RoutePreloader {
-  private router: Router
-  private preloadedRoutes = new Set<string>()
+  private readonly router: Router
+  private readonly preloadedRoutes = new Set<string>()
   private config: PreloadConfig[] = []
 
   constructor(router: Router) {

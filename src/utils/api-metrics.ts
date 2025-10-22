@@ -13,7 +13,7 @@ interface ApiMetrics {
 }
 
 class ApiMetricsCollector {
-  private metrics: Map<string, ApiMetrics> = new Map()
+  private readonly metrics: Map<string, ApiMetrics> = new Map()
   private readonly maxMetrics = 1000 // Keep only last 1000 requests
 
   startRequest(requestId: string, method: string, url: string): void {
@@ -102,7 +102,7 @@ class ApiMetricsCollector {
 
     if (completedMetrics.length === 0) return 0
 
-    const totalDuration = completedMetrics.reduce((sum, m) => sum + (m.duration || 0), 0)
+    const totalDuration = completedMetrics.reduce((sum, m) => sum + (m.duration ?? 0), 0)
     return totalDuration / completedMetrics.length
   }
 
@@ -134,7 +134,7 @@ export function setupApiMetrics(axiosInstance: any): void {
       apiMetricsCollector.startRequest(
         requestId,
         config.method?.toUpperCase() || 'GET',
-        config.url || ''
+        config.url ?? ''
       )
 
       return config
@@ -156,7 +156,7 @@ export function setupApiMetrics(axiosInstance: any): void {
     (error: any) => {
       const requestId = error.config?.metadata?.requestId
       if (requestId) {
-        apiMetricsCollector.endRequest(requestId, error.response?.status || 0, false, error.message)
+        apiMetricsCollector.endRequest(requestId, error.response?.status ?? 0, false, error.message)
       }
       return Promise.reject(error)
     }
@@ -166,7 +166,7 @@ export function setupApiMetrics(axiosInstance: any): void {
 // Performance monitoring utilities
 export class PerformanceMonitor {
   private static instance: PerformanceMonitor
-  private metrics: Map<string, number> = new Map()
+  private readonly metrics: Map<string, number> = new Map()
 
   static getInstance(): PerformanceMonitor {
     if (!PerformanceMonitor.instance) {

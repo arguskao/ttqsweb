@@ -33,7 +33,7 @@ async function createDevServer() {
     }
 
     try {
-      const parsedUrl = parse(req.url || '', true)
+      const parsedUrl = parse(req.url ?? '', true)
       const pathname = parsedUrl.pathname || '/'
 
       // Only handle API routes
@@ -77,7 +77,7 @@ async function createDevServer() {
         if (typeof value === 'string') {
           headers[key] = value
         } else if (Array.isArray(value)) {
-          headers[key] = value[0] || ''
+          headers[key] = value[0] ?? ''
         }
       }
 

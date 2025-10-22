@@ -51,9 +51,9 @@
                       <span class="icon">
                         <i class="fas fa-star"></i>
                       </span>
-                      <span>{{ (instructor.average_rating || 0).toFixed(1) }}/5.0</span>
+                      <span>{{ (instructor.average_rating ?? 0).toFixed(1) }}/5.0</span>
                     </span>
-                    <span class="tag is-info">{{ instructor.total_ratings || 0 }} 評價</span>
+                    <span class="tag is-info">{{ instructor.total_ratings ?? 0 }} 評價</span>
                   </div>
 
                   <div class="content">
@@ -77,16 +77,16 @@
                 <div class="card-content">
                   <div class="field">
                     <label class="label">授課數量</label>
-                    <p class="is-size-4">{{ stats?.total_courses || 0 }} 門課程</p>
+                    <p class="is-size-4">{{ stats?.total_courses ?? 0 }} 門課程</p>
                   </div>
                   <div class="field">
                     <label class="label">學員人數</label>
-                    <p class="is-size-4">{{ stats?.total_students || 0 }} 位學員</p>
+                    <p class="is-size-4">{{ stats?.total_students ?? 0 }} 位學員</p>
                   </div>
                   <div class="field">
                     <label class="label">百分制評分</label>
                     <p class="is-size-4">
-                      {{ ((instructor.average_rating || 0) * 20).toFixed(0) }}/100
+                      {{ ((instructor.average_rating ?? 0) * 20).toFixed(0) }}/100
                     </p>
                   </div>
                 </div>
@@ -261,7 +261,7 @@ const loadRatings = async () => {
         limit: ratingsMeta.value.limit
       }
     })
-    ratings.value = response.data?.data || []
+    ratings.value = response.data?.data ?? []
 
     if (response.data?.meta) {
       ratingsMeta.value = response.data.meta

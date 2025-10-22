@@ -236,7 +236,7 @@ const getGroupTypeClass = (type: string) => {
     alumni: 'is-warning',
     study: 'is-primary'
   }
-  return classes[type] || ''
+  return classes[type] ?? ''
 }
 
 watch(activeTab, () => {

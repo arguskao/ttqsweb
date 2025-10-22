@@ -135,7 +135,7 @@ export const createLearningEvaluation: RouteHandler = async (req: ApiRequest) =>
     }
 
     // Calculate improvement rate
-    let improvement_rate = null
+    let improvement_rate: number | null = null
     if (pre_test_score !== null && pre_test_score !== undefined) {
       improvement_rate = ((post_test_score - pre_test_score) / pre_test_score) * 100
     }

@@ -147,7 +147,7 @@ export const FileUploadSchema = z.object({
     .refine(
       file =>
         ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'].includes(
-          file.name.split('.').pop()?.toLowerCase() || ''
+          file.name.split('.').pop()?.toLowerCase() ?? ''
         ),
       '只支持 PDF、DOC、DOCX、JPG、JPEG、PNG 格式'
     ),

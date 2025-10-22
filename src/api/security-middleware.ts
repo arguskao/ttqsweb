@@ -1,5 +1,5 @@
 // 安全中間件和防護措施
-import type { Request, Response, NextFunction } from 'express'
+import type { ApiRequest, ApiResponse, Middleware } from './types'
 
 // 速率限制配置
 export interface RateLimitConfig {
@@ -11,28 +11,29 @@ export interface RateLimitConfig {
 }
 
 // CSRF 保護中間件
-export const csrfProtection = (req: Request, res: Response, next: NextFunction) => {
+export const csrfProtection: Middleware = async (req, next) => {
   // 檢查 CSRF token
   const token = req.headers['x-csrf-token'] as string
   const sessionToken = (req as any).session?.csrfToken
 
   // 對於 GET 請求，跳過 CSRF 檢查
   if (req.method === 'GET') {
-    return next()
+    return await next()
   }
 
   if (!token || token !== sessionToken) {
-    return res.status(403).json({
+    return {
       success: false,
       error: {
         code: 'CSRF_TOKEN_MISMATCH',
         message: 'CSRF token 驗證失敗',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        requestId: 'unknown'
       }
-    })
+    }
   }
 
-  next()
+  return await next()
 }
 
 // 生成 CSRF token
@@ -41,24 +42,34 @@ export const generateCSRFToken = (): string => {
 }
 
 // 安全頭部中間件
-export const securityHeaders = (req: Request, res: Response, next: NextFunction) => {
-  // 設置安全頭部
-  res.setHeader('X-Content-Type-Options', 'nosniff')
-  res.setHeader('X-Frame-Options', 'DENY')
-  res.setHeader('X-XSS-Protection', '1; mode=block')
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
-  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
+export const securityHeaders: Middleware = async (req, next) => {
+  const response = await next()
 
-  // HSTS (僅在 HTTPS 環境下)
-  if (req.secure) {
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  // 設置安全頭部
+  const securityHeaders = {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-XSS-Protection': '1; mode=block',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'geolocation=(), microphone=(), camera=()'
   }
 
-  next()
+  // HSTS (僅在 HTTPS 環境下)
+  if (req.url?.startsWith('https://')) {
+    securityHeaders['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+  }
+
+  return {
+    ...response,
+    headers: {
+      ...response.headers,
+      ...securityHeaders
+    }
+  }
 }
 
 // Content Security Policy 中間件
-export const cspMiddleware = (req: Request, res: Response, next: NextFunction) => {
+export const cspMiddleware: Middleware = async (req, next) => {
   const cspDirectives = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
@@ -71,45 +82,54 @@ export const cspMiddleware = (req: Request, res: Response, next: NextFunction) =
     "form-action 'self'"
   ].join('; ')
 
-  res.setHeader('Content-Security-Policy', cspDirectives)
-  next()
+  const response = await next()
+
+  return {
+    ...response,
+    headers: {
+      ...response.headers,
+      'Content-Security-Policy': cspDirectives
+    }
+  }
 }
 
 // 輸入驗證中間件
-export const inputValidation = (req: Request, res: Response, next: NextFunction) => {
+export const inputValidation: Middleware = async (req, next) => {
   // 檢查請求體大小
   const contentLength = parseInt(req.headers['content-length'] || '0')
   const maxSize = 10 * 1024 * 1024 // 10MB
 
   if (contentLength > maxSize) {
-    return res.status(413).json({
+    return {
       success: false,
       error: {
         code: 'PAYLOAD_TOO_LARGE',
         message: '請求體過大',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        requestId: 'unknown'
       }
-    })
+    }
   }
 
   // 檢查 Content-Type
   const contentType = req.headers['content-type']
   if (req.method !== 'GET' && req.method !== 'HEAD' && !contentType?.includes('application/json')) {
-    return res.status(415).json({
+    return {
       success: false,
       error: {
         code: 'UNSUPPORTED_MEDIA_TYPE',
         message: '不支持的媒體類型',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        requestId: 'unknown'
       }
-    })
+    }
   }
 
-  next()
+  return await next()
 }
 
 // SQL 注入防護中間件
-export const sqlInjectionProtection = (req: Request, res: Response, next: NextFunction) => {
+export const sqlInjectionProtection: Middleware = async (req, next) => {
   const sqlInjectionPatterns = [
     /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/gi,
     /(\b(OR|AND)\s+\d+\s*=\s*\d+)/gi,
@@ -120,173 +140,154 @@ export const sqlInjectionProtection = (req: Request, res: Response, next: NextFu
     /(UPDATE\s+SET)/gi
   ]
 
-  const checkForSQLInjection = (obj: any): boolean => {
-    if (typeof obj === 'string') {
-      return sqlInjectionPatterns.some(pattern => pattern.test(obj))
-    }
-
-    if (typeof obj === 'object' && obj !== null) {
-      return Object.values(obj).some(value => checkForSQLInjection(value))
-    }
-
-    return false
-  }
-
-  // 檢查請求體、查詢參數和路徑參數
-  if (
-    checkForSQLInjection(req.body) ||
-    checkForSQLInjection(req.query) ||
-    checkForSQLInjection(req.params)
-  ) {
-    return res.status(400).json({
-      success: false,
-      error: {
-        code: 'INVALID_INPUT',
-        message: '檢測到潛在的 SQL 注入攻擊',
-        timestamp: new Date().toISOString()
+  // 檢查查詢參數
+  const queryString = JSON.stringify(req.query ?? {})
+  for (const pattern of sqlInjectionPatterns) {
+    if (pattern.test(queryString)) {
+      return {
+        success: false,
+        error: {
+          code: 'SQL_INJECTION_DETECTED',
+          message: '檢測到潛在的 SQL 注入攻擊',
+          timestamp: new Date().toISOString(),
+          requestId: 'unknown'
+        }
       }
-    })
+    }
   }
 
-  next()
+  // 檢查請求體
+  if (req.body) {
+    const bodyString = JSON.stringify(req.body)
+    for (const pattern of sqlInjectionPatterns) {
+      if (pattern.test(bodyString)) {
+        return {
+          success: false,
+          error: {
+            code: 'SQL_INJECTION_DETECTED',
+            message: '檢測到潛在的 SQL 注入攻擊',
+            timestamp: new Date().toISOString(),
+            requestId: 'unknown'
+          }
+        }
+      }
+    }
+  }
+
+  return await next()
 }
 
 // XSS 防護中間件
-export const xssProtection = (req: Request, res: Response, next: NextFunction) => {
+export const xssProtection: Middleware = async (req, next) => {
   const xssPatterns = [
     /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+    /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
+    /<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi,
+    /<embed\b[^<]*>/gi,
     /javascript:/gi,
-    /on\w+\s*=/gi,
-    /<iframe/gi,
-    /<object/gi,
-    /<embed/gi,
-    /<link/gi,
-    /<meta/gi
+    /on\w+\s*=/gi
   ]
 
-  const checkForXSS = (obj: any): boolean => {
-    if (typeof obj === 'string') {
-      return xssPatterns.some(pattern => pattern.test(obj))
-    }
-
-    if (typeof obj === 'object' && obj !== null) {
-      return Object.values(obj).some(value => checkForXSS(value))
-    }
-
-    return false
-  }
-
-  if (checkForXSS(req.body) || checkForXSS(req.query)) {
-    return res.status(400).json({
-      success: false,
-      error: {
-        code: 'INVALID_INPUT',
-        message: '檢測到潛在的 XSS 攻擊',
-        timestamp: new Date().toISOString()
+  // 檢查查詢參數
+  const queryString = JSON.stringify(req.query ?? {})
+  for (const pattern of xssPatterns) {
+    if (pattern.test(queryString)) {
+      return {
+        success: false,
+        error: {
+          code: 'XSS_DETECTED',
+          message: '檢測到潛在的 XSS 攻擊',
+          timestamp: new Date().toISOString(),
+          requestId: 'unknown'
+        }
       }
-    })
+    }
   }
 
-  next()
+  // 檢查請求體
+  if (req.body) {
+    const bodyString = JSON.stringify(req.body)
+    for (const pattern of xssPatterns) {
+      if (pattern.test(bodyString)) {
+        return {
+          success: false,
+          error: {
+            code: 'XSS_DETECTED',
+            message: '檢測到潛在的 XSS 攻擊',
+            timestamp: new Date().toISOString(),
+            requestId: 'unknown'
+          }
+        }
+      }
+    }
+  }
+
+  return await next()
 }
 
 // 請求日誌中間件
-export const requestLogging = (req: Request, res: Response, next: NextFunction) => {
+export const requestLogging: Middleware = async (req, next) => {
   const startTime = Date.now()
-  const requestId =
-    req.headers['x-request-id'] || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  const requestId = require('crypto').randomBytes(16).toString('hex')
 
-  // 添加請求 ID 到響應頭
-  res.setHeader('X-Request-ID', requestId)
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - Request ID: ${requestId}`)
 
-  // 記錄請求開始
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - Request ID: ${requestId}`)
+  const response = await next()
+  const duration = Date.now() - startTime
 
-  // 監聽響應完成
-  res.on('finish', () => {
-    const duration = Date.now() - startTime
-    const logLevel = res.statusCode >= 400 ? 'ERROR' : 'INFO'
+  console.log(
+    `[${new Date().toISOString()}] ${req.method} ${req.url} - ${response.success ? 'SUCCESS' : 'ERROR'} - ${duration}ms - Request ID: ${requestId}`
+  )
 
-    console.log(
-      `[${new Date().toISOString()}] ${logLevel} ${req.method} ${req.path} ${res.statusCode} - ${duration}ms - Request ID: ${requestId}`
-    )
-  })
-
-  next()
+  return {
+    ...response,
+    meta: {
+      ...response.meta,
+      requestId,
+      duration: `${duration}ms`
+    }
+  }
 }
 
-// 錯誤處理中間件
-export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error('Unhandled error:', err)
+// 錯誤處理函數 (不是中間件，因為它處理錯誤)
+export const handleError = (error: any, req: ApiRequest): ApiResponse => {
+  console.error('Unhandled error:', error)
 
   // 根據錯誤類型返回適當的響應
-  if (err.name === 'ValidationError') {
-    return res.status(400).json({
+  if (error.name === 'ValidationError') {
+    return {
       success: false,
       error: {
         code: 'VALIDATION_ERROR',
-        message: '數據驗證失敗',
-        details: err.details,
-        timestamp: new Date().toISOString()
+        message: error.message || '驗證失敗',
+        timestamp: new Date().toISOString(),
+        requestId: 'unknown'
       }
-    })
+    }
   }
 
-  if (err.name === 'UnauthorizedError') {
-    return res.status(401).json({
+  if (error.name === 'UnauthorizedError') {
+    return {
       success: false,
       error: {
         code: 'UNAUTHORIZED',
-        message: '未授權訪問',
-        timestamp: new Date().toISOString()
+        message: error.message || '未授權訪問',
+        timestamp: new Date().toISOString(),
+        requestId: 'unknown'
       }
-    })
-  }
-
-  if (err.name === 'ForbiddenError') {
-    return res.status(403).json({
-      success: false,
-      error: {
-        code: 'FORBIDDEN',
-        message: '權限不足',
-        timestamp: new Date().toISOString()
-      }
-    })
+    }
   }
 
   // 默認錯誤響應
-  res.status(500).json({
+  return {
     success: false,
     error: {
       code: 'INTERNAL_SERVER_ERROR',
-      message: '服務器內部錯誤',
-      timestamp: new Date().toISOString()
+      message: '內部服務器錯誤',
+      timestamp: new Date().toISOString(),
+      requestId: 'unknown'
     }
-  })
+  }
 }
 
-// 組合所有安全中間件
-export const securityMiddleware = [
-  securityHeaders,
-  cspMiddleware,
-  inputValidation,
-  sqlInjectionProtection,
-  xssProtection,
-  requestLogging
-]
-
-// 認證相關的安全中間件
-export const authSecurityMiddleware = [csrfProtection, ...securityMiddleware]
-
-// 導出所有中間件
-export {
-  csrfProtection,
-  generateCSRFToken,
-  securityHeaders,
-  cspMiddleware,
-  inputValidation,
-  sqlInjectionProtection,
-  xssProtection,
-  requestLogging,
-  errorHandler
-}
+// 所有中間件已經通過 export const 導出，不需要重複導出

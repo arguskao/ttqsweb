@@ -85,8 +85,15 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       // 簡單的 JWT 解析 (不驗證簽名)
-      const part = token.value.split('.')[1] || ''
+      const part = token.value.split('.')[1] ?? ''
       const payload = JSON.parse(atob(String(part)))
+
+      // 如果沒有 exp 字段，視為已過期
+      if (!payload.exp) {
+        console.warn('[Auth] Token 沒有過期時間，視為已過期')
+        return true
+      }
+
       const now = Math.floor(Date.now() / 1000)
       return payload.exp < now
     } catch {

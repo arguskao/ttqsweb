@@ -17,6 +17,7 @@
 
 <script setup lang="ts">
 import CourseCard from './CourseCard.vue'
+
 import type { Course } from '@/types'
 
 const courses: Course[] = [
@@ -24,37 +25,37 @@ const courses: Course[] = [
     id: 1,
     title: '藥學入門',
     description: '基礎藥學知識課程',
-    courseType: 'basic',
-    durationHours: 40,
+    course_type: 'basic',
+    duration_hours: 40,
     price: 5000,
-    instructorId: 1,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    instructor_id: 1,
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 2,
     title: '保健食品專業知識',
     description: '進階保健食品課程',
-    courseType: 'advanced',
-    durationHours: 60,
+    course_type: 'advanced',
+    duration_hours: 60,
     price: 8000,
-    instructorId: 1,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    instructor_id: 1,
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 3,
     title: '藥局實習',
     description: '實際藥局環境實習',
-    courseType: 'internship',
-    durationHours: 120,
+    course_type: 'internship',
+    duration_hours: 120,
     price: 12000,
-    instructorId: 1,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    instructor_id: 1,
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   }
 ]
 
@@ -102,12 +103,12 @@ const handleRegisterNow = (course: Course) => {
   .courses-section {
     padding: 40px 0;
   }
-  
+
   .section-title {
     font-size: 2rem;
     margin-bottom: 32px;
   }
-  
+
   .courses-grid {
     grid-template-columns: 1fr;
     gap: 24px;

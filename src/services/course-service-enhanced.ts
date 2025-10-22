@@ -20,7 +20,7 @@ export class CourseService implements ICourseService {
   }
 
   async getCourses(filters?: CourseFilters): Promise<Course[]> {
-    const cacheKey = `courses_${JSON.stringify(filters || {})}`
+    const cacheKey = `courses_${JSON.stringify(filters ?? {})}`
 
     // 嘗試從緩存獲取
     const cached = this.cacheService.get<Course[]>(cacheKey)

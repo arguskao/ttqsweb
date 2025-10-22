@@ -25,7 +25,7 @@ export class Analytics {
     document.head.appendChild(script1)
 
     // Initialize gtag
-    window.dataLayer = window.dataLayer || []
+    window.dataLayer = window.dataLayer ?? []
     window.gtag = function () {
       window.dataLayer.push(arguments)
     }

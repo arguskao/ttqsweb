@@ -14,7 +14,7 @@
                 <span class="icon">
                   <i class="fas fa-download"></i>
                 </span>
-                <span>{{ document.downloadCount || 0 }} 次</span>
+                <span>{{ document.downloadCount ?? 0 }} 次</span>
               </span>
             </div>
           </div>
@@ -109,7 +109,7 @@ const emit = defineEmits<{
 }>()
 
 const fileIconClass = computed(() => {
-  const type = props.document.fileType?.toLowerCase() || ''
+  const type = props.document.fileType?.toLowerCase() ?? ''
 
   if (type.includes('pdf')) return 'fas fa-file-pdf'
   if (type.includes('word') || type.includes('doc')) return 'fas fa-file-word'
@@ -122,7 +122,7 @@ const fileIconClass = computed(() => {
 })
 
 const fileTypeLabel = computed(() => {
-  const type = props.document.fileType?.toLowerCase() || ''
+  const type = props.document.fileType?.toLowerCase() ?? ''
 
   if (type.includes('pdf')) return 'PDF'
   if (type.includes('word') || type.includes('doc')) return 'Word'

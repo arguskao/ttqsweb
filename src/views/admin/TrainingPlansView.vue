@@ -201,8 +201,9 @@
 </template>
 
 <script setup lang="ts">
-import api from '@/services/api'
 import { ref, onMounted } from 'vue'
+
+import api from '@/services/api'
 
 const plans = ref<any[]>([])
 const currentPage = ref(1)

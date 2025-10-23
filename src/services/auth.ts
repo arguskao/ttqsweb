@@ -5,7 +5,7 @@ import { ValidationError, AuthenticationError, ConflictError } from '../api/erro
 import { getDatabasePool } from '../config/database'
 
 // User types
-export type UserType = 'job_seeker' | 'employer'
+export type UserType = 'admin' | 'instructor' | 'employer' | 'job_seeker'
 
 // Registration data interface
 export interface RegisterData {
@@ -140,8 +140,8 @@ export const registerUser = async (data: RegisterData): Promise<{ user: User; to
     throw new ValidationError(passwordValidation.message!)
   }
 
-  if (!['job_seeker', 'employer'].includes(userType)) {
-    throw new ValidationError('用戶類型必須是求職者或雇主')
+  if (!['admin', 'instructor', 'employer', 'job_seeker'].includes(userType)) {
+    throw new ValidationError('用戶類型必須是管理員、講師、雇主或求職者')
   }
 
   const pool = getDatabasePool()

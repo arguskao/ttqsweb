@@ -60,12 +60,12 @@
                       <span
                         class="tag is-medium"
                         :class="{
-                          'is-warning': application.application_status === 'pending',
-                          'is-success': application.application_status === 'approved',
-                          'is-danger': application.application_status === 'rejected'
+                          'is-warning': application.status === 'pending',
+                          'is-success': application.status === 'approved',
+                          'is-danger': application.status === 'rejected'
                         }"
                       >
-                        {{ statusText(application.application_status) }}
+                        {{ statusText(application.status) }}
                       </span>
                       <span v-if="!application.is_active" class="tag is-medium is-dark"
                         >已停用</span
@@ -106,7 +106,7 @@
                 </div>
 
                 <!-- Action buttons -->
-                <div v-if="application.application_status === 'pending'" class="field is-grouped">
+                <div v-if="application.status === 'pending'" class="field is-grouped">
                   <div class="control">
                     <button
                       class="button is-success"
@@ -235,7 +235,7 @@ const loadApplications = async () => {
       params.status = filters.value.status
     }
 
-    const response = await api.get('/instructors', { params })
+    const response = await api.get('/instructor-applications', { params })
     applications.value = response.data?.data ?? []
 
     if (response.data?.meta) {
@@ -259,7 +259,7 @@ const reviewApplication = async (instructorId: number, status: 'approved' | 'rej
 
   try {
     isReviewing.value = true
-    await api.post(`/instructors/${instructorId}/review`, { status })
+    await api.put(`/instructor-applications/${instructorId}/review`, { status })
     alert(status === 'approved' ? '已批准申請' : '已拒絕申請')
     await loadApplications()
   } catch (error: any) {

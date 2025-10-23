@@ -73,6 +73,27 @@
               <span>我的職缺</span>
             </RouterLink>
 
+            <!-- 講師專用功能 -->
+            <RouterLink
+              v-if="isApprovedInstructor"
+              to="/instructor/course-application"
+              class="navbar-item"
+            >
+              <span class="icon"> 👨‍🏫 </span>
+              <span>申請開課</span>
+            </RouterLink>
+
+            <!-- 管理員專用功能 -->
+            <RouterLink v-if="isAdmin" to="/admin/instructor-applications" class="navbar-item">
+              <span class="icon"> 👨‍🏫 </span>
+              <span>講師申請審核</span>
+            </RouterLink>
+
+            <RouterLink v-if="isAdmin" to="/admin/analytics" class="navbar-item">
+              <span class="icon"> 📊 </span>
+              <span>數據分析</span>
+            </RouterLink>
+
             <hr class="navbar-divider" />
 
             <a class="navbar-item" @click="handleLogout">
@@ -87,7 +108,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 
 import { authService } from '@/services/auth-service'
@@ -101,6 +122,9 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
 const user = computed(() => authStore.user)
 const isJobSeeker = computed(() => authStore.isJobSeeker)
 const isEmployer = computed(() => authStore.isEmployer)
+const isInstructor = computed(() => authStore.isInstructor)
+const isAdmin = computed(() => authStore.user?.userType === 'admin')
+const isApprovedInstructor = computed(() => authStore.isApprovedInstructor)
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
@@ -109,6 +133,19 @@ const toggleMenu = () => {
 const closeMenu = () => {
   isMenuOpen.value = false
 }
+
+// 監聽用戶變化，重新檢查講師狀態
+watch(
+  () => user.value?.id,
+  async newUserId => {
+    if (newUserId) {
+      await authStore.checkInstructorStatus()
+    } else {
+      authStore.clearInstructorStatus()
+    }
+  },
+  { immediate: true }
+)
 
 const handleLogout = async () => {
   try {

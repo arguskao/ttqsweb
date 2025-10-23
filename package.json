@@ -20,6 +20,8 @@
     "format:check": "prettier --check src/",
     "format:staged": "prettier --write",
     "migrate": "jiti src/scripts/migrate.ts",
+    "migrate:roles": "jiti src/scripts/migrate-roles-final.ts",
+    "check:env": "jiti src/scripts/check-env.ts",
     "test:db": "jiti src/scripts/test-db.ts",
     "test": "vitest --run",
     "test:run": "vitest --run",

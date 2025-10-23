@@ -24,6 +24,7 @@
         <router-link to="/courses" class="navbar-item">課程</router-link>
         <router-link to="/jobs" class="navbar-item">就業媒合</router-link>
         <router-link to="/documents" class="navbar-item">文件下載</router-link>
+        <router-link to="/instructor/apply" class="navbar-item">講師申請</router-link>
         <router-link to="/community/forum" class="navbar-item">討論區</router-link>
         <router-link to="/community/groups" class="navbar-item">群組</router-link>
         <router-link to="/community/experiences" class="navbar-item">經驗分享</router-link>
@@ -44,7 +45,7 @@
         <div v-else class="navbar-item has-dropdown" :class="{ 'is-active': isUserMenuOpen }">
           <a class="navbar-link" @click="toggleUserMenu">
             <span class="icon">
-              <i class="fas fa-user"></i>
+              <i class="fas fa-user-circle"></i>
             </span>
             <span>{{ currentUser?.firstName }} {{ currentUser?.lastName }}</span>
           </a>
@@ -81,6 +82,44 @@
               <span>職缺管理</span>
             </router-link>
 
+            <!-- 講師專用功能 -->
+            <router-link
+              v-if="isApprovedInstructor"
+              to="/instructor/course-application"
+              class="navbar-item"
+              @click="closeMenus"
+            >
+              <span class="icon">
+                <i class="fas fa-chalkboard-teacher"></i>
+              </span>
+              <span>申請開課</span>
+            </router-link>
+
+            <!-- 管理員專用功能 -->
+            <router-link
+              v-if="currentUser?.userType === 'admin'"
+              to="/admin/instructor-applications"
+              class="navbar-item"
+              @click="closeMenus"
+            >
+              <span class="icon">
+                <i class="fas fa-user-check"></i>
+              </span>
+              <span>講師申請審核</span>
+            </router-link>
+
+            <router-link
+              v-if="currentUser?.userType === 'admin'"
+              to="/admin/analytics"
+              class="navbar-item"
+              @click="closeMenus"
+            >
+              <span class="icon">
+                <i class="fas fa-chart-bar"></i>
+              </span>
+              <span>數據分析</span>
+            </router-link>
+
             <hr class="navbar-divider" />
 
             <a class="navbar-item" @click="handleLogout">
@@ -97,12 +136,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { authService } from '@/services/auth-service'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 // Menu state
 const isMenuOpen = ref(false)
@@ -111,6 +152,7 @@ const isUserMenuOpen = ref(false)
 // Authentication state
 const isAuthenticated = computed(() => authService.isAuthenticated())
 const currentUser = computed(() => authService.getCurrentUser())
+const isApprovedInstructor = computed(() => authStore.isApprovedInstructor)
 
 // Menu functions
 const toggleMenu = () => {
@@ -152,9 +194,26 @@ const handleClickOutside = (event: Event) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
+
+  // 檢查講師狀態 - 每次組件掛載都檢查
+  if (currentUser.value?.id) {
+    await authStore.checkInstructorStatus()
+  }
 })
+
+// 監聽用戶變化，重新檢查講師狀態
+watch(
+  () => currentUser.value?.id,
+  async newUserId => {
+    if (newUserId) {
+      await authStore.checkInstructorStatus()
+    } else {
+      authStore.clearInstructorStatus()
+    }
+  }
+)
 </script>
 
 <style scoped>

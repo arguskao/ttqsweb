@@ -25,8 +25,16 @@ async function hashPassword(password: string): Promise<string> {
 
 // 驗證密碼
 async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  const passwordHash = await hashPassword(password)
-  return passwordHash === hash
+  // 檢查是否為 bcrypt 哈希（以 $2b$ 開頭）
+  if (hash.startsWith('$2b$')) {
+    // 使用 bcrypt 驗證
+    const bcrypt = await import('bcryptjs')
+    return await bcrypt.compare(password, hash)
+  } else {
+    // 使用 SHA-256 驗證（舊版本相容）
+    const passwordHash = await hashPassword(password)
+    return passwordHash === hash
+  }
 }
 
 // 生成簡單的 JWT token
@@ -35,12 +43,14 @@ function generateToken(userId: number, email: string): string {
   const now = Math.floor(Date.now() / 1000)
   const expiresIn = 3600 // 1 hour
   const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
-  const payload = btoa(JSON.stringify({
-    userId,
-    email,
-    iat: now,
-    exp: now + expiresIn // 添加過期時間
-  }))
+  const payload = btoa(
+    JSON.stringify({
+      userId,
+      email,
+      iat: now,
+      exp: now + expiresIn // 添加過期時間
+    })
+  )
   const signature = btoa('signature')
   return `${header}.${payload}.${signature}`
 }
@@ -56,7 +66,7 @@ export async function handleApiRequest(context: Context, path: string): Promise<
     // POST /auth/register
     if (method === 'POST' && path === '/auth/register') {
       try {
-        const body = await request.json() as any
+        const body = (await request.json()) as any
         const { email, password, confirmPassword, userType, firstName, lastName, phone } = body
 
         // 驗證必填欄位
@@ -66,7 +76,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
               success: false,
               error: { code: 'VALIDATION_ERROR', message: '請填寫所有必填欄位' }
             }),
-            { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 400,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
 
@@ -77,7 +90,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
               success: false,
               error: { code: 'VALIDATION_ERROR', message: '密碼確認不一致' }
             }),
-            { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 400,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
 
@@ -88,7 +104,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
               success: false,
               error: { code: 'VALIDATION_ERROR', message: '密碼至少需要8個字符' }
             }),
-            { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 400,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
 
@@ -105,7 +124,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
               success: false,
               error: { code: 'CONFLICT', message: '此電子郵件已被註冊' }
             }),
-            { status: 409, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 409,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
 
@@ -144,7 +166,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
               }
             }
           }),
-          { status: 201, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+          {
+            status: 201,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          }
         )
       } catch (error: any) {
         console.error('[Auth] 註冊失敗:', error.message)
@@ -153,7 +178,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
             success: false,
             error: { code: 'SERVER_ERROR', message: error.message || '註冊失敗' }
           }),
-          { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          }
         )
       }
     }
@@ -161,7 +189,7 @@ export async function handleApiRequest(context: Context, path: string): Promise<
     // POST /auth/login
     if (method === 'POST' && path === '/auth/login') {
       try {
-        const body = await request.json() as any
+        const body = (await request.json()) as any
         const { email, password } = body
 
         // 驗證必填欄位
@@ -171,7 +199,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
               success: false,
               error: { code: 'VALIDATION_ERROR', message: '請填寫電子郵件和密碼' }
             }),
-            { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 400,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
 
@@ -188,7 +219,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
               success: false,
               error: { code: 'UNAUTHORIZED', message: '電子郵件或密碼不正確' }
             }),
-            { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 401,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
 
@@ -202,7 +236,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
               success: false,
               error: { code: 'UNAUTHORIZED', message: '電子郵件或密碼不正確' }
             }),
-            { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 401,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
 
@@ -230,7 +267,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
               }
             }
           }),
-          { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          }
         )
       } catch (error: any) {
         console.error('[Auth] 登入失敗:', error.message)
@@ -239,7 +279,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
             success: false,
             error: { code: 'SERVER_ERROR', message: error.message || '登入失敗' }
           }),
-          { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          }
         )
       }
     }
@@ -255,22 +298,25 @@ export async function handleApiRequest(context: Context, path: string): Promise<
               success: false,
               error: { code: 'UNAUTHORIZED', message: '需要提供認證 token' }
             }),
-            { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 401,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
 
         const token = authHeader.substring(7)
-        
+
         // 簡單解析 JWT token 獲取用戶 ID
         try {
           const parts = token.split('.')
           if (parts.length !== 3) {
             throw new Error('Invalid token format')
           }
-          
+
           const payload = JSON.parse(atob(parts[1]))
           const userId = payload.userId
-          
+
           if (!userId) {
             throw new Error('Invalid token payload')
           }
@@ -287,7 +333,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
                 success: false,
                 error: { code: 'NOT_FOUND', message: '用戶不存在' }
               }),
-              { status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+              {
+                status: 404,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
             )
           }
 
@@ -310,7 +359,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
                 }
               }
             }),
-            { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         } catch (tokenError) {
           return new Response(
@@ -318,7 +370,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
               success: false,
               error: { code: 'UNAUTHORIZED', message: '無效的認證 token' }
             }),
-            { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 401,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
       } catch (error: any) {
@@ -328,7 +383,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
             success: false,
             error: { code: 'SERVER_ERROR', message: error.message || '獲取用戶資料失敗' }
           }),
-          { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          }
         )
       }
     }
@@ -344,23 +402,26 @@ export async function handleApiRequest(context: Context, path: string): Promise<
               success: false,
               error: { code: 'UNAUTHORIZED', message: '需要提供認證 token' }
             }),
-            { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 401,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
 
         const token = authHeader.substring(7)
-        const body = await request.json() as any
-        
+        const body = (await request.json()) as any
+
         // 簡單解析 JWT token 獲取用戶 ID
         try {
           const parts = token.split('.')
           if (parts.length !== 3) {
             throw new Error('Invalid token format')
           }
-          
+
           const payload = JSON.parse(atob(parts[1]))
           const userId = payload.userId
-          
+
           if (!userId) {
             throw new Error('Invalid token payload')
           }
@@ -374,7 +435,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
                 success: false,
                 error: { code: 'VALIDATION_ERROR', message: '至少需要提供一個要更新的欄位' }
               }),
-              { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+              {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
             )
           }
 
@@ -462,7 +526,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
                 success: false,
                 error: { code: 'NOT_FOUND', message: '用戶不存在' }
               }),
-              { status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+              {
+                status: 404,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
             )
           }
 
@@ -485,7 +552,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
                 }
               }
             }),
-            { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         } catch (tokenError) {
           return new Response(
@@ -493,7 +563,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
               success: false,
               error: { code: 'UNAUTHORIZED', message: '無效的認證 token' }
             }),
-            { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 401,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
       } catch (error: any) {
@@ -503,7 +576,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
             success: false,
             error: { code: 'SERVER_ERROR', message: error.message || '更新用戶資料失敗' }
           }),
-          { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          }
         )
       }
     }
@@ -514,7 +590,10 @@ export async function handleApiRequest(context: Context, path: string): Promise<
         success: false,
         error: { code: 'NOT_FOUND', message: 'Auth endpoint not found' }
       }),
-      { status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+      {
+        status: 404,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      }
     )
   }
 
@@ -693,8 +772,14 @@ export async function handleApiRequest(context: Context, path: string): Promise<
       if (!databaseUrl) {
         console.error('[Fallback] DATABASE_URL 未配置')
         return new Response(
-          JSON.stringify({ success: false, error: { code: 'DB_ERROR', message: 'Database not configured' } }),
-          { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+          JSON.stringify({
+            success: false,
+            error: { code: 'DB_ERROR', message: 'Database not configured' }
+          }),
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          }
         )
       }
 
@@ -717,14 +802,24 @@ export async function handleApiRequest(context: Context, path: string): Promise<
           `
 
           return new Response(
-            JSON.stringify({ success: true, data: experiences, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } }),
-            { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            JSON.stringify({
+              success: true,
+              data: experiences,
+              meta: { page, limit, total, totalPages: Math.ceil(total / limit) }
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         } catch (dbError: any) {
           console.error('[Fallback] 查詢經驗分享失敗:', dbError.message)
           return new Response(
             JSON.stringify({ success: true, data: [], meta: { page, limit, total: 0 } }),
-            { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
       }
@@ -739,23 +834,35 @@ export async function handleApiRequest(context: Context, path: string): Promise<
 
           if (experience.length === 0) {
             return new Response(
-              JSON.stringify({ success: false, error: { code: 'NOT_FOUND', message: 'Experience not found' } }),
-              { status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+              JSON.stringify({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Experience not found' }
+              }),
+              {
+                status: 404,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
             )
           }
 
           // 增加瀏覽次數
           await sql`UPDATE experience_shares SET view_count = view_count + 1 WHERE id = ${experienceId}`
 
-          return new Response(
-            JSON.stringify({ success: true, data: experience[0] }),
-            { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-          )
+          return new Response(JSON.stringify({ success: true, data: experience[0] }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          })
         } catch (dbError: any) {
           console.error('[Fallback] 查詢經驗分享詳情失敗:', dbError.message)
           return new Response(
-            JSON.stringify({ success: false, error: { code: 'DB_ERROR', message: 'Database error' } }),
-            { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            JSON.stringify({
+              success: false,
+              error: { code: 'DB_ERROR', message: 'Database error' }
+            }),
+            {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
       }
@@ -763,13 +870,19 @@ export async function handleApiRequest(context: Context, path: string): Promise<
       // 創建經驗分享
       if (method === 'POST' && path === '/experiences') {
         try {
-          const body = await request.json() as any
+          const body = (await request.json()) as any
           const { title, content, share_type, tags, is_featured } = body
 
           if (!title || !content || !share_type) {
             return new Response(
-              JSON.stringify({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Missing required fields' } }),
-              { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+              JSON.stringify({
+                success: false,
+                error: { code: 'VALIDATION_ERROR', message: 'Missing required fields' }
+              }),
+              {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
             )
           }
 
@@ -785,15 +898,25 @@ export async function handleApiRequest(context: Context, path: string): Promise<
             RETURNING *
           `
 
-          return new Response(
-            JSON.stringify({ success: true, data: result[0] }),
-            { status: 201, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-          )
+          return new Response(JSON.stringify({ success: true, data: result[0] }), {
+            status: 201,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          })
         } catch (dbError: any) {
           console.error('[Fallback] 創建經驗分享失敗:', dbError.message, dbError.stack)
           return new Response(
-            JSON.stringify({ success: false, error: { code: 'DB_ERROR', message: 'Failed to create experience', details: dbError.message } }),
-            { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            JSON.stringify({
+              success: false,
+              error: {
+                code: 'DB_ERROR',
+                message: 'Failed to create experience',
+                details: dbError.message
+              }
+            }),
+            {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
       }
@@ -808,13 +931,22 @@ export async function handleApiRequest(context: Context, path: string): Promise<
 
           return new Response(
             JSON.stringify({ success: true, data: { message: 'Experience liked successfully' } }),
-            { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         } catch (dbError: any) {
           console.error('[Fallback] 點讚失敗:', dbError.message)
           return new Response(
-            JSON.stringify({ success: false, error: { code: 'DB_ERROR', message: 'Database error' } }),
-            { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            JSON.stringify({
+              success: false,
+              error: { code: 'DB_ERROR', message: 'Database error' }
+            }),
+            {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
       }
@@ -833,6 +965,637 @@ export async function handleApiRequest(context: Context, path: string): Promise<
     }
   }
 
+  // 講師申請相關端點
+  if (
+    path.startsWith('/instructor-applications') ||
+    (path.startsWith('/users/') && path.includes('/instructor-application'))
+  ) {
+    try {
+      const url = new URL(request.url)
+      const method = request.method.toUpperCase()
+
+      // 導入 Neon 數據庫
+      const { neon } = await import('@neondatabase/serverless')
+      const databaseUrl = env.DATABASE_URL
+
+      if (!databaseUrl) {
+        console.error('[Instructor] DATABASE_URL 未配置')
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: { code: 'DB_ERROR', message: 'Database not configured' }
+          }),
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          }
+        )
+      }
+
+      const sql = neon(databaseUrl)
+
+      // 檢查現有申請：GET /users/:id/instructor-application
+      const userAppMatch = path.match(/^\/users\/(\d+)\/instructor-application$/)
+      if (method === 'GET' && userAppMatch) {
+        const userId = parseInt(userAppMatch[1])
+
+        try {
+          // 檢查表是否存在
+          const tableCheck = await sql`
+            SELECT EXISTS (
+              SELECT FROM information_schema.tables 
+              WHERE table_schema = 'public' 
+              AND table_name = 'instructor_applications'
+            ) as table_exists
+          `
+
+          if (!tableCheck[0]?.table_exists) {
+            return new Response(
+              JSON.stringify({
+                success: true,
+                data: null
+              }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          const applications = await sql`
+            SELECT * FROM instructor_applications 
+            WHERE user_id = ${userId}
+            ORDER BY created_at DESC
+            LIMIT 1
+          `
+
+          if (applications.length === 0) {
+            return new Response(
+              JSON.stringify({
+                success: true,
+                data: null
+              }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: applications[0]
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        } catch (dbError: any) {
+          console.error('[Instructor] 查詢申請失敗:', dbError.message)
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: { code: 'DB_ERROR', message: 'Database error' }
+            }),
+            {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        }
+      }
+
+      // 創建新申請：POST /instructor-applications
+      if (method === 'POST' && path === '/instructor-applications') {
+        console.log('[Instructor] 開始處理講師申請')
+        try {
+          const body = (await request.json()) as any
+          console.log('[Instructor] 接收到的申請數據:', body)
+          const { bio, qualifications, specialization, years_of_experience, target_audiences } =
+            body
+
+          if (!bio || !qualifications || !specialization || years_of_experience === undefined) {
+            console.log('[Instructor] 驗證失敗，缺少必填欄位')
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'VALIDATION_ERROR', message: '請填寫所有必填欄位' }
+              }),
+              {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          // 從 Authorization header 獲取用戶 ID
+          const authHeader = request.headers.get('Authorization') || ''
+          console.log('[Instructor] Authorization header:', authHeader ? '存在' : '不存在')
+          if (!authHeader.startsWith('Bearer ')) {
+            console.log('[Instructor] 認證失敗，沒有有效的 Bearer token')
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'UNAUTHORIZED', message: '需要提供認證 token' }
+              }),
+              {
+                status: 401,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          const token = authHeader.substring(7)
+          const parts = token.split('.')
+          if (parts.length !== 3) {
+            console.log('[Instructor] Token 格式無效')
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'UNAUTHORIZED', message: '無效的認證 token' }
+              }),
+              {
+                status: 401,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          const payload = JSON.parse(atob(parts[1]))
+          const userId = payload.userId
+          console.log('[Instructor] 解析出的用戶 ID:', userId)
+
+          if (!userId) {
+            console.log('[Instructor] Token 中沒有用戶 ID')
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'UNAUTHORIZED', message: '無效的認證 token' }
+              }),
+              {
+                status: 401,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          // 先檢查表是否存在，如果不存在就創建
+          const tableCheck = await sql`
+            SELECT EXISTS (
+              SELECT FROM information_schema.tables 
+              WHERE table_schema = 'public' 
+              AND table_name = 'instructor_applications'
+            ) as table_exists
+          `
+
+          if (!tableCheck[0]?.table_exists) {
+            console.log('[Instructor] 創建 instructor_applications 表')
+            await sql`
+              CREATE TABLE IF NOT EXISTS instructor_applications (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                bio TEXT NOT NULL,
+                qualifications TEXT NOT NULL,
+                specialization VARCHAR(255) NOT NULL,
+                years_of_experience INTEGER NOT NULL DEFAULT 0,
+                target_audiences TEXT,
+                status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+                submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                reviewed_at TIMESTAMP NULL,
+                reviewed_by INTEGER REFERENCES users(id),
+                review_notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+              )
+            `
+          }
+
+          // 檢查是否已有申請
+          console.log('[Instructor] 檢查現有申請，用戶 ID:', userId)
+          const existingApps = await sql`
+            SELECT id FROM instructor_applications 
+            WHERE user_id = ${userId} AND status IN ('pending', 'approved')
+          `
+          console.log('[Instructor] 現有申請數量:', existingApps.length)
+
+          if (existingApps.length > 0) {
+            console.log('[Instructor] 用戶已有進行中的申請')
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'CONFLICT', message: '您已經有進行中的申請' }
+              }),
+              {
+                status: 409,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          // 創建新申請
+          console.log('[Instructor] 開始創建新申請')
+          const result = await sql`
+            INSERT INTO instructor_applications (
+              user_id, bio, qualifications, specialization, years_of_experience, 
+              target_audiences, status, submitted_at, created_at, updated_at
+            )
+            VALUES (
+              ${userId}, ${bio}, ${qualifications}, ${specialization}, ${years_of_experience},
+              ${target_audiences || ''}, 'pending', NOW(), NOW(), NOW()
+            )
+            RETURNING *
+          `
+          console.log('[Instructor] 申請創建成功，ID:', result[0]?.id)
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: result[0]
+            }),
+            {
+              status: 201,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        } catch (dbError: any) {
+          console.error('[Instructor] 創建申請失敗:', dbError.message, dbError.stack)
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: {
+                code: 'DB_ERROR',
+                message: 'Database error',
+                details: dbError.message,
+                stack: dbError.stack
+              }
+            }),
+            {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        }
+      }
+
+      // 重新提交申請：POST /instructor-applications/:id/resubmit
+      const resubmitMatch = path.match(/^\/instructor-applications\/(\d+)\/resubmit$/)
+      if (method === 'POST' && resubmitMatch) {
+        const applicationId = parseInt(resubmitMatch[1])
+
+        try {
+          const body = (await request.json()) as any
+          const { bio, qualifications, specialization, years_of_experience, target_audiences } =
+            body
+
+          if (!bio || !qualifications || !specialization || years_of_experience === undefined) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'VALIDATION_ERROR', message: '請填寫所有必填欄位' }
+              }),
+              {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          // 更新申請
+          const result = await sql`
+            UPDATE instructor_applications 
+            SET bio = ${bio}, qualifications = ${qualifications}, specialization = ${specialization},
+                years_of_experience = ${years_of_experience}, target_audiences = ${target_audiences || ''},
+                status = 'pending', submitted_at = NOW(), updated_at = NOW()
+            WHERE id = ${applicationId}
+            RETURNING *
+          `
+
+          if (result.length === 0) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'NOT_FOUND', message: '申請不存在' }
+              }),
+              {
+                status: 404,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: result[0]
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        } catch (dbError: any) {
+          console.error('[Instructor] 重新提交申請失敗:', dbError.message)
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: { code: 'DB_ERROR', message: 'Database error' }
+            }),
+            {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        }
+      }
+
+      // 管理員審核申請：PUT /instructor-applications/:id/review
+      const reviewMatch = path.match(/^\/instructor-applications\/(\d+)\/review$/)
+      if (method === 'PUT' && reviewMatch) {
+        const applicationId = parseInt(reviewMatch[1])
+        console.log('[Instructor] 開始審核申請，ID:', applicationId)
+
+        try {
+          const body = (await request.json()) as any
+          const { status, review_notes } = body
+          console.log('[Instructor] 審核數據:', { status, review_notes })
+
+          if (!status || !['approved', 'rejected'].includes(status)) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'VALIDATION_ERROR', message: 'Status must be approved or rejected' }
+              }),
+              {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          // 從 Authorization header 獲取管理員用戶 ID
+          const authHeader = request.headers.get('Authorization') || ''
+          if (!authHeader.startsWith('Bearer ')) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'UNAUTHORIZED', message: '需要提供認證 token' }
+              }),
+              {
+                status: 401,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          const token = authHeader.substring(7)
+          const parts = token.split('.')
+          if (parts.length !== 3) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'UNAUTHORIZED', message: '無效的認證 token' }
+              }),
+              {
+                status: 401,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          const payload = JSON.parse(atob(parts[1]))
+          const reviewerId = payload.userId
+
+          if (!reviewerId) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'UNAUTHORIZED', message: '無效的認證 token' }
+              }),
+              {
+                status: 401,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          // 檢查申請是否存在且為待審核狀態
+          console.log('[Instructor] 查詢申請，ID:', applicationId)
+          const applications = await sql`
+            SELECT * FROM instructor_applications 
+            WHERE id = ${applicationId} AND status = 'pending'
+          `
+          console.log('[Instructor] 找到申請:', applications.length > 0 ? '是' : '否')
+
+          if (applications.length === 0) {
+            console.log('[Instructor] 申請不存在或已審核')
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'NOT_FOUND', message: '申請不存在或已審核' }
+              }),
+              {
+                status: 404,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          const application = applications[0]
+
+          // 更新申請狀態
+          await sql`
+            UPDATE instructor_applications 
+            SET status = ${status}, reviewed_at = NOW(), reviewed_by = ${reviewerId}, review_notes = ${review_notes || ''}
+            WHERE id = ${applicationId}
+          `
+
+          // 如果批准，創建講師記錄並更新用戶類型
+          if (status === 'approved') {
+            // 更新用戶類型為 instructor
+            await sql`
+              UPDATE users 
+              SET user_type = 'instructor'
+              WHERE id = ${application.user_id}
+            `
+
+            // 創建講師記錄
+            await sql`
+              INSERT INTO instructors (
+                user_id, bio, qualifications, specialization, years_of_experience,
+                application_status, approval_date, approved_by, average_rating, total_ratings, is_active, created_at, updated_at
+              )
+              VALUES (
+                ${application.user_id}, ${application.bio}, ${application.qualifications}, 
+                ${application.specialization}, ${application.years_of_experience}, 'approved', NOW(), 
+                ${reviewerId}, 0, 0, true, NOW(), NOW()
+              )
+            `
+
+            console.log('[Instructor] 用戶類型已更新為 instructor，用戶ID:', application.user_id)
+          }
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: { message: `Application ${status} successfully` }
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        } catch (dbError: any) {
+          console.error('[Instructor] 審核申請失敗:', dbError.message)
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: { code: 'DB_ERROR', message: 'Database error' }
+            }),
+            {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        }
+      }
+
+      // 獲取所有申請列表（管理員）：GET /instructor-applications
+      if (method === 'GET' && path === '/instructor-applications') {
+        console.log('[Instructor] 管理員查詢申請列表')
+        try {
+          const page = parseInt(url.searchParams.get('page') || '1', 10)
+          const limit = parseInt(url.searchParams.get('limit') || '10', 10)
+          const offset = (page - 1) * limit
+          const status = url.searchParams.get('status')
+          console.log('[Instructor] 查詢參數 - page:', page, 'limit:', limit, 'status:', status)
+
+          // 先檢查表是否存在
+          const tableCheck = await sql`
+            SELECT EXISTS (
+              SELECT FROM information_schema.tables 
+              WHERE table_schema = 'public' 
+              AND table_name = 'instructor_applications'
+            ) as table_exists
+          `
+          console.log('[Instructor] 表存在檢查結果:', tableCheck[0]?.table_exists)
+
+          if (!tableCheck[0]?.table_exists) {
+            console.log('[Instructor] instructor_applications 表不存在，返回空列表')
+            return new Response(
+              JSON.stringify({
+                success: true,
+                data: [],
+                meta: { page, limit, total: 0, totalPages: 0 }
+              }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          // 使用簡單的查詢方式
+          let applications
+          let total
+
+          if (status) {
+            console.log('[Instructor] 按狀態篩選查詢:', status)
+            // 獲取總數
+            const countResult = await sql`
+              SELECT COUNT(*) as count FROM instructor_applications 
+              WHERE status = ${status}
+            `
+            total = parseInt(countResult[0]?.count || '0')
+            console.log('[Instructor] 篩選後總數:', total)
+
+            // 獲取申請列表
+            applications = await sql`
+              SELECT ia.*, u.email, u.first_name, u.last_name, u.user_type
+              FROM instructor_applications ia
+              LEFT JOIN users u ON ia.user_id = u.id
+              WHERE ia.status = ${status}
+              ORDER BY ia.submitted_at DESC
+              LIMIT ${limit} OFFSET ${offset}
+            `
+          } else {
+            console.log('[Instructor] 查詢所有申請')
+            // 獲取總數
+            const countResult = await sql`
+              SELECT COUNT(*) as count FROM instructor_applications
+            `
+            total = parseInt(countResult[0]?.count || '0')
+            console.log('[Instructor] 總申請數:', total)
+
+            // 獲取申請列表
+            applications = await sql`
+              SELECT ia.*, u.email, u.first_name, u.last_name, u.user_type
+              FROM instructor_applications ia
+              LEFT JOIN users u ON ia.user_id = u.id
+              ORDER BY ia.submitted_at DESC
+              LIMIT ${limit} OFFSET ${offset}
+            `
+          }
+
+          console.log('[Instructor] 查詢到的申請數量:', applications.length)
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: applications,
+              meta: { page, limit, total, totalPages: Math.ceil(total / limit) }
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        } catch (dbError: any) {
+          console.error('[Instructor] 查詢申請列表失敗:', dbError.message, dbError.stack)
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: {
+                code: 'DB_ERROR',
+                message: 'Database error',
+                details: dbError.message
+              }
+            }),
+            {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        }
+      }
+
+      // 未涵蓋的講師申請端點
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Instructor application endpoint not found' }
+        }),
+        {
+          status: 404,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        }
+      )
+    } catch (error: any) {
+      console.error('[Instructor] 講師申請處理錯誤:', error.message)
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: { code: 'SERVER_ERROR', message: 'Server error' }
+        }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        }
+      )
+    }
+  }
+
   // 備用：討論區/社群相關端點（直接查詢數據庫）
   if (path.startsWith('/groups') || path.startsWith('/topics') || path.startsWith('/forum')) {
     try {
@@ -846,8 +1609,14 @@ export async function handleApiRequest(context: Context, path: string): Promise<
       if (!databaseUrl) {
         console.error('[Fallback] DATABASE_URL 未配置')
         return new Response(
-          JSON.stringify({ success: false, error: { code: 'DB_ERROR', message: 'Database not configured' } }),
-          { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+          JSON.stringify({
+            success: false,
+            error: { code: 'DB_ERROR', message: 'Database not configured' }
+          }),
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          }
         )
       }
 
@@ -860,7 +1629,8 @@ export async function handleApiRequest(context: Context, path: string): Promise<
         const offset = (page - 1) * limit
 
         try {
-          const countResult = await sql`SELECT COUNT(*) as count FROM student_groups WHERE is_active = true`
+          const countResult =
+            await sql`SELECT COUNT(*) as count FROM student_groups WHERE is_active = true`
           const total = parseInt(countResult[0]?.count || '0')
 
           const groups = await sql`
@@ -871,14 +1641,24 @@ export async function handleApiRequest(context: Context, path: string): Promise<
           `
 
           return new Response(
-            JSON.stringify({ success: true, data: groups, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } }),
-            { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            JSON.stringify({
+              success: true,
+              data: groups,
+              meta: { page, limit, total, totalPages: Math.ceil(total / limit) }
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         } catch (dbError: any) {
           console.error('[Fallback] 查詢群組失敗:', dbError.message)
           return new Response(
             JSON.stringify({ success: true, data: [], meta: { page, limit, total: 0 } }),
-            { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
       }
@@ -900,16 +1680,312 @@ export async function handleApiRequest(context: Context, path: string): Promise<
           `
 
           return new Response(
-            JSON.stringify({ success: true, data: topics, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } }),
-            { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            JSON.stringify({
+              success: true,
+              data: topics,
+              meta: { page, limit, total, totalPages: Math.ceil(total / limit) }
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         } catch (dbError: any) {
           console.error('[Fallback] 查詢論壇主題失敗:', dbError.message)
           return new Response(
             JSON.stringify({ success: true, data: [], meta: { page, limit, total: 0 } }),
-            { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
           )
         }
+      }
+
+      // 課程申請相關端點
+      if (pathname.startsWith('/course-applications')) {
+        console.log('[Course Applications] 處理課程申請請求:', method, pathname)
+
+        // POST /course-applications - 創建課程申請
+        if (method === 'POST' && pathname === '/course-applications') {
+          try {
+            const body = await request.json()
+            console.log('[Course Applications] 創建課程申請:', body)
+
+            // 驗證必填欄位
+            const requiredFields = [
+              'course_name',
+              'description',
+              'category',
+              'target_audience',
+              'duration',
+              'price'
+            ]
+            for (const field of requiredFields) {
+              if (!body[field]) {
+                return new Response(
+                  JSON.stringify({
+                    success: false,
+                    message: `請填寫${field}欄位`,
+                    status: 400
+                  }),
+                  {
+                    status: 400,
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Access-Control-Allow-Origin': '*'
+                    }
+                  }
+                )
+              }
+            }
+
+            // 檢查用戶是否為已批准的講師
+            const instructorCheck = await sql`
+              SELECT id, status FROM instructor_applications 
+              WHERE user_id = ${userId}
+            `
+
+            if (!instructorCheck.length || instructorCheck[0].status !== 'approved') {
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  message: '只有已通過審核的講師才能申請開課',
+                  status: 403
+                }),
+                {
+                  status: 403,
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                  }
+                }
+              )
+            }
+
+            // 插入課程申請
+            const result = await sql`
+              INSERT INTO course_applications (
+                instructor_id, course_name, description, category, target_audience,
+                duration, price, delivery_methods, syllabus, teaching_experience,
+                materials, special_requirements, status, submitted_at, created_at, updated_at
+              ) VALUES (
+                ${instructorCheck[0].id}, ${body.course_name}, ${body.description}, 
+                ${body.category}, ${body.target_audience}, ${body.duration}, ${body.price},
+                ${body.delivery_methods || ''}, ${body.syllabus}, ${body.teaching_experience},
+                ${body.materials || ''}, ${body.special_requirements || ''}, 'pending', 
+                NOW(), NOW(), NOW()
+              )
+              RETURNING id
+            `
+
+            console.log('[Course Applications] 課程申請創建成功:', result[0])
+
+            return new Response(
+              JSON.stringify({
+                success: true,
+                message: '課程申請提交成功',
+                data: { applicationId: result[0].id }
+              }),
+              {
+                status: 201,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          } catch (error: any) {
+            console.error('[Course Applications] 創建課程申請失敗:', error)
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: '提交失敗，請稍後再試',
+                details: error.message,
+                stack: error.stack
+              }),
+              {
+                status: 500,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+        }
+
+        // GET /course-applications/:id - 獲取課程申請詳情
+        if (method === 'GET' && pathname.match(/^\/course-applications\/\d+$/)) {
+          try {
+            const applicationId = parseInt(pathname.split('/')[2])
+            console.log('[Course Applications] 獲取課程申請詳情:', applicationId)
+
+            const application = await sql`
+              SELECT 
+                ca.id, ca.course_name, ca.description, ca.category, ca.target_audience,
+                ca.duration, ca.price, ca.delivery_methods, ca.syllabus, ca.teaching_experience,
+                ca.materials, ca.special_requirements, ca.status, ca.submitted_at, ca.reviewed_at,
+                ca.review_notes, ca.created_at, ca.updated_at,
+                u.name as instructor_name, u.email as instructor_email,
+                ia.id as instructor_id
+              FROM course_applications ca
+              JOIN instructor_applications ia ON ca.instructor_id = ia.id
+              JOIN users u ON ia.user_id = u.id
+              WHERE ca.id = ${applicationId}
+            `
+
+            if (!application.length) {
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  message: '課程申請不存在',
+                  status: 404
+                }),
+                {
+                  status: 404,
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                  }
+                }
+              )
+            }
+
+            // 檢查權限：只有講師本人或管理員可以查看
+            if (userType !== 'admin' && application[0].instructor_id !== userId) {
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  message: '無權限查看此課程申請',
+                  status: 403
+                }),
+                {
+                  status: 403,
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                  }
+                }
+              )
+            }
+
+            return new Response(
+              JSON.stringify({
+                success: true,
+                data: application[0]
+              }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          } catch (error: any) {
+            console.error('[Course Applications] 獲取課程申請詳情失敗:', error)
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: '獲取申請詳情失敗',
+                details: error.message
+              }),
+              {
+                status: 500,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+        }
+
+        // GET /instructors/:id/course-applications - 獲取講師的課程申請列表
+        if (method === 'GET' && pathname.match(/^\/instructors\/\d+\/course-applications$/)) {
+          try {
+            const instructorId = parseInt(pathname.split('/')[2])
+            console.log('[Course Applications] 獲取講師課程申請列表:', instructorId)
+
+            // 檢查權限：只有講師本人或管理員可以查看
+            const instructorCheck = await sql`
+              SELECT user_id FROM instructor_applications WHERE id = ${instructorId}
+            `
+
+            if (!instructorCheck.length) {
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  message: '講師不存在',
+                  status: 404
+                }),
+                {
+                  status: 404,
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                  }
+                }
+              )
+            }
+
+            if (userType !== 'admin' && instructorCheck[0].user_id !== userId) {
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  message: '無權限查看此講師的課程申請',
+                  status: 403
+                }),
+                {
+                  status: 403,
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                  }
+                }
+              )
+            }
+
+            const applications = await sql`
+              SELECT 
+                ca.id, ca.course_name, ca.description, ca.category, ca.target_audience,
+                ca.duration, ca.price, ca.delivery_methods, ca.syllabus, ca.teaching_experience,
+                ca.materials, ca.special_requirements, ca.status, ca.submitted_at, ca.reviewed_at,
+                ca.review_notes, ca.created_at, ca.updated_at,
+                u.name as instructor_name, u.email as instructor_email
+              FROM course_applications ca
+              JOIN instructor_applications ia ON ca.instructor_id = ia.id
+              JOIN users u ON ia.user_id = u.id
+              WHERE ca.instructor_id = ${instructorId}
+              ORDER BY ca.submitted_at DESC
+            `
+
+            return new Response(
+              JSON.stringify({
+                success: true,
+                data: applications
+              }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          } catch (error: any) {
+            console.error('[Course Applications] 獲取課程申請列表失敗:', error)
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: '獲取申請列表失敗',
+                details: error.message
+              }),
+              {
+                status: 500,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+        }
+
+        // 如果課程申請路徑但沒有匹配的處理，返回 404
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: { code: 'NOT_FOUND', message: 'Course application endpoint not found' }
+          }),
+          {
+            status: 404,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          }
+        )
       }
 
       // 未涵蓋的討論區端點先回 200 空集合，避免 UI 報錯

@@ -192,6 +192,32 @@ const router = createRouter({
       }
     },
     {
+      path: '/instructor/apply',
+      name: 'instructor-apply',
+      component: createAsyncComponent(
+        () => import('../views/instructor/InstructorApplicationView.vue')
+      ),
+      meta: {
+        requiresAuth: true,
+        title: '講師申請 - 藥助Next學院',
+        description: '申請成為藥助Next學院的講師，分享您的專業知識與經驗。',
+        keywords: '講師申請,講師招募,教學工作,藥學講師'
+      }
+    },
+    {
+      path: '/instructor/course-application',
+      name: 'instructor-course-application',
+      component: createAsyncComponent(
+        () => import('../views/instructor/CourseApplicationView.vue')
+      ),
+      meta: {
+        requiresAuth: true,
+        requiresInstructor: true,
+        title: '申請開課 - 藥助Next學院',
+        description: '申請開設專業課程，分享您的知識與經驗'
+      }
+    },
+    {
       path: '/instructor/profile',
       name: 'instructor-profile',
       component: createAsyncComponent(
@@ -238,6 +264,7 @@ const router = createRouter({
       ),
       meta: {
         requiresAuth: true,
+        requiresAdmin: true,
         keepAlive: true
       }
     },
@@ -247,6 +274,7 @@ const router = createRouter({
       component: createAsyncComponent(() => import('../views/admin/AnalyticsDashboardView.vue')),
       meta: {
         requiresAuth: true,
+        requiresAdmin: true,
         keepAlive: true
       }
     },
@@ -256,6 +284,7 @@ const router = createRouter({
       component: createAsyncComponent(() => import('../views/admin/TTQSDashboardView.vue')),
       meta: {
         requiresAuth: true,
+        requiresAdmin: true,
         keepAlive: true
       }
     },
@@ -265,6 +294,77 @@ const router = createRouter({
       component: createAsyncComponent(() => import('../views/admin/TrainingPlansView.vue')),
       meta: {
         requiresAuth: true,
+        requiresAdmin: true,
+        keepAlive: true
+      }
+    },
+    {
+      path: '/training/policy',
+      name: 'training-policy',
+      component: createAsyncComponent(() => import('../views/training/TrainingPolicyView.vue')),
+      meta: {
+        title: '訓練政策 - 藥助Next學院',
+        description: '了解藥助Next學院的訓練政策、核心原則與品質保證機制。',
+        keywords: '訓練政策,TTQS,品質管理,藥局助理培訓',
+        keepAlive: true
+      }
+    },
+    {
+      path: '/training/quality',
+      name: 'training-quality',
+      component: createAsyncComponent(() => import('../views/training/TrainingQualityView.vue')),
+      meta: {
+        title: '訓練品質 - 藥助Next學院',
+        description: '深入了解藥助Next學院的TTQS品質管理系統與四層評估機制。',
+        keywords: '訓練品質,TTQS,四層評估,品質管理系統',
+        keepAlive: true
+      }
+    },
+    {
+      path: '/training/performance',
+      name: 'training-performance',
+      component: createAsyncComponent(
+        () => import('../views/training/TrainingPerformanceView.vue')
+      ),
+      meta: {
+        title: '訓練績效 - 藥助Next學院',
+        description: '查看藥助Next學院的訓練績效指標、達成狀況與改善行動。',
+        keywords: '訓練績效,績效指標,轉職成功率,學員滿意度',
+        keepAlive: true
+      }
+    },
+    {
+      path: '/training/development',
+      name: 'training-development',
+      component: createAsyncComponent(
+        () => import('../views/training/TrainingDevelopmentView.vue')
+      ),
+      meta: {
+        title: '訓練發展方向 - 藥助Next學院',
+        description: '了解藥助Next學院的發展願景、階段性策略與創新發展項目。',
+        keywords: '訓練發展,發展方向,創新發展,數位化轉型',
+        keepAlive: true
+      }
+    },
+    {
+      path: '/training/objectives',
+      name: 'training-objectives',
+      component: createAsyncComponent(() => import('../views/training/TrainingObjectivesView.vue')),
+      meta: {
+        title: '訓練目標 - 藥助Next學院',
+        description: '了解藥助Next學院的訓練目標設定、達成策略與監控機制。',
+        keywords: '訓練目標,目標設定,績效指標,目標達成',
+        keepAlive: true
+      }
+    },
+    {
+      path: '/training/courses',
+      name: 'training-courses',
+      component: createAsyncComponent(() => import('../views/training/TrainingCoursesView.vue')),
+      meta: {
+        title: '訓練發展重點課程 - 藥助Next學院',
+        description: '深入了解藥助Next學院的重點課程架構、內容與特色。',
+        keywords: '重點課程,課程架構,基礎職能,進階實務,實習課程',
         keepAlive: true
       }
     }
@@ -306,7 +406,7 @@ router.beforeEach(async (to, from, next) => {
     const localToken = localStorage.getItem('auth_token')
     const sessionUser = sessionStorage.getItem('user')
     const localUser = localStorage.getItem('auth_user')
-    
+
     // Try to recover authentication state from either storage
     if (sessionToken && sessionUser) {
       console.log('Recovering auth from sessionStorage')
@@ -337,7 +437,7 @@ router.beforeEach(async (to, from, next) => {
         // Sync to sessionStorage
         sessionStorage.setItem('access_token', localToken)
         sessionStorage.setItem('user', localUser)
-        const expiryTime = Date.now() + (60 * 60 * 1000) // 1 hour default
+        const expiryTime = Date.now() + 60 * 60 * 1000 // 1 hour default
         sessionStorage.setItem('token_expiry', expiryTime.toString())
         // Re-check authentication
         if (authService.isAuthenticated()) {
@@ -364,13 +464,44 @@ router.beforeEach(async (to, from, next) => {
     return
   }
 
-  // Check if route requires employer role
-  if (to.meta.requiresEmployer && user?.userType !== 'employer') {
+  // Check if route requires admin role
+  if (to.meta.requiresAdmin && user?.userType !== 'admin') {
     next({ name: 'home' })
     return
   }
 
-  // Check if route requires job seeker role
+  // Check if route requires instructor role or higher
+  if (to.meta.requiresInstructor && !['admin', 'instructor'].includes(user?.userType || '')) {
+    next({ name: 'home' })
+    return
+  }
+
+  // Check if route requires approved instructor (for course application)
+  if (to.meta.requiresInstructor && user?.userType === 'instructor') {
+    const authStore = useAuthStore()
+    // 如果講師狀態還沒檢查，先檢查
+    if (!authStore.instructorStatus) {
+      await authStore.checkInstructorStatus()
+    }
+
+    // 檢查是否為已批准的講師
+    if (!authStore.isApprovedInstructor) {
+      console.log('User is instructor but not approved, redirecting to home')
+      next({ name: 'home' })
+      return
+    }
+  }
+
+  // Check if route requires employer role or higher
+  if (
+    to.meta.requiresEmployer &&
+    !['admin', 'instructor', 'employer'].includes(user?.userType || '')
+  ) {
+    next({ name: 'home' })
+    return
+  }
+
+  // Check if route requires job seeker role (基本用戶權限)
   if (to.meta.requiresJobSeeker && user?.userType !== 'job_seeker') {
     next({ name: 'home' })
     return

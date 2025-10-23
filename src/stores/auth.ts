@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, readonly } from 'vue'
 
 import type { User } from '@/types'
+import { InstructorStatusService, type InstructorStatus } from '@/services/instructor-status'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -9,12 +10,20 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const instructorStatus = ref<InstructorStatus | null>(null)
 
   // Computed
   const isAuthenticated = computed(() => !!token.value && !!user.value)
   const userType = computed(() => user.value?.userType)
   const isJobSeeker = computed(() => user.value?.userType === 'job_seeker')
   const isEmployer = computed(() => user.value?.userType === 'employer')
+  const isInstructor = computed(() => user.value?.userType === 'instructor')
+  const isAdmin = computed(() => user.value?.userType === 'admin')
+
+  // 檢查是否為已通過審核的講師
+  const isApprovedInstructor = computed(() => {
+    return instructorStatus.value?.isApprovedInstructor ?? false
+  })
 
   // Actions
   function setAuth(authUser: User, authToken: string) {
@@ -30,6 +39,7 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     token.value = null
     error.value = null
+    instructorStatus.value = null
 
     // 清除 localStorage
     localStorage.removeItem('auth_token')
@@ -79,6 +89,24 @@ export const useAuthStore = defineStore('auth', () => {
     persistAuth()
   }
 
+  // 檢查講師狀態
+  async function checkInstructorStatus() {
+    if (!user.value?.id) return
+
+    try {
+      const status = await InstructorStatusService.checkInstructorStatus(user.value.id)
+      instructorStatus.value = status
+    } catch (error) {
+      console.error('檢查講師狀態失敗:', error)
+      instructorStatus.value = { isApprovedInstructor: false }
+    }
+  }
+
+  // 清除講師狀態
+  function clearInstructorStatus() {
+    instructorStatus.value = null
+  }
+
   // 檢查 token 是否過期 (簡單檢查)
   function isTokenExpired(): boolean {
     if (!token.value) return true
@@ -110,12 +138,16 @@ export const useAuthStore = defineStore('auth', () => {
     token: readonly(token),
     isLoading: readonly(isLoading),
     error: readonly(error),
+    instructorStatus: readonly(instructorStatus),
 
     // Computed
     isAuthenticated,
     userType,
     isJobSeeker,
     isEmployer,
+    isInstructor,
+    isAdmin,
+    isApprovedInstructor,
 
     // Actions
     setAuth,
@@ -125,6 +157,8 @@ export const useAuthStore = defineStore('auth', () => {
     loadAuth,
     updateUser,
     persistAuth,
-    isTokenExpired
+    isTokenExpired,
+    checkInstructorStatus,
+    clearInstructorStatus
   }
 })

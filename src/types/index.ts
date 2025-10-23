@@ -5,7 +5,7 @@ export * from './api'
 export interface User {
   id: number
   email: string
-  userType: 'job_seeker' | 'employer'
+  userType: 'job_seeker' | 'employer' | 'admin' | 'instructor'
   firstName: string
   lastName: string
   phone?: string

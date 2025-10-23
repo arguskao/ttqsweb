@@ -1,3 +1,6 @@
+// User types
+export type UserType = 'job_seeker' | 'employer' | 'admin' | 'instructor'
+
 // API Request and Response types
 export interface ApiRequest {
   method: string
@@ -10,13 +13,13 @@ export interface ApiRequest {
   user?: {
     id: number
     email: string
-    userType: 'job_seeker' | 'employer' | 'admin'
+    userType: 'job_seeker' | 'employer' | 'admin' | 'instructor'
     firstName?: string
     lastName?: string
     phone?: string
     isActive?: boolean
     // 兼容舊的屬性名稱
-    user_type?: 'job_seeker' | 'employer' | 'admin'
+    user_type?: 'job_seeker' | 'employer' | 'admin' | 'instructor'
     first_name?: string
     last_name?: string
     is_active?: boolean

@@ -11,15 +11,11 @@
           </div>
           <div class="buttons is-centered">
             <router-link to="/courses" class="button is-white is-large">
-              <span class="icon">
-                🎓
-              </span>
+              <span class="icon"> 🎓 </span>
               <span>開始學習</span>
             </router-link>
             <router-link to="/jobs" class="button is-light is-large">
-              <span class="icon">
-                💼
-              </span>
+              <span class="icon"> 💼 </span>
               <span>尋找工作</span>
             </router-link>
           </div>
@@ -49,7 +45,7 @@
             <PolicyCard
               icon="⚙️"
               title="實務結合"
-              description="強調實務操作與理論結合，提供真實藥局環境的學習體驗"
+              description="強調實務操作與理論結合，不紙上談兵，提供真實藥局環境的學習體驗"
               icon-color="info"
             />
           </div>
@@ -58,7 +54,7 @@
             <PolicyCard
               icon="💼"
               title="就業媒合"
-              description="提供完整的就業媒合服務，協助學員成功轉職進入醫藥產業"
+              description="提供完整的就業媒合服務，不只協助學員成功轉職進入醫藥產業，更提供老闆穩定的員工"
               icon-color="success"
             />
           </div>
@@ -82,27 +78,15 @@
 
         <div class="columns">
           <div class="column">
-            <CourseStageCard
-              title="基礎階段"
-              :items="basicStageItems"
-              title-color="primary"
-            />
+            <CourseStageCard title="基礎階段" :items="basicStageItems" title-color="primary" />
           </div>
 
           <div class="column">
-            <CourseStageCard
-              title="進階階段"
-              :items="advancedStageItems"
-              title-color="info"
-            />
+            <CourseStageCard title="進階階段" :items="advancedStageItems" title-color="info" />
           </div>
 
           <div class="column">
-            <CourseStageCard
-              title="實習階段"
-              :items="internshipStageItems"
-              title-color="success"
-            />
+            <CourseStageCard title="實習階段" :items="internshipStageItems" title-color="success" />
           </div>
         </div>
       </div>
@@ -117,24 +101,9 @@ import CourseStageCard from '@/components/common/CourseStageCard.vue'
 import PolicyCard from '@/components/common/PolicyCard.vue'
 
 // Course stage data
-const basicStageItems = [
-  '藥學入門知識',
-  '庫存管理基礎',
-  '溝通技巧培養',
-  '職場倫理規範'
-]
+const basicStageItems = ['藥學入門知識', '庫存管理基礎', '溝通技巧培養', '職場倫理規範']
 
-const advancedStageItems = [
-  '保健食品專業知識',
-  '處方箋辨識技能',
-  '櫃台管理實務',
-  '醫療法規應用'
-]
+const advancedStageItems = ['保健食品專業知識', '處方箋辨識技能', '櫃台管理實務', '醫療法規應用']
 
-const internshipStageItems = [
-  '實際藥局實習',
-  '職場適應訓練',
-  '專業技能驗證',
-  '就業準備輔導'
-]
+const internshipStageItems = ['實際藥局實習', '職場適應訓練', '專業技能驗證', '就業準備輔導']
 </script>

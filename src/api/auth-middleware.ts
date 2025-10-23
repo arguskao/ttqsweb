@@ -3,7 +3,12 @@ import jwt from 'jsonwebtoken'
 import { getUserById } from '../services/auth'
 
 import { AuthenticationError } from './errors'
-import type { Middleware } from './types'
+import type { Middleware, ApiRequest } from './types'
+
+// Authenticated request type
+export interface AuthenticatedRequest extends ApiRequest {
+  user: NonNullable<ApiRequest['user']>
+}
 
 // JWT token verification
 const verifyToken = (token: string) => {
@@ -137,3 +142,37 @@ export const requireEmployer: Middleware = requireRole(['employer'])
 
 // Convenience middleware for any authenticated user
 export const requireAuth: Middleware = authMiddleware
+
+// Admin role requirement
+export function requireAdmin(req: AuthenticatedRequest) {
+  if (!req.user) {
+    throw new AuthenticationError('需要登入才能訪問此資源')
+  }
+
+  if (req.user.userType !== 'admin') {
+    throw new AuthenticationError('需要管理員權限才能訪問此資源')
+  }
+
+  return req.user
+}
+
+// Higher role requirement (for role hierarchy)
+export function requireHigherRole(req: AuthenticatedRequest, targetUserType: string) {
+  if (!req.user) {
+    throw new AuthenticationError('需要登入才能訪問此資源')
+  }
+
+  const roleHierarchy = ['job_seeker', 'employer', 'instructor', 'admin']
+  const currentUserRoleIndex = roleHierarchy.indexOf(req.user.userType)
+  const targetRoleIndex = roleHierarchy.indexOf(targetUserType)
+
+  if (currentUserRoleIndex === -1 || targetRoleIndex === -1) {
+    throw new AuthenticationError('無效的用戶角色')
+  }
+
+  if (currentUserRoleIndex <= targetRoleIndex) {
+    throw new AuthenticationError('沒有足夠權限修改此用戶')
+  }
+
+  return req.user
+}

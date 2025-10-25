@@ -88,7 +88,7 @@
                         autocomplete="email"
                       />
                       <span class="icon is-small is-left">
-                        <i class="fas fa-envelope"></i>
+                        <span>✉️</span>
                       </span>
                     </div>
                     <p v-if="errors.email" class="help is-danger">{{ errors.email }}</p>
@@ -105,7 +105,7 @@
                         :disabled="isLoading"
                       />
                       <span class="icon is-small is-left">
-                        <i class="fas fa-phone"></i>
+                        <span>📞</span>
                       </span>
                     </div>
                   </div>
@@ -123,7 +123,7 @@
                         autocomplete="new-password"
                       />
                       <span class="icon is-small is-left">
-                        <i class="fas fa-lock"></i>
+                        <span>🔒</span>
                       </span>
                     </div>
                     <p v-if="errors.password" class="help is-danger">{{ errors.password }}</p>
@@ -143,7 +143,7 @@
                         autocomplete="new-password"
                       />
                       <span class="icon is-small is-left">
-                        <i class="fas fa-lock"></i>
+                        <span>🔒</span>
                       </span>
                     </div>
                     <p v-if="errors.confirmPassword" class="help is-danger">

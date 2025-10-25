@@ -14,7 +14,12 @@ import type {
   CourseProgress,
   CourseSearchParams,
   EnrollmentSearchParams,
-  CoursePaginationMeta
+  CoursePaginationMeta,
+  CourseApplication,
+  CourseApplicationWithInstructor,
+  CreateCourseApplicationRequest,
+  CourseApplicationSearchParams,
+  CourseApplicationStatus
 } from './types'
 
 // 課程Repository
@@ -480,6 +485,254 @@ export class CourseEnrollmentRepository extends BaseRepository<CourseEnrollment>
       completedEnrollments: parseInt(result?.completed_enrollments || '0'),
       inProgressEnrollments: parseInt(result?.in_progress_enrollments || '0'),
       averageProgress: parseFloat(result?.average_progress || '0')
+    }
+  }
+}
+
+// 課程申請Repository
+export class CourseApplicationRepository extends BaseRepository<CourseApplication> {
+  constructor() {
+    super('course_applications')
+  }
+
+  // 創建課程申請
+  async createApplication(
+    instructorId: number,
+    data: CreateCourseApplicationRequest
+  ): Promise<CourseApplication> {
+    const result = await this.queryOne(
+      `INSERT INTO course_applications (
+        instructor_id, course_name, description, category, target_audience,
+        duration, price, delivery_methods, syllabus, teaching_experience,
+        materials, special_requirements, status, submitted_at, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending', NOW(), NOW(), NOW())
+      RETURNING *`,
+      [
+        instructorId,
+        data.course_name,
+        data.description,
+        data.category,
+        data.target_audience,
+        data.duration,
+        data.price,
+        data.delivery_methods || '',
+        data.syllabus,
+        data.teaching_experience,
+        data.materials || null,
+        data.special_requirements || null
+      ]
+    )
+
+    return result as CourseApplication
+  }
+
+  // 根據講師ID查找課程申請
+  async findByInstructor(
+    instructorId: number,
+    filters?: CourseApplicationSearchParams
+  ): Promise<{ data: CourseApplicationWithInstructor[]; meta: CoursePaginationMeta }> {
+    const { status, category, page = 1, limit = 10 } = filters || {}
+    const offset = (page - 1) * limit
+
+    const whereConditions: string[] = ['ca.instructor_id = $1']
+    const values: any[] = [instructorId]
+    let paramIndex = 2
+
+    if (status) {
+      whereConditions.push(`ca.status = $${paramIndex}`)
+      values.push(status)
+      paramIndex++
+    }
+
+    if (category) {
+      whereConditions.push(`ca.category = $${paramIndex}`)
+      values.push(category)
+      paramIndex++
+    }
+
+    const whereClause = whereConditions.join(' AND ')
+
+    // 獲取總數
+    const countResult = await this.queryOne(
+      `SELECT COUNT(*) as total
+       FROM course_applications ca
+       WHERE ${whereClause}`,
+      values
+    )
+    const total = parseInt(countResult?.total || '0')
+
+    // 獲取數據
+    const data = await this.queryMany(
+      `SELECT
+        ca.*,
+        u.name as instructor_name,
+        u.email as instructor_email,
+        ia.bio as instructor_bio,
+        ia.user_id
+      FROM course_applications ca
+      JOIN instructor_applications ia ON ca.instructor_id = ia.id
+      JOIN users u ON ia.user_id = u.id
+      WHERE ${whereClause}
+      ORDER BY ca.submitted_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      [...values, limit, offset]
+    )
+
+    const meta: CoursePaginationMeta = {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasNext: page * limit < total,
+      hasPrev: page > 1
+    }
+
+    return { data: data as CourseApplicationWithInstructor[], meta }
+  }
+
+  // 根據ID查找課程申請（包含講師信息）
+  async findByIdWithInstructor(id: number): Promise<CourseApplicationWithInstructor | null> {
+    const result = await this.queryOne(
+      `SELECT
+        ca.*,
+        u.name as instructor_name,
+        u.email as instructor_email,
+        ia.bio as instructor_bio,
+        ia.user_id
+      FROM course_applications ca
+      JOIN instructor_applications ia ON ca.instructor_id = ia.id
+      JOIN users u ON ia.user_id = u.id
+      WHERE ca.id = $1`,
+      [id]
+    )
+
+    return result as CourseApplicationWithInstructor | null
+  }
+
+  // 查找所有課程申請（管理員用）
+  async findAllWithFilters(
+    filters?: CourseApplicationSearchParams
+  ): Promise<{ data: CourseApplicationWithInstructor[]; meta: CoursePaginationMeta }> {
+    const { instructor_id, status, category, page = 1, limit = 10 } = filters || {}
+    const offset = (page - 1) * limit
+
+    const whereConditions: string[] = []
+    const values: any[] = []
+    let paramIndex = 1
+
+    if (instructor_id) {
+      whereConditions.push(`ca.instructor_id = $${paramIndex}`)
+      values.push(instructor_id)
+      paramIndex++
+    }
+
+    if (status) {
+      whereConditions.push(`ca.status = $${paramIndex}`)
+      values.push(status)
+      paramIndex++
+    }
+
+    if (category) {
+      whereConditions.push(`ca.category = $${paramIndex}`)
+      values.push(category)
+      paramIndex++
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''
+
+    // 獲取總數
+    const countResult = await this.queryOne(
+      `SELECT COUNT(*) as total
+       FROM course_applications ca
+       ${whereClause}`,
+      values
+    )
+    const total = parseInt(countResult?.total || '0')
+
+    // 獲取數據
+    const data = await this.queryMany(
+      `SELECT
+        ca.*,
+        u.name as instructor_name,
+        u.email as instructor_email,
+        ia.bio as instructor_bio,
+        ia.user_id
+      FROM course_applications ca
+      JOIN instructor_applications ia ON ca.instructor_id = ia.id
+      JOIN users u ON ia.user_id = u.id
+      ${whereClause}
+      ORDER BY ca.submitted_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      [...values, limit, offset]
+    )
+
+    const meta: CoursePaginationMeta = {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasNext: page * limit < total,
+      hasPrev: page > 1
+    }
+
+    return { data: data as CourseApplicationWithInstructor[], meta }
+  }
+
+  // 審核課程申請
+  async reviewApplication(
+    id: number,
+    status: 'approved' | 'rejected',
+    reviewNotes?: string
+  ): Promise<CourseApplication> {
+    const result = await this.queryOne(
+      `UPDATE course_applications
+       SET status = $1, reviewed_at = NOW(), review_notes = $2, updated_at = NOW()
+       WHERE id = $3
+       RETURNING *`,
+      [status, reviewNotes || null, id]
+    )
+
+    return result as CourseApplication
+  }
+
+  // 檢查講師是否有待審核的申請
+  async hasPendingApplication(instructorId: number): Promise<boolean> {
+    const result = await this.queryOne(
+      `SELECT COUNT(*) as count
+       FROM course_applications
+       WHERE instructor_id = $1 AND status = 'pending'`,
+      [instructorId]
+    )
+
+    return parseInt(result?.count || '0') > 0
+  }
+
+  // 獲取課程申請統計
+  async getApplicationStats(instructorId?: number): Promise<{
+    total: number
+    pending: number
+    approved: number
+    rejected: number
+  }> {
+    const whereClause = instructorId ? 'WHERE instructor_id = $1' : ''
+    const values = instructorId ? [instructorId] : []
+
+    const result = await this.queryOne(
+      `SELECT
+        COUNT(*) as total,
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+        COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved,
+        COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected
+       FROM course_applications
+       ${whereClause}`,
+      values
+    )
+
+    return {
+      total: parseInt(result?.total || '0'),
+      pending: parseInt(result?.pending || '0'),
+      approved: parseInt(result?.approved || '0'),
+      rejected: parseInt(result?.rejected || '0')
     }
   }
 }

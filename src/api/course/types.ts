@@ -202,3 +202,75 @@ export interface EnrollmentListResponse {
   meta: CoursePaginationMeta
 }
 
+// ==================== 課程申請相關類型 ====================
+
+// 課程申請狀態
+export type CourseApplicationStatus = 'pending' | 'approved' | 'rejected'
+
+// 課程申請
+export interface CourseApplication {
+  id: number
+  instructor_id: number
+  course_name: string
+  description: string
+  category: string
+  target_audience: string
+  duration: number
+  price: number
+  delivery_methods: string
+  syllabus: string
+  teaching_experience: string
+  materials: string | null
+  special_requirements: string | null
+  status: CourseApplicationStatus
+  submitted_at: Date
+  reviewed_at: Date | null
+  review_notes: string | null
+  created_at: Date
+  updated_at: Date
+}
+
+// 課程申請詳情（包含講師信息）
+export interface CourseApplicationWithInstructor extends CourseApplication {
+  instructor_name?: string
+  instructor_email?: string
+  instructor_bio?: string
+  user_id?: number
+}
+
+// 創建課程申請請求
+export interface CreateCourseApplicationRequest {
+  course_name: string
+  description: string
+  category: string
+  target_audience: string
+  duration: number
+  price: number
+  delivery_methods?: string
+  syllabus: string
+  teaching_experience: string
+  materials?: string
+  special_requirements?: string
+}
+
+// 審核課程申請請求
+export interface ReviewCourseApplicationRequest {
+  status: 'approved' | 'rejected'
+  review_notes?: string
+}
+
+// 課程申請搜索參數
+export interface CourseApplicationSearchParams {
+  instructor_id?: number
+  status?: CourseApplicationStatus
+  category?: string
+  page?: number
+  limit?: number
+}
+
+// 課程申請列表響應
+export interface CourseApplicationListResponse {
+  applications: CourseApplicationWithInstructor[]
+  meta: CoursePaginationMeta
+}
+

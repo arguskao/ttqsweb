@@ -23,8 +23,9 @@
       <div class="navbar-start">
         <router-link to="/courses" class="navbar-item">課程</router-link>
         <router-link to="/jobs" class="navbar-item">就業媒合</router-link>
-        <router-link to="/documents" class="navbar-item">文件下載</router-link>
+        <router-link to="/instructors" class="navbar-item">講師一覽</router-link>
         <router-link to="/instructor/apply" class="navbar-item">講師申請</router-link>
+        <router-link to="/documents" class="navbar-item">文件下載</router-link>
         <router-link to="/community/forum" class="navbar-item">討論區</router-link>
         <router-link to="/community/groups" class="navbar-item">群組</router-link>
         <router-link to="/community/experiences" class="navbar-item">經驗分享</router-link>
@@ -106,6 +107,18 @@
                 <i class="fas fa-user-check"></i>
               </span>
               <span>講師申請審核</span>
+            </router-link>
+
+            <router-link
+              v-if="currentUser?.userType === 'admin'"
+              to="/admin/course-applications"
+              class="navbar-item"
+              @click="closeMenus"
+            >
+              <span class="icon">
+                <i class="fas fa-chalkboard"></i>
+              </span>
+              <span>課程申請審核</span>
             </router-link>
 
             <router-link

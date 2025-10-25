@@ -34,7 +34,7 @@
                 <div class="control">
                   <button class="button is-primary" @click="loadInstructors">
                     <span class="icon">
-                      <i class="fas fa-search"></i>
+                      <span>🔍</span>
                     </span>
                     <span>搜尋</span>
                   </button>
@@ -86,9 +86,9 @@
                       <p class="subtitle is-6">
                         <span class="icon-text">
                           <span class="icon has-text-warning">
-                            <i class="fas fa-star"></i>
+                            <span>⭐</span>
                           </span>
-                          <span>{{ (instructor.average_rating ?? 0).toFixed(1) }}/5.0</span>
+                          <span>{{ (instructor.average_rating || 0).toFixed(1) }}/5.0</span>
                         </span>
                         <span class="ml-2">({{ instructor.total_ratings ?? 0 }})</span>
                       </p>
@@ -108,7 +108,10 @@
                   </div>
 
                   <footer class="card-footer">
-                    <router-link :to="`/instructors/${instructor.id}`" class="card-footer-item">
+                    <router-link
+                      :to="`/instructors/${instructor.user_id}`"
+                      class="card-footer-item"
+                    >
                       查看詳情
                     </router-link>
                   </footer>
@@ -203,20 +206,47 @@ const loadInstructors = async () => {
     errorMessage.value = ''
 
     const params: any = {
-      status: 'approved',
       is_active: 'true',
       page: meta.value.page,
       limit: meta.value.limit
     }
 
-    const response = await api.get('/instructors', { params })
-    instructors.value = response.data?.data ?? []
+    if (filters.value.specialization) {
+      params.specialization = filters.value.specialization
+    }
 
-    if (response.data?.meta) {
-      meta.value = response.data.meta
+    console.log('發送 API 請求，參數:', params)
+    const response = await api.get('/instructors', { params })
+    console.log('收到 API 響應:', response)
+    console.log('響應狀態:', response.status)
+    console.log('響應數據:', response.data)
+
+    if (response.data && response.data.success) {
+      const responseData = response.data.data
+      console.log('提取的數據:', responseData)
+      console.log('數據類型:', typeof responseData)
+      console.log('是否為陣列:', Array.isArray(responseData))
+
+      if (Array.isArray(responseData)) {
+        instructors.value = responseData
+        console.log('設置講師列表成功，長度:', instructors.value.length)
+      } else {
+        console.error('響應數據不是陣列:', responseData)
+        instructors.value = []
+      }
+
+      if (response.data.meta) {
+        meta.value = response.data.meta
+        console.log('設置分頁信息:', meta.value)
+      }
+    } else {
+      console.error('API 響應失敗或格式錯誤:', response.data)
+      instructors.value = []
     }
   } catch (error: any) {
-    errorMessage.value = error.response?.data?.error?.message || '載入講師列表失敗'
+    console.error('講師 API 錯誤:', error)
+    console.error('錯誤響應:', error.response)
+    errorMessage.value = error.response?.data?.error?.message || error.message || '載入講師列表失敗'
   } finally {
     isLoading.value = false
   }
@@ -262,6 +292,8 @@ const paginationPages = computed(() => {
 
 // Load instructors on component mount
 onMounted(() => {
+  console.log('講師頁面已掛載，開始載入講師列表')
+  console.log('初始狀態 - isLoading:', isLoading.value, 'instructors:', instructors.value.length)
   loadInstructors()
 })
 </script>

@@ -174,6 +174,15 @@ setupSupportRoutes(router)
 // 設置API文檔路由（必須在所有其他路由之後）
 setupApiDocumentationRoutes(router)
 
+// 調試：列出所有註冊的路由
+console.log('=== 已註冊的路由 ===')
+const allRoutes = router.getRoutes()
+allRoutes.forEach(route => {
+  console.log(`${route.method} ${route.path}`)
+})
+console.log(`總共 ${allRoutes.length} 個路由`)
+console.log('==================')
+
 // 添加缺失的API端點
 // 添加文件上傳端點
 router.post('/api/v1/documents', async (req: ApiRequest): Promise<ApiResponse> => {

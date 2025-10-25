@@ -28,7 +28,7 @@
                 <div class="control">
                   <button class="button is-primary" @click="handleSearch">
                     <span class="icon">
-                      <i class="fas fa-search"></i>
+                      <span>🔍</span>
                     </span>
                     <span>搜尋</span>
                   </button>
@@ -104,7 +104,7 @@
             <div class="control">
               <button class="button is-light" @click="clearFilters">
                 <span class="icon">
-                  <i class="fas fa-times"></i>
+                  <span>✕</span>
                 </span>
                 <span>清除篩選</span>
               </button>

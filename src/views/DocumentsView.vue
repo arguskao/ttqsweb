@@ -22,7 +22,7 @@
                     @input="handleSearch"
                   />
                   <span class="icon is-left">
-                    <i class="fas fa-search"></i>
+                    <span>🔍</span>
                   </span>
                 </p>
               </div>
@@ -44,7 +44,7 @@
             <div class="column is-2">
               <button class="button is-light is-fullwidth" @click="resetFilters">
                 <span class="icon">
-                  <i class="fas fa-redo"></i>
+                  <span>🔄</span>
                 </span>
                 <span>重置</span>
               </button>
@@ -57,7 +57,7 @@
           <h3 class="title is-5 mb-4">
             <span class="icon-text">
               <span class="icon has-text-info">
-                <i class="fas fa-chart-bar"></i>
+                <span>📊</span>
               </span>
               <span>下載統計</span>
             </span>
@@ -89,7 +89,7 @@
         <div v-else-if="documents.length === 0" class="notification is-info">
           <p class="has-text-centered">
             <span class="icon">
-              <i class="fas fa-info-circle"></i>
+              <span>ℹ️</span>
             </span>
             {{ searchTerm || selectedCategory ? '沒有找到符合條件的文件' : '目前沒有可用的文件' }}
           </p>
@@ -203,7 +203,7 @@
         <footer class="modal-card-foot">
           <button class="button is-primary" @click="handleDownloadFromPreview">
             <span class="icon">
-              <i class="fas fa-download"></i>
+              <span>⬇️</span>
             </span>
             <span>下載文件</span>
           </button>
@@ -323,7 +323,7 @@ const fetchDocuments = async () => {
       // API直接返回文檔數組在data中
       const docs = Array.isArray(response.data.data)
         ? response.data.data
-        : response.data.data.documents ?? []
+        : (response.data.data.documents ?? [])
       documents.value = docs.map((doc: any) => ({
         id: doc.id,
         title: doc.title,

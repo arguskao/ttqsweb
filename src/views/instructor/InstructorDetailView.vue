@@ -51,7 +51,7 @@
                       <span class="icon">
                         <i class="fas fa-star"></i>
                       </span>
-                      <span>{{ (instructor.average_rating ?? 0).toFixed(1) }}/5.0</span>
+                      <span>{{ (parseFloat(instructor.average_rating) || 0).toFixed(1) }}/5.0</span>
                     </span>
                     <span class="tag is-info">{{ instructor.total_ratings ?? 0 }} 評價</span>
                   </div>
@@ -86,7 +86,7 @@
                   <div class="field">
                     <label class="label">百分制評分</label>
                     <p class="is-size-4">
-                      {{ ((instructor.average_rating ?? 0) * 20).toFixed(0) }}/100
+                      {{ ((parseFloat(instructor.average_rating) || 0) * 20).toFixed(0) }}/100
                     </p>
                   </div>
                 </div>
@@ -226,10 +226,29 @@ const loadInstructor = async () => {
 
     const instructorId = route.params.id
     const response = await api.get(`/instructors/${instructorId}`)
-    instructor.value = response.data
+    console.log('講師詳情 API 響應:', response.data)
+    
+    if (response.data && response.data.success) {
+      instructor.value = response.data.data
+      console.log('設置講師資料:', instructor.value)
+    } else {
+      throw new Error('API 響應格式錯誤')
+    }
 
-    // Load stats and ratings
-    await Promise.all([loadStats(), loadRatings()])
+    // 暫時跳過統計和評價 API，直接使用默認值
+    console.log('使用默認統計和評價數據')
+    stats.value = {
+      total_courses: 0,
+      total_students: 0,
+      completion_rate: 0
+    }
+    ratings.value = []
+    ratingsMeta.value = {
+      page: 1,
+      limit: 5,
+      total: 0,
+      totalPages: 0
+    }
   } catch (error: any) {
     errorMessage.value = error.response?.data?.error?.message || '載入講師資料失敗'
   } finally {
@@ -237,46 +256,34 @@ const loadInstructor = async () => {
   }
 }
 
-// Load instructor statistics
+// Load instructor statistics (暫時停用)
 const loadStats = async () => {
-  if (!instructor.value) return
-
-  try {
-    const response = await api.get(`/instructors/${instructor.value.id}/stats`)
-    stats.value = response.data
-  } catch (error) {
-    console.error('Failed to load stats:', error)
+  console.log('統計 API 暫時停用，使用默認值')
+  stats.value = {
+    total_courses: 0,
+    total_students: 0,
+    completion_rate: 0
   }
 }
 
-// Load instructor ratings
+// Load instructor ratings (暫時停用)
 const loadRatings = async () => {
-  if (!instructor.value) return
-
-  try {
-    loadingRatings.value = true
-    const response = await api.get(`/instructors/${instructor.value.id}/ratings`, {
-      params: {
-        page: ratingsMeta.value.page,
-        limit: ratingsMeta.value.limit
-      }
-    })
-    ratings.value = response.data?.data ?? []
-
-    if (response.data?.meta) {
-      ratingsMeta.value = response.data.meta
-    }
-  } catch (error) {
-    console.error('Failed to load ratings:', error)
-  } finally {
-    loadingRatings.value = false
+  console.log('評價 API 暫時停用，使用默認值')
+  loadingRatings.value = false
+  ratings.value = []
+  ratingsMeta.value = {
+    page: 1,
+    limit: 5,
+    total: 0,
+    totalPages: 0
   }
 }
 
 // Change ratings page
 const changeRatingsPage = (page: number) => {
   ratingsMeta.value.page = page
-  loadRatings()
+  // 暫時跳過評價 API 調用
+  console.log('評價分頁功能暫時停用')
 }
 
 // Load instructor on component mount

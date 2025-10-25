@@ -5,6 +5,7 @@
 
 import type { ApiRouter } from '../router'
 
+import { setupCourseApplicationRoutes } from './applications'
 import { setupCourseEnrollmentRoutes } from './enrollments'
 import { setupCourseManagementRoutes } from './management'
 
@@ -23,5 +24,8 @@ export function setupCourseRoutes(router: ApiRouter): void {
 
   // 設置課程註冊路由
   setupCourseEnrollmentRoutes(router)
+
+  // 設置課程申請路由
+  setupCourseApplicationRoutes(router)
 }
 

@@ -5,7 +5,7 @@
       <div class="mb-4">
         <router-link to="/community/groups" class="button is-light">
           <span class="icon">
-            <i class="fas fa-arrow-left"></i>
+            <span>⬅️</span>
           </span>
           <span>返回群組列表</span>
         </router-link>
@@ -56,7 +56,7 @@
               </button>
               <button v-else class="button is-success" disabled>
                 <span class="icon">
-                  <i class="fas fa-check"></i>
+                  <span>✅</span>
                 </span>
                 <span>已加入</span>
               </button>
@@ -68,7 +68,7 @@
                 class="button is-info"
               >
                 <span class="icon">
-                  <i class="fas fa-comments"></i>
+                  <span>💬</span>
                 </span>
                 <span>查看討論</span>
               </router-link>

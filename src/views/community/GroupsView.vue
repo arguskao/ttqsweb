@@ -18,7 +18,7 @@
       <div class="box mb-4">
         <button class="button is-primary" @click="showCreateModal = true">
           <span class="icon">
-            <i class="fas fa-plus"></i>
+            <span>➕</span>
           </span>
           <span>創建新群組</span>
         </button>
@@ -46,9 +46,9 @@
               <p class="has-text-grey-light">
                 <span class="icon-text">
                   <span class="icon">
-                    <i class="fas fa-users"></i>
+                    <span>👥</span>
                   </span>
-                  <span>{{ group.memberCount }} 位成員</span>
+                  <span>{{ group.memberCount || 0 }} 位成員</span>
                 </span>
               </p>
             </div>

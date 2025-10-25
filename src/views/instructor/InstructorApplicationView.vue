@@ -6,7 +6,7 @@
         <div class="container">
           <h1 class="title is-2">
             <span class="icon is-large">
-              <i class="fas fa-chalkboard-teacher"></i>
+              <span>👨‍🏫</span>
             </span>
             講師申請
           </h1>
@@ -269,7 +269,7 @@
                   :disabled="!canSubmit"
                 >
                   <span class="icon">
-                    <i class="fas fa-paper-plane"></i>
+                    <span>✈️</span>
                   </span>
                   <span>{{ showResubmitForm ? '重新提交申請' : '提交申請' }}</span>
                 </button>

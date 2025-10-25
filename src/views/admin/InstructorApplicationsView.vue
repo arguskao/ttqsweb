@@ -61,15 +61,13 @@
                         class="tag is-medium"
                         :class="{
                           'is-warning': application.status === 'pending',
-                          'is-success': application.status === 'approved',
+                          'is-success': application.status === 'approved' && application.is_active !== false,
+                          'is-dark': application.status === 'approved' && application.is_active === false,
                           'is-danger': application.status === 'rejected'
                         }"
                       >
-                        {{ statusText(application.status) }}
+                        {{ getStatusText(application) }}
                       </span>
-                      <span v-if="!application.is_active" class="tag is-medium is-dark"
-                        >已停用</span
-                      >
                     </div>
                   </div>
                 </div>
@@ -105,7 +103,9 @@
                   </div>
                 </div>
 
-                <!-- Action buttons -->
+
+
+                <!-- Action buttons for pending applications -->
                 <div v-if="application.status === 'pending'" class="field is-grouped">
                   <div class="control">
                     <button
@@ -114,7 +114,7 @@
                       :disabled="isReviewing"
                     >
                       <span class="icon">
-                        <i class="fas fa-check"></i>
+                        <span>✅</span>
                       </span>
                       <span>批准</span>
                     </button>
@@ -126,24 +126,24 @@
                       :disabled="isReviewing"
                     >
                       <span class="icon">
-                        <i class="fas fa-times"></i>
+                        <span>❌</span>
                       </span>
                       <span>拒絕</span>
                     </button>
                   </div>
                 </div>
 
-                <!-- View details button -->
-                <div class="field">
+                <!-- View details button - only for approved applications -->
+                <div v-if="application.status === 'approved'" class="field">
                   <div class="control">
                     <router-link
-                      :to="`/instructors/${application.id}`"
+                      :to="`/instructors/${application.user_id}`"
                       class="button is-info is-light"
                     >
                       <span class="icon">
-                        <i class="fas fa-eye"></i>
+                        <span>👁️</span>
                       </span>
-                      <span>查看詳情</span>
+                      <span>查看講師詳情</span>
                     </router-link>
                   </div>
                 </div>
@@ -211,13 +211,14 @@ const formatDate = (dateString: string): string => {
 }
 
 // Status text helper
-const statusText = (status: string): string => {
-  const texts: Record<string, string> = {
-    pending: '待審核',
-    approved: '已批准',
-    rejected: '已拒絕'
+const getStatusText = (application: any): string => {
+  if (application.status === 'pending') return '待審核'
+  if (application.status === 'rejected') return '已拒絕'
+  if (application.status === 'approved') {
+    if (application.is_active === false) return '已停用'
+    return '已批准'
   }
-  return texts[status] || status
+  return application.status
 }
 
 // Load applications
@@ -247,6 +248,7 @@ const loadApplications = async () => {
     isLoading.value = false
   }
 }
+
 
 // Review application
 const reviewApplication = async (instructorId: number, status: 'approved' | 'rejected') => {

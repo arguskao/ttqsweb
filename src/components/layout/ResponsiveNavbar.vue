@@ -89,6 +89,11 @@
               <span>講師申請審核</span>
             </RouterLink>
 
+            <RouterLink v-if="isAdmin" to="/admin/course-applications" class="navbar-item">
+              <span class="icon"> 📚 </span>
+              <span>課程申請審核</span>
+            </RouterLink>
+
             <RouterLink v-if="isAdmin" to="/admin/analytics" class="navbar-item">
               <span class="icon"> 📊 </span>
               <span>數據分析</span>

@@ -145,19 +145,19 @@
               <div class="job-details">
                 <div class="detail-item">
                   <span class="icon">
-                    <i class="fas fa-map-marker-alt"></i>
+                    <span>📍</span>
                   </span>
                   <span>{{ job.location }}</span>
                 </div>
                 <div class="detail-item">
                   <span class="icon">
-                    <i class="fas fa-dollar-sign"></i>
+                    <span>💰</span>
                   </span>
                   <span>{{ formatSalary(job.salary) }}</span>
                 </div>
                 <div class="detail-item">
                   <span class="icon">
-                    <i class="fas fa-clock"></i>
+                    <span>⏰</span>
                   </span>
                   <span>{{ job.employmentType }}</span>
                 </div>
@@ -169,7 +169,7 @@
             <div class="card-footer-item">
               <div class="applications-info">
                 <span class="icon">
-                  <i class="fas fa-users"></i>
+                  <span>👥</span>
                 </span>
                 <span>{{ job.applicationCount }} 個申請</span>
               </div>
@@ -177,7 +177,7 @@
             <div class="card-footer-item">
               <div class="date-info">
                 <span class="icon">
-                  <i class="fas fa-calendar"></i>
+                  <span>📅</span>
                 </span>
                 <span>{{ formatDate(job.createdAt) }}</span>
               </div>
@@ -185,7 +185,7 @@
             <div class="card-footer-item">
               <div class="expiry-info" :class="{ 'is-expired': isJobExpired(job) }">
                 <span class="icon">
-                  <i class="fas fa-hourglass-end"></i>
+                  <span>⏳</span>
                 </span>
                 <span>{{ formatExpiryDate(job.expiresAt) }}</span>
               </div>

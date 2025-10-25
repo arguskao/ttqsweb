@@ -4,7 +4,7 @@
       <h1 class="title is-4 has-text-centered">
         <span class="icon-text">
           <span class="icon">
-            <i class="fas fa-chalkboard-teacher"></i>
+            <span>👨‍🏫</span>
           </span>
           <span>申請開課</span>
         </span>

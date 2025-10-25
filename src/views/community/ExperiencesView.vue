@@ -7,7 +7,7 @@
       <div class="box mb-4">
         <button class="button is-primary" @click="showCreateModal = true">
           <span class="icon">
-            <i class="fas fa-pen"></i>
+            <span>✏️</span>
           </span>
           <span>分享經驗</span>
         </button>
@@ -44,7 +44,7 @@
                   </span>
                   <span v-if="exp.is_featured" class="tag is-warning ml-2">
                     <span class="icon">
-                      <i class="fas fa-star"></i>
+                      <span>⭐</span>
                     </span>
                     <span>精選</span>
                   </span>
@@ -60,19 +60,19 @@
                 <div class="level-left">
                   <a class="level-item" @click="viewExperience(exp.id)">
                     <span class="icon is-small">
-                      <i class="fas fa-eye"></i>
+                      <span>👁️</span>
                     </span>
                     <span>{{ exp.view_count }}</span>
                   </a>
                   <a class="level-item" @click="likeExperience(exp.id)">
                     <span class="icon is-small">
-                      <i class="fas fa-heart"></i>
+                      <span>❤️</span>
                     </span>
                     <span>{{ exp.like_count }}</span>
                   </a>
                   <a class="level-item">
                     <span class="icon is-small">
-                      <i class="fas fa-comment"></i>
+                      <span>💬</span>
                     </span>
                     <span>{{ exp.comment_count }}</span>
                   </a>
@@ -114,7 +114,12 @@
           <div class="field">
             <label class="label">標題</label>
             <div class="control">
-              <input v-model="newExperience.title" class="input" type="text" placeholder="輸入標題" />
+              <input
+                v-model="newExperience.title"
+                class="input"
+                type="text"
+                placeholder="輸入標題"
+              />
             </div>
           </div>
 
@@ -240,8 +245,8 @@ const createExperience = async () => {
 
     const tags = tagsInput.value
       .split(',')
-      .map((t) => t.trim())
-      .filter((t) => t)
+      .map(t => t.trim())
+      .filter(t => t)
 
     await api.post('/experiences', {
       ...newExperience.value,
@@ -255,7 +260,8 @@ const createExperience = async () => {
     loadExperiences()
   } catch (error: any) {
     console.error('發布經驗失敗:', error)
-    const errorMessage = error.response?.data?.error?.message || error.message || '發布失敗，請稍後再試'
+    const errorMessage =
+      error.response?.data?.error?.message || error.message || '發布失敗，請稍後再試'
     alert(errorMessage)
   }
 }

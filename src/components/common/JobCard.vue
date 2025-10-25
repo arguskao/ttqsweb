@@ -14,7 +14,7 @@
             :class="{ 'has-text-danger': isFavorited }"
           >
             <span class="icon">
-              <i :class="isFavorited ? 'fas fa-heart' : 'far fa-heart'"></i>
+              <span>{{ isFavorited ? '❤️' : '🤍' }}</span>
             </span>
           </button>
         </div>
@@ -31,13 +31,13 @@
           </span>
           <span v-if="job.location" class="tag is-light">
             <span class="icon is-small">
-              <i class="fas fa-map-marker-alt"></i>
+              <span>📍</span>
             </span>
             <span>{{ job.location }}</span>
           </span>
           <span v-if="salaryRange" class="tag is-success is-light">
             <span class="icon is-small">
-              <i class="fas fa-dollar-sign"></i>
+              <span>💰</span>
             </span>
             <span>{{ salaryRange }}</span>
           </span>

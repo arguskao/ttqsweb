@@ -269,6 +269,20 @@ const router = createRouter({
       }
     },
     {
+      path: '/admin/course-applications',
+      name: 'admin-course-applications',
+      component: createAsyncComponent(
+        () => import('../views/admin/CourseApplicationsView.vue')
+      ),
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true,
+        keepAlive: true,
+        title: '課程申請管理 - 藥助Next學院',
+        description: '審核和管理課程申請'
+      }
+    },
+    {
       path: '/admin/analytics',
       name: 'admin-analytics',
       component: createAsyncComponent(() => import('../views/admin/AnalyticsDashboardView.vue')),

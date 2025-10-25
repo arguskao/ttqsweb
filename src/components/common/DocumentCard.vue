@@ -12,7 +12,7 @@
             <div class="level-item">
               <span class="icon-text has-text-grey">
                 <span class="icon">
-                  <i class="fas fa-download"></i>
+                  <span>⬇️</span>
                 </span>
                 <span>{{ document.downloadCount ?? 0 }} 次</span>
               </span>
@@ -23,7 +23,7 @@
         <h4 class="title is-5">
           <span class="icon-text">
             <span class="icon has-text-primary">
-              <i :class="fileIconClass"></i>
+              <span>{{ getFileIcon() }}</span>
             </span>
             <span>{{ document.title }}</span>
           </span>
@@ -38,7 +38,7 @@
             <div class="level-item">
               <span class="icon-text has-text-grey-light">
                 <span class="icon">
-                  <i class="fas fa-file"></i>
+                  <span>📄</span>
                 </span>
                 <span>{{ fileTypeLabel }}</span>
               </span>
@@ -46,7 +46,7 @@
             <div v-if="document.fileSize" class="level-item">
               <span class="icon-text has-text-grey-light">
                 <span class="icon">
-                  <i class="fas fa-hdd"></i>
+                  <span>💾</span>
                 </span>
                 <span>{{ formatFileSize(document.fileSize) }}</span>
               </span>
@@ -57,24 +57,16 @@
     </div>
 
     <footer class="card-footer">
-      <a
-        href="#"
-        @click.prevent="handlePreview"
-        class="card-footer-item"
-      >
+      <a href="#" @click.prevent="handlePreview" class="card-footer-item">
         <span class="icon">
-          <i class="fas fa-eye"></i>
+          <span>👁️</span>
         </span>
         <span>預覽</span>
       </a>
 
-      <a
-        href="#"
-        @click.prevent="handleDownload"
-        class="card-footer-item has-text-primary"
-      >
+      <a href="#" @click.prevent="handleDownload" class="card-footer-item has-text-primary">
         <span class="icon">
-          <i class="fas fa-download"></i>
+          <span>⬇️</span>
         </span>
         <span>下載</span>
       </a>
@@ -108,18 +100,18 @@ const emit = defineEmits<{
   preview: [document: Document]
 }>()
 
-const fileIconClass = computed(() => {
+const getFileIcon = () => {
   const type = props.document.fileType?.toLowerCase() ?? ''
 
-  if (type.includes('pdf')) return 'fas fa-file-pdf'
-  if (type.includes('word') || type.includes('doc')) return 'fas fa-file-word'
-  if (type.includes('excel') || type.includes('xls')) return 'fas fa-file-excel'
-  if (type.includes('powerpoint') || type.includes('ppt')) return 'fas fa-file-powerpoint'
-  if (type.includes('image') || type.includes('png') || type.includes('jpg')) return 'fas fa-file-image'
-  if (type.includes('zip') || type.includes('rar')) return 'fas fa-file-archive'
+  if (type.includes('pdf')) return '📄'
+  if (type.includes('word') || type.includes('doc')) return '📝'
+  if (type.includes('excel') || type.includes('xls')) return '📊'
+  if (type.includes('powerpoint') || type.includes('ppt')) return '📈'
+  if (type.includes('image') || type.includes('png') || type.includes('jpg')) return '🖼️'
+  if (type.includes('zip') || type.includes('rar')) return '📦'
 
-  return 'fas fa-file-alt'
-})
+  return '📄'
+}
 
 const fileTypeLabel = computed(() => {
   const type = props.document.fileType?.toLowerCase() ?? ''
@@ -141,7 +133,7 @@ const formatFileSize = (bytes: number): string => {
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
 
-  return `${Math.round(bytes / Math.pow(k, i) * 100) / 100} ${sizes[i]}`
+  return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`
 }
 
 const handleDownload = () => {

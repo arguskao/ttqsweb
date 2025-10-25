@@ -369,28 +369,20 @@ const loadProfile = async () => {
   }
 }
 
-// Load instructor statistics
+// Load instructor statistics (暫時停用)
 const loadStats = async () => {
-  if (!instructor.value) return
-
-  try {
-    const response = await api.get(`/instructors/${instructor.value.id}/stats`)
-    stats.value = response.data
-  } catch (error) {
-    console.error('Failed to load stats:', error)
+  console.log('講師個人資料頁面 - 統計 API 暫時停用')
+  stats.value = {
+    total_courses: 0,
+    total_students: 0,
+    completion_rate: 0
   }
 }
 
-// Load instructor ratings
+// Load instructor ratings (暫時停用)
 const loadRatings = async () => {
-  if (!instructor.value) return
-
-  try {
-    const response = await api.get(`/instructors/${instructor.value.id}/ratings`)
-    ratings.value = response.data
-  } catch (error) {
-    console.error('Failed to load ratings:', error)
-  }
+  console.log('講師個人資料頁面 - 評價 API 暫時停用')
+  ratings.value = []
 }
 
 // Submit instructor application

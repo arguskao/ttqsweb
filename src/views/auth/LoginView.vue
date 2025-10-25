@@ -30,7 +30,7 @@
                         :disabled="isLoading"
                       />
                       <span class="icon is-small is-left">
-                        <i class="fas fa-envelope"></i>
+                        <span>✉️</span>
                       </span>
                     </div>
                     <p v-if="errors.email" class="help is-danger">{{ errors.email }}</p>
@@ -48,7 +48,7 @@
                         :disabled="isLoading"
                       />
                       <span class="icon is-small is-left">
-                        <i class="fas fa-lock"></i>
+                        <span>🔒</span>
                       </span>
                     </div>
                     <p v-if="errors.password" class="help is-danger">{{ errors.password }}</p>
@@ -87,7 +87,12 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { authService, validateEmail, validateRequired, validationMessages } from '@/services/auth-service'
+import {
+  authService,
+  validateEmail,
+  validateRequired,
+  validationMessages
+} from '@/services/auth-service'
 import type { LoginCredentials } from '@/types'
 
 const router = useRouter()

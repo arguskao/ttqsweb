@@ -709,7 +709,7 @@ export async function handleApiRequest(context: Context, path: string): Promise<
     console.log(`[API] 處理請求: ${request.method} ${path}`)
 
     // 直接導入而不是動態導入
-    const apiModule = await import('../../api/index.ts')
+    const apiModule = await import('../../../../src/api/index.ts')
     const router = apiModule.router
 
     if (router) {
@@ -993,6 +993,249 @@ export async function handleApiRequest(context: Context, path: string): Promise<
       }
 
       const sql = neon(databaseUrl)
+
+      console.log('[Instructor] 處理講師申請請求 - method:', method, 'path:', path)
+
+      // 管理員審核申請：PUT /instructor-applications/:id/review
+      const reviewMatch = path.match(/^\/instructor-applications\/(\d+)\/review$/)
+      console.log(
+        '[Instructor] 審核申請匹配結果:',
+        reviewMatch ? 'matched' : 'not matched',
+        'method:',
+        method
+      )
+      if (method === 'PUT' && reviewMatch) {
+        const applicationId = parseInt(reviewMatch[1])
+        console.log('[Instructor] 開始審核申請，ID:', applicationId)
+
+        try {
+          const body = (await request.json()) as any
+          const { status, review_notes } = body
+          console.log('[Instructor] 審核數據:', { status, review_notes })
+
+          if (!status || !['approved', 'rejected'].includes(status)) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'VALIDATION_ERROR', message: 'Status must be approved or rejected' }
+              }),
+              {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          // 從 Authorization header 獲取管理員用戶 ID
+          const authHeader = request.headers.get('Authorization') || ''
+          if (!authHeader.startsWith('Bearer ')) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'UNAUTHORIZED', message: '需要提供認證 token' }
+              }),
+              {
+                status: 401,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          const token = authHeader.substring(7)
+          const parts = token.split('.')
+          if (parts.length !== 3) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'UNAUTHORIZED', message: '無效的認證 token' }
+              }),
+              {
+                status: 401,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          const payload = JSON.parse(atob(parts[1]))
+          const reviewerId = payload.userId
+
+          if (!reviewerId) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'UNAUTHORIZED', message: '無效的認證 token' }
+              }),
+              {
+                status: 401,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          // 檢查申請是否存在且為待審核狀態
+          console.log('[Instructor] 查詢申請，ID:', applicationId)
+          const applications = await sql`
+            SELECT * FROM instructor_applications 
+            WHERE id = ${applicationId} AND status = 'pending'
+          `
+          console.log('[Instructor] 找到申請:', applications.length > 0 ? '是' : '否')
+
+          if (applications.length === 0) {
+            console.log('[Instructor] 申請不存在或已審核')
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'NOT_FOUND', message: '申請不存在或已審核' }
+              }),
+              {
+                status: 404,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          const application = applications[0]
+
+          // 更新申請狀態
+          await sql`
+            UPDATE instructor_applications 
+            SET status = ${status}, reviewed_at = NOW(), reviewed_by = ${reviewerId}, review_notes = ${review_notes || ''}
+            WHERE id = ${applicationId}
+          `
+
+          // 如果批准，創建講師記錄並更新用戶類型
+          if (status === 'approved') {
+            // 更新用戶類型為 instructor
+            await sql`
+              UPDATE users 
+              SET user_type = 'instructor'
+              WHERE id = ${application.user_id}
+            `
+
+            // 創建講師記錄
+            await sql`
+              INSERT INTO instructors (
+                user_id, bio, qualifications, specialization, years_of_experience,
+                application_status, approval_date, approved_by, average_rating, total_ratings, is_active, created_at, updated_at
+              )
+              VALUES (
+                ${application.user_id}, ${application.bio}, ${application.qualifications}, 
+                ${application.specialization}, ${application.years_of_experience}, 'approved', NOW(), 
+                ${reviewerId}, 0, 0, true, NOW(), NOW()
+              )
+            `
+
+            console.log('[Instructor] 用戶類型已更新為 instructor，用戶ID:', application.user_id)
+          }
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: { message: `Application ${status} successfully` }
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        } catch (dbError: any) {
+          console.error('[Instructor] 審核申請失敗:', dbError.message)
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: { code: 'DB_ERROR', message: 'Database error' }
+            }),
+            {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        }
+      }
+
+      // 重置申請狀態（管理員）：PUT /instructor-applications/:id/reset
+      if (method === 'PUT' && path.match(/^\/instructor-applications\/\d+\/reset$/)) {
+        const applicationId = parseInt(path.split('/')[2])
+
+        if (isNaN(applicationId)) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: { code: 'VALIDATION_ERROR', message: 'Invalid application ID' }
+            }),
+            {
+              status: 400,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        }
+
+        try {
+          // 檢查申請是否存在
+          const application = await sql`
+            SELECT * FROM instructor_applications WHERE id = ${applicationId}
+          `
+
+          if (!application[0]) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Application not found' }
+              }),
+              {
+                status: 404,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          // 重置申請狀態為 pending
+          await sql`
+            UPDATE instructor_applications 
+            SET status = 'pending', reviewed_at = NULL, reviewed_by = NULL, review_notes = NULL
+            WHERE id = ${applicationId}
+          `
+
+          // 如果之前有講師記錄，刪除它
+          await sql`
+            DELETE FROM instructors WHERE user_id = ${application[0].user_id}
+          `
+
+          // 重置用戶類型為 job_seeker
+          await sql`
+            UPDATE users 
+            SET user_type = 'job_seeker'
+            WHERE id = ${application[0].user_id}
+          `
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: { message: 'Application reset to pending successfully' }
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        } catch (dbError: any) {
+          console.error('[Instructor] 重置申請失敗:', dbError.message, dbError.stack)
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: {
+                code: 'DB_ERROR',
+                message: 'Database error',
+                details: dbError.message
+              }
+            }),
+            {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        }
+      }
 
       // 檢查現有申請：GET /users/:id/instructor-application
       const userAppMatch = path.match(/^\/users\/(\d+)\/instructor-application$/)
@@ -1310,157 +1553,6 @@ export async function handleApiRequest(context: Context, path: string): Promise<
         }
       }
 
-      // 管理員審核申請：PUT /instructor-applications/:id/review
-      const reviewMatch = path.match(/^\/instructor-applications\/(\d+)\/review$/)
-      if (method === 'PUT' && reviewMatch) {
-        const applicationId = parseInt(reviewMatch[1])
-        console.log('[Instructor] 開始審核申請，ID:', applicationId)
-
-        try {
-          const body = (await request.json()) as any
-          const { status, review_notes } = body
-          console.log('[Instructor] 審核數據:', { status, review_notes })
-
-          if (!status || !['approved', 'rejected'].includes(status)) {
-            return new Response(
-              JSON.stringify({
-                success: false,
-                error: { code: 'VALIDATION_ERROR', message: 'Status must be approved or rejected' }
-              }),
-              {
-                status: 400,
-                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-              }
-            )
-          }
-
-          // 從 Authorization header 獲取管理員用戶 ID
-          const authHeader = request.headers.get('Authorization') || ''
-          if (!authHeader.startsWith('Bearer ')) {
-            return new Response(
-              JSON.stringify({
-                success: false,
-                error: { code: 'UNAUTHORIZED', message: '需要提供認證 token' }
-              }),
-              {
-                status: 401,
-                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-              }
-            )
-          }
-
-          const token = authHeader.substring(7)
-          const parts = token.split('.')
-          if (parts.length !== 3) {
-            return new Response(
-              JSON.stringify({
-                success: false,
-                error: { code: 'UNAUTHORIZED', message: '無效的認證 token' }
-              }),
-              {
-                status: 401,
-                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-              }
-            )
-          }
-
-          const payload = JSON.parse(atob(parts[1]))
-          const reviewerId = payload.userId
-
-          if (!reviewerId) {
-            return new Response(
-              JSON.stringify({
-                success: false,
-                error: { code: 'UNAUTHORIZED', message: '無效的認證 token' }
-              }),
-              {
-                status: 401,
-                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-              }
-            )
-          }
-
-          // 檢查申請是否存在且為待審核狀態
-          console.log('[Instructor] 查詢申請，ID:', applicationId)
-          const applications = await sql`
-            SELECT * FROM instructor_applications 
-            WHERE id = ${applicationId} AND status = 'pending'
-          `
-          console.log('[Instructor] 找到申請:', applications.length > 0 ? '是' : '否')
-
-          if (applications.length === 0) {
-            console.log('[Instructor] 申請不存在或已審核')
-            return new Response(
-              JSON.stringify({
-                success: false,
-                error: { code: 'NOT_FOUND', message: '申請不存在或已審核' }
-              }),
-              {
-                status: 404,
-                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-              }
-            )
-          }
-
-          const application = applications[0]
-
-          // 更新申請狀態
-          await sql`
-            UPDATE instructor_applications 
-            SET status = ${status}, reviewed_at = NOW(), reviewed_by = ${reviewerId}, review_notes = ${review_notes || ''}
-            WHERE id = ${applicationId}
-          `
-
-          // 如果批准，創建講師記錄並更新用戶類型
-          if (status === 'approved') {
-            // 更新用戶類型為 instructor
-            await sql`
-              UPDATE users 
-              SET user_type = 'instructor'
-              WHERE id = ${application.user_id}
-            `
-
-            // 創建講師記錄
-            await sql`
-              INSERT INTO instructors (
-                user_id, bio, qualifications, specialization, years_of_experience,
-                application_status, approval_date, approved_by, average_rating, total_ratings, is_active, created_at, updated_at
-              )
-              VALUES (
-                ${application.user_id}, ${application.bio}, ${application.qualifications}, 
-                ${application.specialization}, ${application.years_of_experience}, 'approved', NOW(), 
-                ${reviewerId}, 0, 0, true, NOW(), NOW()
-              )
-            `
-
-            console.log('[Instructor] 用戶類型已更新為 instructor，用戶ID:', application.user_id)
-          }
-
-          return new Response(
-            JSON.stringify({
-              success: true,
-              data: { message: `Application ${status} successfully` }
-            }),
-            {
-              status: 200,
-              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-            }
-          )
-        } catch (dbError: any) {
-          console.error('[Instructor] 審核申請失敗:', dbError.message)
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: { code: 'DB_ERROR', message: 'Database error' }
-            }),
-            {
-              status: 500,
-              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-            }
-          )
-        }
-      }
-
       // 獲取所有申請列表（管理員）：GET /instructor-applications
       if (method === 'GET' && path === '/instructor-applications') {
         console.log('[Instructor] 管理員查詢申請列表')
@@ -1596,8 +1688,317 @@ export async function handleApiRequest(context: Context, path: string): Promise<
     }
   }
 
-  // 備用：討論區/社群相關端點（直接查詢數據庫）
-  if (path.startsWith('/groups') || path.startsWith('/topics') || path.startsWith('/forum')) {
+  // 講師清單端點
+  if (path.startsWith('/instructors')) {
+    try {
+      const url = new URL(request.url)
+      const method = request.method.toUpperCase()
+
+      // 導入 Neon 數據庫
+      const { neon } = await import('@neondatabase/serverless')
+      const databaseUrl = env.DATABASE_URL
+
+      if (!databaseUrl) {
+        console.error('[Instructors] DATABASE_URL 未配置')
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: { code: 'DB_ERROR', message: 'Database not configured' }
+          }),
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          }
+        )
+      }
+
+      const sql = neon(databaseUrl)
+
+      // GET /instructors - 獲取講師列表
+      if (method === 'GET' && path === '/instructors') {
+        const page = parseInt(url.searchParams.get('page') || '1', 10)
+        const limit = parseInt(url.searchParams.get('limit') || '12', 10)
+        const offset = (page - 1) * limit
+        const isActive = url.searchParams.get('is_active') === 'true'
+        const specialization = url.searchParams.get('specialization') || ''
+
+        try {
+          // 查詢總數
+          let countResult
+          if (specialization) {
+            // 先查詢 instructors 表
+            countResult = await sql`
+               SELECT COUNT(*) as count 
+               FROM instructors i
+               LEFT JOIN users u ON i.user_id = u.id
+               WHERE i.is_active = ${isActive} AND i.specialization ILIKE ${`%${specialization}%`}
+             `
+
+            // 如果 instructors 表中沒有數據，查詢 instructor_applications 表
+            if (parseInt(countResult[0]?.count || '0') === 0) {
+              countResult = await sql`
+                 SELECT COUNT(*) as count 
+                 FROM instructor_applications ia
+                 LEFT JOIN users u ON ia.user_id = u.id
+                 WHERE ia.status = 'approved' AND ia.specialization ILIKE ${`%${specialization}%`}
+               `
+            }
+          } else {
+            // 先查詢 instructors 表
+            countResult = await sql`
+               SELECT COUNT(*) as count 
+               FROM instructors i
+               LEFT JOIN users u ON i.user_id = u.id
+               WHERE i.is_active = ${isActive}
+             `
+
+            // 如果 instructors 表中沒有數據，查詢 instructor_applications 表
+            if (parseInt(countResult[0]?.count || '0') === 0) {
+              countResult = await sql`
+                 SELECT COUNT(*) as count 
+                 FROM instructor_applications ia
+                 LEFT JOIN users u ON ia.user_id = u.id
+                 WHERE ia.status = 'approved'
+               `
+            }
+          }
+          const total = parseInt(countResult[0]?.count || '0')
+
+          // 查詢講師列表
+          let instructors
+          if (specialization) {
+            // 先查詢 instructors 表
+            instructors = await sql`
+               SELECT 
+                 i.*,
+                 u.first_name,
+                 u.last_name,
+                 u.email,
+                 u.user_type,
+                 COALESCE(i.average_rating, 0) as average_rating,
+                 COALESCE(i.total_ratings, 0) as total_ratings
+               FROM instructors i
+               LEFT JOIN users u ON i.user_id = u.id
+               WHERE i.is_active = ${isActive} AND i.specialization ILIKE ${`%${specialization}%`}
+               ORDER BY i.created_at DESC
+               LIMIT ${limit} OFFSET ${offset}
+             `
+
+            // 如果 instructors 表中沒有數據，查詢 instructor_applications 表
+            if (instructors.length === 0) {
+              instructors = await sql`
+                 SELECT 
+                   ia.*,
+                   u.first_name,
+                   u.last_name,
+                   u.email,
+                   u.user_type,
+                   COALESCE(ia.average_rating, 0) as average_rating,
+                   COALESCE(ia.total_ratings, 0) as total_ratings
+                 FROM instructor_applications ia
+                 LEFT JOIN users u ON ia.user_id = u.id
+                 WHERE ia.status = 'approved' AND ia.specialization ILIKE ${`%${specialization}%`}
+                 ORDER BY ia.submitted_at DESC
+                 LIMIT ${limit} OFFSET ${offset}
+               `
+            }
+          } else {
+            // 先查詢 instructors 表
+            instructors = await sql`
+               SELECT 
+                 i.*,
+                 u.first_name,
+                 u.last_name,
+                 u.email,
+                 u.user_type,
+                 COALESCE(i.average_rating, 0) as average_rating,
+                 COALESCE(i.total_ratings, 0) as total_ratings
+               FROM instructors i
+               LEFT JOIN users u ON i.user_id = u.id
+               WHERE i.is_active = ${isActive}
+               ORDER BY i.created_at DESC
+               LIMIT ${limit} OFFSET ${offset}
+             `
+
+            // 如果 instructors 表中沒有數據，查詢 instructor_applications 表
+            if (instructors.length === 0) {
+              instructors = await sql`
+                 SELECT 
+                   ia.*,
+                   u.first_name,
+                   u.last_name,
+                   u.email,
+                   u.user_type,
+                   COALESCE(ia.average_rating, 0) as average_rating,
+                   COALESCE(ia.total_ratings, 0) as total_ratings
+                 FROM instructor_applications ia
+                 LEFT JOIN users u ON ia.user_id = u.id
+                 WHERE ia.status = 'approved'
+                 ORDER BY ia.submitted_at DESC
+                 LIMIT ${limit} OFFSET ${offset}
+               `
+            }
+          }
+
+          // 轉換數字類型
+          const processedInstructors = instructors.map((instructor: any) => ({
+            ...instructor,
+            average_rating: parseFloat(instructor.average_rating) || 0,
+            total_ratings: parseInt(instructor.total_ratings) || 0,
+            experience_years: parseInt(instructor.experience_years) || 0,
+            years_of_experience: parseInt(instructor.years_of_experience) || 0
+          }))
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: processedInstructors,
+              meta: { page, limit, total, totalPages: Math.ceil(total / limit) }
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        } catch (dbError: any) {
+          console.error('[Instructors] 查詢講師失敗:', dbError.message)
+          return new Response(
+            JSON.stringify({ success: true, data: [], meta: { page, limit, total: 0 } }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        }
+      }
+
+      // GET /instructors/:id - 獲取單個講師詳情
+      const instructorDetailMatch = path.match(/^\/instructors\/(\d+)$/)
+      if (method === 'GET' && instructorDetailMatch) {
+        const userId = parseInt(instructorDetailMatch[1])
+        console.log('[Instructors] 查詢講師詳情，用戶ID:', userId)
+
+        try {
+          // 先查詢 instructors 表
+          let instructorResult = await sql`
+             SELECT 
+               i.*,
+               u.first_name,
+               u.last_name,
+               u.email
+             FROM instructors i
+             LEFT JOIN users u ON i.user_id = u.id
+             WHERE i.user_id = ${userId} AND i.is_active = true
+           `
+
+          // 如果 instructors 表中沒有找到，則查詢 instructor_applications 表
+          if (instructorResult.length === 0) {
+            console.log('[Instructors] instructors 表中未找到，查詢 instructor_applications 表')
+            instructorResult = await sql`
+               SELECT 
+                 ia.*,
+                 u.first_name,
+                 u.last_name,
+                 u.email,
+                 ia.bio,
+                 ia.qualifications,
+                 ia.specialization,
+                 ia.years_of_experience,
+                 ia.average_rating,
+                 ia.total_ratings,
+                 ia.is_active,
+                 ia.created_at,
+                 ia.updated_at
+               FROM instructor_applications ia
+               LEFT JOIN users u ON ia.user_id = u.id
+               WHERE ia.user_id = ${userId} AND ia.status = 'approved'
+             `
+          }
+
+          if (instructorResult.length === 0) {
+            console.log('[Instructors] 講師不存在，用戶ID:', userId)
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: { code: 'NOT_FOUND', message: '講師不存在' }
+              }),
+              {
+                status: 404,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+
+          const instructor = instructorResult[0]
+          console.log('[Instructors] 找到講師:', instructor.first_name, instructor.last_name)
+
+          // 轉換數字類型
+          const processedInstructor = {
+            ...instructor,
+            average_rating: parseFloat(instructor.average_rating) || 0,
+            total_ratings: parseInt(instructor.total_ratings) || 0,
+            experience_years: parseInt(instructor.experience_years) || 0,
+            years_of_experience: parseInt(instructor.years_of_experience) || 0
+          }
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: processedInstructor
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        } catch (dbError: any) {
+          console.error('[Instructors] 查詢講師詳情失敗:', dbError.message)
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: { code: 'DB_ERROR', message: 'Database error' }
+            }),
+            {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            }
+          )
+        }
+      }
+
+      // 其他講師相關端點可以在這裡添加
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: { code: 'NOT_FOUND', message: '講師端點不存在' }
+        }),
+        {
+          status: 404,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        }
+      )
+    } catch (error: any) {
+      console.error('[Instructors] 講師端點處理錯誤:', error.message)
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: { code: 'SERVER_ERROR', message: 'Server error' }
+        }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        }
+      )
+    }
+  }
+
+  // 備用：討論區/社群/課程申請相關端點（直接查詢數據庫）
+  if (
+    path.startsWith('/groups') ||
+    path.startsWith('/topics') ||
+    path.startsWith('/forum') ||
+    path.startsWith('/course-applications')
+  ) {
     try {
       const url = new URL(request.url)
       const method = request.method.toUpperCase()
@@ -1634,9 +2035,21 @@ export async function handleApiRequest(context: Context, path: string): Promise<
           const total = parseInt(countResult[0]?.count || '0')
 
           const groups = await sql`
-            SELECT * FROM student_groups
-            WHERE is_active = true
-            ORDER BY created_at DESC
+            SELECT 
+              sg.id,
+              sg.name,
+              sg.description,
+              sg.group_type,
+              sg.created_by,
+              sg.is_active,
+              sg.created_at,
+              sg.updated_at,
+              COUNT(gm.id) as member_count
+            FROM student_groups sg
+            LEFT JOIN group_members gm ON sg.id = gm.group_id
+            WHERE sg.is_active = true
+            GROUP BY sg.id, sg.name, sg.description, sg.group_type, sg.created_by, sg.is_active, sg.created_at, sg.updated_at
+            ORDER BY sg.created_at DESC
             LIMIT ${limit} OFFSET ${offset}
           `
 
@@ -1703,11 +2116,162 @@ export async function handleApiRequest(context: Context, path: string): Promise<
       }
 
       // 課程申請相關端點
-      if (pathname.startsWith('/course-applications')) {
-        console.log('[Course Applications] 處理課程申請請求:', method, pathname)
+      if (path.startsWith('/course-applications')) {
+        console.log('[Course Applications] 處理課程申請請求:', method, path)
+
+        // 處理 OPTIONS 請求（CORS 預檢）
+        if (method === 'OPTIONS') {
+          return new Response(null, {
+            status: 204,
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+              'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+              'Access-Control-Max-Age': '86400'
+            }
+          })
+        }
+
+        // 驗證認證
+        const authHeader = request.headers.get('Authorization')
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: '未提供認證令牌',
+              status: 401
+            }),
+            {
+              status: 401,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+              }
+            }
+          )
+        }
+
+        const token = authHeader.substring(7)
+        let userId: number
+        let userType: string
+
+        try {
+          // 解析 JWT token（簡化版本）
+          const payload = JSON.parse(atob(token.split('.')[1]))
+          userId = payload.userId || payload.id
+          userType = payload.userType || payload.user_type
+        } catch (error) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: '無效的認證令牌',
+              status: 401
+            }),
+            {
+              status: 401,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+              }
+            }
+          )
+        }
+
+        // GET /course-applications - 獲取所有課程申請（管理員用）
+        if (method === 'GET' && path === '/course-applications') {
+          // 只有管理員可以查看所有申請
+          if (userType !== 'admin') {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: '只有管理員可以查看所有課程申請',
+                status: 403
+              }),
+              {
+                status: 403,
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Access-Control-Allow-Origin': '*'
+                }
+              }
+            )
+          }
+
+          try {
+            const page = parseInt(url.searchParams.get('page') || '1', 10)
+            const limit = parseInt(url.searchParams.get('limit') || '10', 10)
+            const offset = (page - 1) * limit
+            const statusFilter = url.searchParams.get('status')
+
+            console.log('[Course Applications] 獲取所有課程申請:', { page, limit, statusFilter })
+
+            // 構建查詢條件
+            let whereClause = ''
+            const params: any[] = []
+
+            if (statusFilter) {
+              whereClause = 'WHERE ca.status = $1'
+              params.push(statusFilter)
+            }
+
+            // 獲取總數
+            const countQuery = `SELECT COUNT(*) as count FROM course_applications ca ${whereClause}`
+            const countResult = await sql.unsafe(countQuery, params)
+            const total = parseInt(countResult[0]?.count || '0')
+
+            // 獲取申請列表
+            const listQuery = `
+              SELECT
+                ca.id, ca.course_name, ca.description, ca.category, ca.target_audience,
+                ca.duration, ca.price, ca.delivery_methods, ca.syllabus, ca.teaching_experience,
+                ca.materials, ca.special_requirements, ca.status, ca.submitted_at, ca.reviewed_at,
+                ca.review_notes, ca.created_at, ca.updated_at,
+                u.name as instructor_name, u.email as instructor_email,
+                ia.id as instructor_id
+              FROM course_applications ca
+              JOIN instructor_applications ia ON ca.instructor_id = ia.id
+              JOIN users u ON ia.user_id = u.id
+              ${whereClause}
+              ORDER BY ca.submitted_at DESC
+              LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+            `
+            params.push(limit, offset)
+            const applications = await sql.unsafe(listQuery, params)
+
+            return new Response(
+              JSON.stringify({
+                success: true,
+                data: applications,
+                meta: {
+                  page,
+                  limit,
+                  total,
+                  totalPages: Math.ceil(total / limit)
+                }
+              }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          } catch (error: any) {
+            console.error('[Course Applications] 獲取所有課程申請失敗:', error)
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: '獲取課程申請列表失敗',
+                details: error.message
+              }),
+              {
+                status: 500,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+        }
 
         // POST /course-applications - 創建課程申請
-        if (method === 'POST' && pathname === '/course-applications') {
+        if (method === 'POST' && path === '/course-applications') {
           try {
             const body = await request.json()
             console.log('[Course Applications] 創建課程申請:', body)
@@ -1742,7 +2306,7 @@ export async function handleApiRequest(context: Context, path: string): Promise<
 
             // 檢查用戶是否為已批准的講師
             const instructorCheck = await sql`
-              SELECT id, status FROM instructor_applications 
+              SELECT id, status FROM instructor_applications
               WHERE user_id = ${userId}
             `
 
@@ -1810,9 +2374,9 @@ export async function handleApiRequest(context: Context, path: string): Promise<
         }
 
         // GET /course-applications/:id - 獲取課程申請詳情
-        if (method === 'GET' && pathname.match(/^\/course-applications\/\d+$/)) {
+        if (method === 'GET' && path.match(/^\/course-applications\/\d+$/)) {
           try {
-            const applicationId = parseInt(pathname.split('/')[2])
+            const applicationId = parseInt(path.split('/')[2])
             console.log('[Course Applications] 獲取課程申請詳情:', applicationId)
 
             const application = await sql`
@@ -1891,9 +2455,9 @@ export async function handleApiRequest(context: Context, path: string): Promise<
         }
 
         // GET /instructors/:id/course-applications - 獲取講師的課程申請列表
-        if (method === 'GET' && pathname.match(/^\/instructors\/\d+\/course-applications$/)) {
+        if (method === 'GET' && path.match(/^\/instructors\/\d+\/course-applications$/)) {
           try {
-            const instructorId = parseInt(pathname.split('/')[2])
+            const instructorId = parseInt(path.split('/')[2])
             console.log('[Course Applications] 獲取講師課程申請列表:', instructorId)
 
             // 檢查權限：只有講師本人或管理員可以查看
@@ -1965,6 +2529,130 @@ export async function handleApiRequest(context: Context, path: string): Promise<
               JSON.stringify({
                 success: false,
                 message: '獲取申請列表失敗',
+                details: error.message
+              }),
+              {
+                status: 500,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          }
+        }
+
+        // PUT /course-applications/:id/review - 審核課程申請（管理員用）
+        if (method === 'PUT' && path.match(/^\/course-applications\/\d+\/review$/)) {
+          // 只有管理員可以審核
+          if (userType !== 'admin') {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: '只有管理員可以審核課程申請',
+                status: 403
+              }),
+              {
+                status: 403,
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Access-Control-Allow-Origin': '*'
+                }
+              }
+            )
+          }
+
+          try {
+            const applicationId = parseInt(path.split('/')[2])
+            const body = await request.json()
+            console.log('[Course Applications] 審核課程申請:', applicationId, body)
+
+            // 驗證狀態
+            if (!body.status || !['approved', 'rejected'].includes(body.status)) {
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  message: '審核狀態必須是 approved 或 rejected',
+                  status: 400
+                }),
+                {
+                  status: 400,
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                  }
+                }
+              )
+            }
+
+            // 檢查申請是否存在
+            const applicationCheck = await sql`
+              SELECT id, status FROM course_applications WHERE id = ${applicationId}
+            `
+
+            if (!applicationCheck.length) {
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  message: '課程申請不存在',
+                  status: 404
+                }),
+                {
+                  status: 404,
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                  }
+                }
+              )
+            }
+
+            // 檢查申請狀態
+            if (applicationCheck[0].status !== 'pending') {
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  message: '只能審核待審核的申請',
+                  status: 400
+                }),
+                {
+                  status: 400,
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                  }
+                }
+              )
+            }
+
+            // 更新申請狀態
+            const updatedApplication = await sql`
+              UPDATE course_applications
+              SET
+                status = ${body.status},
+                review_notes = ${body.review_notes || null},
+                reviewed_at = NOW(),
+                updated_at = NOW()
+              WHERE id = ${applicationId}
+              RETURNING *
+            `
+
+            return new Response(
+              JSON.stringify({
+                success: true,
+                data: {
+                  application: updatedApplication[0],
+                  message: `課程申請已${body.status === 'approved' ? '批准' : '拒絕'}`
+                }
+              }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              }
+            )
+          } catch (error: any) {
+            console.error('[Course Applications] 審核課程申請失敗:', error)
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: '審核失敗',
                 details: error.message
               }),
               {

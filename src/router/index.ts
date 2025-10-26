@@ -218,6 +218,20 @@ const router = createRouter({
       }
     },
     {
+      path: '/instructor/my-courses',
+      name: 'instructor-my-courses',
+      component: createAsyncComponent(
+        () => import('../views/instructor/InstructorMyCoursesView.vue')
+      ),
+      meta: {
+        requiresAuth: true,
+        requiresInstructor: true,
+        title: '我的授課 - 藥助Next學院',
+        description: '管理您教授的課程',
+        keepAlive: true
+      }
+    },
+    {
       path: '/instructor/profile',
       name: 'instructor-profile',
       component: createAsyncComponent(
@@ -391,7 +405,7 @@ router.beforeEach(async (to, from, next) => {
   if (!(window as any).__authInitialized) {
     try {
       await authServiceEnhanced.initializeAuth()
-      ;(window as any).__authInitialized = true
+        ; (window as any).__authInitialized = true
     } catch (error) {
       console.error('Auth initialization failed in router guard:', error)
     }

@@ -26,7 +26,7 @@ export const PhoneSchema = z
   .optional()
 
 // 用戶類型驗證
-export const UserTypeSchema = z.enum(['job_seeker', 'employer'] as const, {
+export const UserTypeSchema = z.enum(['job_seeker', 'employer', 'instructor'] as const, {
   message: '請選擇有效的用戶類型'
 })
 
@@ -194,7 +194,7 @@ export interface ApiErrorResponse {
 export interface User {
   id: number
   email: string
-  userType: 'job_seeker' | 'employer'
+  userType: 'job_seeker' | 'employer' | 'instructor'
   firstName: string
   lastName: string
   phone?: string

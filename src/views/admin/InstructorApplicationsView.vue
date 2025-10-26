@@ -251,7 +251,7 @@ const loadApplications = async () => {
 
 
 // Review application
-const reviewApplication = async (instructorId: number, status: 'approved' | 'rejected') => {
+const reviewApplication = async (applicationId: number, status: 'approved' | 'rejected') => {
   const confirmMessage =
     status === 'approved' ? '確定要批准此講師申請嗎？' : '確定要拒絕此講師申請嗎？'
 
@@ -259,12 +259,16 @@ const reviewApplication = async (instructorId: number, status: 'approved' | 'rej
     return
   }
 
+  console.log('審核申請 - ID:', applicationId, 'Status:', status)
+
   try {
     isReviewing.value = true
-    await api.put(`/instructor-applications/${instructorId}/review`, { status })
+    const response = await api.put(`/instructor-applications/${applicationId}/review`, { status })
+    console.log('審核響應:', response.data)
     alert(status === 'approved' ? '已批准申請' : '已拒絕申請')
     await loadApplications()
   } catch (error: any) {
+    console.error('審核失敗:', error.response?.data)
     alert(error.response?.data?.error?.message || '審核失敗')
   } finally {
     isReviewing.value = false

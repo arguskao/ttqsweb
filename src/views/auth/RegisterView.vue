@@ -32,6 +32,7 @@
                           <option value="">請選擇身份類型</option>
                           <option value="job_seeker">求職者</option>
                           <option value="employer">雇主</option>
+                          <option value="instructor">講師</option>
                         </select>
                       </div>
                     </div>

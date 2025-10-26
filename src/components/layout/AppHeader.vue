@@ -45,31 +45,73 @@
         <!-- Authenticated user menu -->
         <div v-else class="navbar-item has-dropdown" :class="{ 'is-active': isUserMenuOpen }">
           <a class="navbar-link" @click="toggleUserMenu">
-            <span class="icon">
-              <i class="fas fa-user-circle"></i>
-            </span>
+            <span class="icon"> 👤 </span>
             <span>{{ currentUser?.firstName }} {{ currentUser?.lastName }}</span>
           </a>
 
           <div class="navbar-dropdown is-right">
             <router-link to="/profile" class="navbar-item" @click="closeMenus">
-              <span class="icon">
-                <i class="fas fa-user-circle"></i>
-              </span>
+              <span class="icon"> 👤 </span>
               <span>個人資料</span>
             </router-link>
 
-            <router-link
-              v-if="currentUser?.userType === 'job_seeker'"
-              to="/learning-progress"
-              class="navbar-item"
-              @click="closeMenus"
-            >
-              <span class="icon">
-                <i class="fas fa-chart-line"></i>
-              </span>
-              <span>學習進度</span>
-            </router-link>
+            <!-- 講師中心 - 帶子菜單 -->
+            <div v-if="isApprovedInstructor" class="navbar-item has-dropdown instructor-dropdown">
+              <a class="navbar-link">
+                <span class="icon">
+                  <span>👨‍🏫</span>
+                </span>
+                <span>講師中心</span>
+              </a>
+              <div class="navbar-dropdown">
+                <router-link to="/instructor/profile" class="navbar-item" @click="closeMenus">
+                  <span class="icon">
+                    <span>👤</span>
+                  </span>
+                  <span>講師資料</span>
+                </router-link>
+                <router-link
+                  to="/instructor/course-application"
+                  class="navbar-item"
+                  @click="closeMenus"
+                >
+                  <span class="icon">
+                    <span>➕</span>
+                  </span>
+                  <span>申請開課</span>
+                </router-link>
+                <router-link to="/instructor/my-courses" class="navbar-item" @click="closeMenus">
+                  <span class="icon">
+                    <span>📚</span>
+                  </span>
+                  <span>我的授課</span>
+                </router-link>
+              </div>
+            </div>
+
+            <!-- 我的課程 - 帶子菜單 -->
+            <div class="navbar-item has-dropdown my-courses-dropdown">
+              <a class="navbar-link">
+                <span class="icon">
+                  <span>📖</span>
+                </span>
+                <span>我的課程</span>
+              </a>
+              <div class="navbar-dropdown">
+                <router-link to="/learning-progress" class="navbar-item" @click="closeMenus">
+                  <span class="icon">
+                    <span>📋</span>
+                  </span>
+                  <span>我選的課</span>
+                </router-link>
+                <router-link to="/courses" class="navbar-item" @click="closeMenus">
+                  <span class="icon">
+                    <span>🔍</span>
+                  </span>
+                  <span>瀏覽所有課程</span>
+                </router-link>
+              </div>
+            </div>
 
             <router-link
               v-if="currentUser?.userType === 'employer'"
@@ -78,22 +120,9 @@
               @click="closeMenus"
             >
               <span class="icon">
-                <i class="fas fa-briefcase"></i>
+                <span>💼</span>
               </span>
               <span>職缺管理</span>
-            </router-link>
-
-            <!-- 講師專用功能 -->
-            <router-link
-              v-if="isApprovedInstructor"
-              to="/instructor/course-application"
-              class="navbar-item"
-              @click="closeMenus"
-            >
-              <span class="icon">
-                <i class="fas fa-chalkboard-teacher"></i>
-              </span>
-              <span>申請開課</span>
             </router-link>
 
             <!-- 管理員專用功能 -->
@@ -104,7 +133,7 @@
               @click="closeMenus"
             >
               <span class="icon">
-                <i class="fas fa-user-check"></i>
+                <span>✓</span>
               </span>
               <span>講師申請審核</span>
             </router-link>
@@ -115,9 +144,7 @@
               class="navbar-item"
               @click="closeMenus"
             >
-              <span class="icon">
-                <i class="fas fa-chalkboard"></i>
-              </span>
+              <span class="icon"> 📚 </span>
               <span>課程申請審核</span>
             </router-link>
 
@@ -128,7 +155,7 @@
               @click="closeMenus"
             >
               <span class="icon">
-                <i class="fas fa-chart-bar"></i>
+                <span>📊</span>
               </span>
               <span>數據分析</span>
             </router-link>
@@ -137,7 +164,7 @@
 
             <a class="navbar-item" @click="handleLogout">
               <span class="icon">
-                <i class="fas fa-sign-out-alt"></i>
+                <span>🚪</span>
               </span>
               <span>登出</span>
             </a>
@@ -230,15 +257,29 @@ watch(
 </script>
 
 <style scoped>
-.navbar-item.has-dropdown .navbar-link {
-  cursor: pointer;
-}
-
 .navbar-dropdown {
   min-width: 200px;
 }
 
 .navbar-item .icon {
   margin-right: 0.5rem;
+}
+
+/* 講師中心 hover 效果 */
+.instructor-dropdown .navbar-dropdown {
+  display: none;
+}
+
+.instructor-dropdown:hover .navbar-dropdown {
+  display: block;
+}
+
+/* 我的課程 hover 效果 */
+.my-courses-dropdown .navbar-dropdown {
+  display: none;
+}
+
+.my-courses-dropdown:hover .navbar-dropdown {
+  display: block;
 }
 </style>

@@ -68,7 +68,7 @@ export const NameSchema = z
   .regex(/^[\u4e00-\u9fa5a-zA-Z\s]+$/, '姓名只能包含中文、英文字母和空格')
 
 // 用戶類型枚舉
-export const UserTypeSchema = z.enum(['job_seeker', 'employer'] as const)
+export const UserTypeSchema = z.enum(['job_seeker', 'employer', 'instructor'] as const)
 
 // 註冊數據驗證 schema
 export const RegisterSchema = z

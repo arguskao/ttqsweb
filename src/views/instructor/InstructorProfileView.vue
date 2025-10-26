@@ -57,7 +57,9 @@
                 <div class="column is-3">
                   <div class="box has-text-centered">
                     <p class="heading">百分制評分</p>
-                    <p class="title">{{ ((instructor.average_rating ?? 0) * 20).toFixed(0) }}/100</p>
+                    <p class="title">
+                      {{ ((instructor.average_rating ?? 0) * 20).toFixed(0) }}/100
+                    </p>
                   </div>
                 </div>
                 <div class="column is-3">
@@ -160,7 +162,11 @@
                     </div>
                     <div class="field is-grouped">
                       <div class="control">
-                        <button class="button is-primary" @click="updateProfile" :disabled="isSaving">
+                        <button
+                          class="button is-primary"
+                          @click="updateProfile"
+                          :disabled="isSaving"
+                        >
                           {{ isSaving ? '儲存中...' : '儲存' }}
                         </button>
                       </div>
@@ -178,13 +184,21 @@
                   <p class="card-header-title">課程管理</p>
                 </header>
                 <div class="card-content">
-                  <p class="mb-3">管理您的課程和教學資料</p>
-                  <router-link to="/courses" class="button is-info">
-                    <span class="icon">
-                      <i class="fas fa-book"></i>
-                    </span>
-                    <span>查看我的課程</span>
-                  </router-link>
+                  <p class="mb-3">申請開設新課程或管理您的授課資料</p>
+                  <div class="buttons">
+                    <router-link to="/instructor/course-application" class="button is-primary">
+                      <span class="icon">
+                        <i class="fas fa-plus"></i>
+                      </span>
+                      <span>申請開課</span>
+                    </router-link>
+                    <router-link to="/courses" class="button is-info">
+                      <span class="icon">
+                        <i class="fas fa-book"></i>
+                      </span>
+                      <span>瀏覽所有課程</span>
+                    </router-link>
+                  </div>
                 </div>
               </div>
 
@@ -202,7 +216,9 @@
                       <div class="level">
                         <div class="level-left">
                           <div>
-                            <p class="heading">{{ rating.student_first_name }} {{ rating.student_last_name }}</p>
+                            <p class="heading">
+                              {{ rating.student_first_name }} {{ rating.student_last_name }}
+                            </p>
                             <p class="subtitle is-6">{{ rating.course_title }}</p>
                           </div>
                         </div>
@@ -216,7 +232,9 @@
                         </div>
                       </div>
                       <p v-if="rating.comment">{{ rating.comment }}</p>
-                      <p class="has-text-grey is-size-7 mt-2">{{ formatDate(rating.created_at) }}</p>
+                      <p class="has-text-grey is-size-7 mt-2">
+                        {{ formatDate(rating.created_at) }}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -280,7 +298,11 @@
                   </div>
                 </section>
                 <footer class="modal-card-foot">
-                  <button class="button is-primary" @click="submitApplication" :disabled="isSubmitting">
+                  <button
+                    class="button is-primary"
+                    @click="submitApplication"
+                    :disabled="isSubmitting"
+                  >
                     {{ isSubmitting ? '提交中...' : '提交申請' }}
                   </button>
                   <button class="button" @click="showApplicationForm = false">取消</button>
@@ -344,19 +366,41 @@ const loadProfile = async () => {
     errorMessage.value = ''
 
     const response = await api.get('/instructors/profile')
-    instructor.value = response.data
 
-    // Set status class
-    if (instructor.value.application_status === 'approved') {
-      statusClass.value = 'is-success'
-    } else if (instructor.value.application_status === 'rejected') {
-      statusClass.value = 'is-danger'
+    // 檢查響應格式
+    if (response.data && response.data.success === false) {
+      // API 返回錯誤
+      if (response.status === 404) {
+        instructor.value = null
+      } else {
+        errorMessage.value = response.data.error?.message || '載入講師資料失敗'
+      }
     } else {
-      statusClass.value = 'is-info'
-    }
+      // 直接返回數據
+      instructor.value = response.data
 
-    // Load stats and ratings
-    await Promise.all([loadStats(), loadRatings()])
+      // 初始化編輯表單
+      editForm.value = {
+        bio: instructor.value.bio ?? '',
+        qualifications: instructor.value.qualifications ?? '',
+        specialization: instructor.value.specialization ?? '',
+        years_of_experience: instructor.value.years_of_experience ?? 0
+      }
+
+      // Set status class
+      if (instructor.value.application_status === 'approved') {
+        statusClass.value = 'is-success'
+      } else if (instructor.value.status === 'approved') {
+        statusClass.value = 'is-success'
+      } else if (instructor.value.application_status === 'rejected') {
+        statusClass.value = 'is-danger'
+      } else {
+        statusClass.value = 'is-info'
+      }
+
+      // Load stats and ratings
+      await Promise.all([loadStats(), loadRatings()])
+    }
   } catch (error: any) {
     if (error.response?.status === 404) {
       // User is not an instructor yet
@@ -452,7 +496,11 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>

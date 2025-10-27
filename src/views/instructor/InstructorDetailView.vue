@@ -19,7 +19,7 @@
           <!-- Back button -->
           <router-link to="/instructors" class="button is-light mb-4">
             <span class="icon">
-              <i class="fas fa-arrow-left"></i>
+              <span>⬅️</span>
             </span>
             <span>返回</span>
           </router-link>
@@ -227,7 +227,7 @@ const loadInstructor = async () => {
     const instructorId = route.params.id
     const response = await api.get(`/instructors/${instructorId}`)
     console.log('講師詳情 API 響應:', response.data)
-    
+
     if (response.data && response.data.success) {
       instructor.value = response.data.data
       console.log('設置講師資料:', instructor.value)

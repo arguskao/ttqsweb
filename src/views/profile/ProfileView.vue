@@ -27,7 +27,7 @@
                     <label class="label">身份類型</label>
                     <div class="control">
                       <span class="tag is-primary is-medium">
-                        {{ user.userType === 'job_seeker' ? '求職者' : '雇主' }}
+                        {{ getUserTypeLabel(user.userType) }}
                       </span>
                     </div>
                   </div>
@@ -84,7 +84,12 @@
                   <div class="field">
                     <label class="label">註冊時間</label>
                     <div class="control">
-                      <input class="input" type="text" :value="formatDate(user.createdAt)" readonly />
+                      <input
+                        class="input"
+                        type="text"
+                        :value="formatDate(user.createdAt)"
+                        readonly
+                      />
                     </div>
                   </div>
 
@@ -113,11 +118,7 @@
                       </button>
                     </div>
                     <div class="control" v-if="isEditing">
-                      <button
-                        class="button is-light"
-                        @click="cancelEdit"
-                        :disabled="isSaving"
-                      >
+                      <button class="button is-light" @click="cancelEdit" :disabled="isSaving">
                         取消
                       </button>
                     </div>
@@ -193,6 +194,22 @@ const formatDate = (dateString: string): string => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// Get user type label
+const getUserTypeLabel = (userType: string): string => {
+  switch (userType) {
+    case 'job_seeker':
+      return '求職者'
+    case 'employer':
+      return '雇主'
+    case 'instructor':
+      return '講師'
+    case 'admin':
+      return '管理員'
+    default:
+      return '未知'
+  }
 }
 
 // Load user profile
@@ -323,7 +340,11 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>

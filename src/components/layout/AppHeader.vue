@@ -125,28 +125,40 @@
               <span>職缺管理</span>
             </router-link>
 
-            <!-- 管理員專用功能 -->
-            <router-link
+            <!-- 申請審核 - 帶子菜單 -->
+            <div
               v-if="currentUser?.userType === 'admin'"
-              to="/admin/instructor-applications"
-              class="navbar-item"
-              @click="closeMenus"
+              class="navbar-item has-dropdown application-review-dropdown"
             >
-              <span class="icon">
-                <span>✓</span>
-              </span>
-              <span>講師申請審核</span>
-            </router-link>
-
-            <router-link
-              v-if="currentUser?.userType === 'admin'"
-              to="/admin/course-applications"
-              class="navbar-item"
-              @click="closeMenus"
-            >
-              <span class="icon"> 📚 </span>
-              <span>課程申請審核</span>
-            </router-link>
+              <a class="navbar-link">
+                <span class="icon">
+                  <span>✓</span>
+                </span>
+                <span>申請審核</span>
+              </a>
+              <div class="navbar-dropdown">
+                <router-link
+                  to="/admin/instructor-applications"
+                  class="navbar-item"
+                  @click="closeMenus"
+                >
+                  <span class="icon">
+                    <span>👨‍🏫</span>
+                  </span>
+                  <span>講師申請審核</span>
+                </router-link>
+                <router-link
+                  to="/admin/course-applications"
+                  class="navbar-item"
+                  @click="closeMenus"
+                >
+                  <span class="icon">
+                    <span>📚</span>
+                  </span>
+                  <span>課程申請審核</span>
+                </router-link>
+              </div>
+            </div>
 
             <router-link
               v-if="currentUser?.userType === 'admin'"
@@ -280,6 +292,15 @@ watch(
 }
 
 .my-courses-dropdown:hover .navbar-dropdown {
+  display: block;
+}
+
+/* 申請審核 hover 效果 */
+.application-review-dropdown .navbar-dropdown {
+  display: none;
+}
+
+.application-review-dropdown:hover .navbar-dropdown {
   display: block;
 }
 </style>

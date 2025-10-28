@@ -16,21 +16,18 @@ interface RateLimitEntry {
 // In-memory store for rate limiting (in production, use Redis)
 const rateLimitStore = new Map<string, RateLimitEntry>()
 
-// Clean up expired entries periodically
-setInterval(
-  () => {
-    const now = Date.now()
-    for (const [key, entry] of rateLimitStore.entries()) {
-      if (entry.blockedUntil && entry.blockedUntil < now) {
-        rateLimitStore.delete(key)
-      } else if (!entry.blockedUntil && now - entry.firstAttempt > 15 * 60 * 1000) {
-        // 15 minutes
-        rateLimitStore.delete(key)
-      }
+// Clean up function (called manually instead of using setInterval)
+function cleanupExpiredEntries() {
+  const now = Date.now()
+  for (const [key, entry] of rateLimitStore.entries()) {
+    if (entry.blockedUntil && entry.blockedUntil < now) {
+      rateLimitStore.delete(key)
+    } else if (!entry.blockedUntil && now - entry.firstAttempt > 15 * 60 * 1000) {
+      // 15 minutes
+      rateLimitStore.delete(key)
     }
-  },
-  5 * 60 * 1000
-) // Clean up every 5 minutes
+  }
+}
 
 export const createRateLimit = (config: RateLimitConfig) => {
   return (identifier: string): Middleware => {

@@ -25,27 +25,24 @@ interface TokenBlacklist {
 const activeSessions = new Map<string, SessionData>()
 const tokenBlacklist: TokenBlacklist = {}
 
-// Clean up expired sessions and blacklisted tokens
-setInterval(
-  () => {
-    const now = Date.now()
+// Clean up function (called manually instead of using setInterval)
+function cleanupExpiredData() {
+  const now = Date.now()
 
-    // Clean up expired sessions (24 hours)
-    for (const [sessionId, session] of activeSessions.entries()) {
-      if (now - session.lastActivity > 24 * 60 * 60 * 1000) {
-        activeSessions.delete(sessionId)
-      }
+  // Clean up expired sessions (24 hours)
+  for (const [sessionId, session] of activeSessions.entries()) {
+    if (now - session.lastActivity > 24 * 60 * 60 * 1000) {
+      activeSessions.delete(sessionId)
     }
+  }
 
-    // Clean up expired blacklisted tokens
-    for (const [tokenId, blacklistEntry] of Object.entries(tokenBlacklist)) {
-      if (now > blacklistEntry.expiresAt) {
-        delete tokenBlacklist[tokenId]
-      }
+  // Clean up expired blacklisted tokens
+  for (const [tokenId, blacklistEntry] of Object.entries(tokenBlacklist)) {
+    if (now > blacklistEntry.expiresAt) {
+      delete tokenBlacklist[tokenId]
     }
-  },
-  5 * 60 * 1000
-) // Clean up every 5 minutes
+  }
+}
 
 export class SessionManager {
   // Create a new session
@@ -140,8 +137,10 @@ export class SessionManager {
 
   // Generate secure session ID
   private static generateSessionId(): string {
-    const crypto = require('crypto')
-    return crypto.randomBytes(32).toString('hex')
+    // Use Web Crypto API for Cloudflare Workers compatibility
+    const array = new Uint8Array(32)
+    globalThis.crypto.getRandomValues(array)
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
   }
 
   // Get active sessions for a user
@@ -153,6 +152,11 @@ export class SessionManager {
       }
     }
     return sessions
+  }
+
+  // Manual cleanup (called periodically by the application)
+  static cleanup(): void {
+    cleanupExpiredData()
   }
 }
 
@@ -166,7 +170,11 @@ export const generateSecureToken = (payload: any, sessionId: string): string => 
   const tokenPayload = {
     ...payload,
     sessionId,
-    tokenId: require('crypto').randomBytes(16).toString('hex'),
+    tokenId: (() => {
+      const array = new Uint8Array(16)
+      globalThis.crypto.getRandomValues(array)
+      return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
+    })(),
     iat: Math.floor(Date.now() / 1000)
   }
 

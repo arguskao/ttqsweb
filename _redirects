@@ -1,7 +1,11 @@
-# Cloudflare Pages redirects configuration
+# SPA fallback - redirect all non-file requests to index.html
+/*    /index.html   200
 
-# API routes redirect to Workers
-/api/* https://api.pharmacy-academy.com/:splat 200
+# API routes should not be redirected
+/api/*  /api/:splat  200
 
-# SPA fallback for Vue Router
-/* /index.html 200
+# Static assets should be served directly
+/assets/*  /assets/:splat  200
+/favicon.ico  /favicon.ico  200
+/robots.txt  /robots.txt  200
+/sitemap.xml  /sitemap.xml  200

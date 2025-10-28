@@ -44,43 +44,23 @@
         <!-- Applications List -->
         <div v-else-if="applications.length > 0">
           <div v-for="application in applications" :key="application.id" class="box mb-4">
-            <div class="columns">
+            <div class="columns is-vcentered">
               <div class="column">
-                <h3 class="title is-4">{{ application.course_name }}</h3>
-                <p class="subtitle is-6">
-                  講師：{{ application.instructor_name || '未知' }} ({{ application.instructor_email }})
+                <h3 class="title is-5">{{ application.course_name }}</h3>
+                <p class="subtitle is-6 mb-2">
+                  講師：{{ application.instructor_name || '未知' }} ({{
+                    application.instructor_email
+                  }})
                 </p>
 
-                <div class="content">
-                  <p><strong>課程類別：</strong>{{ application.category }}</p>
-                  <p><strong>目標學員：</strong>{{ application.target_audience }}</p>
-                  <p><strong>課程時長：</strong>{{ application.duration }} 小時</p>
-                  <p><strong>課程價格：</strong>NT$ {{ application.price }}</p>
-                  <p><strong>授課方式：</strong>{{ application.delivery_methods }}</p>
-                  
-                  <div class="mt-3">
-                    <strong>課程描述：</strong>
-                    <p class="mt-2">{{ application.description }}</p>
+                <div class="columns is-mobile">
+                  <div class="column is-half">
+                    <p><strong>課程類別：</strong>{{ application.category }}</p>
+                    <p><strong>課程時長：</strong>{{ application.duration }} 小時</p>
                   </div>
-
-                  <div class="mt-3">
-                    <strong>課程大綱：</strong>
-                    <p class="mt-2" style="white-space: pre-wrap">{{ application.syllabus }}</p>
-                  </div>
-
-                  <div class="mt-3">
-                    <strong>教學經驗：</strong>
-                    <p class="mt-2" style="white-space: pre-wrap">{{ application.teaching_experience }}</p>
-                  </div>
-
-                  <div v-if="application.materials" class="mt-3">
-                    <strong>教材說明：</strong>
-                    <p class="mt-2">{{ application.materials }}</p>
-                  </div>
-
-                  <div v-if="application.special_requirements" class="mt-3">
-                    <strong>特殊需求：</strong>
-                    <p class="mt-2">{{ application.special_requirements }}</p>
+                  <div class="column is-half">
+                    <p><strong>課程價格：</strong>NT$ {{ application.price }}</p>
+                    <p><strong>授課方式：</strong>{{ application.delivery_methods }}</p>
                   </div>
                 </div>
 
@@ -98,41 +78,42 @@
                   <span class="tag is-light">
                     提交時間：{{ formatDate(application.submitted_at) }}
                   </span>
-                  <span v-if="application.reviewed_at" class="tag is-light">
-                    審核時間：{{ formatDate(application.reviewed_at) }}
-                  </span>
-                </div>
-
-                <div v-if="application.review_notes" class="notification is-info is-light mt-3">
-                  <strong>審核備註：</strong>
-                  <p>{{ application.review_notes }}</p>
                 </div>
               </div>
 
-              <div v-if="application.status === 'pending'" class="column is-narrow">
-                <div class="buttons is-flex is-flex-direction-column">
-                  <button
-                    class="button is-success"
-                    :class="{ 'is-loading': isReviewing }"
-                    :disabled="isReviewing"
-                    @click="reviewApplication(application.id, 'approved')"
-                  >
+              <div class="column is-narrow">
+                <div class="buttons">
+                  <button class="button is-info is-outlined" @click="viewDetails(application)">
                     <span class="icon">
-                      <i class="fas fa-check"></i>
+                      <i class="fas fa-eye"></i>
                     </span>
-                    <span>批准</span>
+                    <span>查看詳情</span>
                   </button>
-                  <button
-                    class="button is-danger"
-                    :class="{ 'is-loading': isReviewing }"
-                    :disabled="isReviewing"
-                    @click="reviewApplication(application.id, 'rejected')"
-                  >
-                    <span class="icon">
-                      <i class="fas fa-times"></i>
-                    </span>
-                    <span>拒絕</span>
-                  </button>
+
+                  <div v-if="application.status === 'pending'" class="buttons">
+                    <button
+                      class="button is-success"
+                      :class="{ 'is-loading': isReviewing }"
+                      :disabled="isReviewing"
+                      @click="reviewApplication(application.id, 'approved')"
+                    >
+                      <span class="icon">
+                        <i class="fas fa-check"></i>
+                      </span>
+                      <span>批准</span>
+                    </button>
+                    <button
+                      class="button is-danger"
+                      :class="{ 'is-loading': isReviewing }"
+                      :disabled="isReviewing"
+                      @click="showRejectModal(application.id)"
+                    >
+                      <span class="icon">
+                        <i class="fas fa-times"></i>
+                      </span>
+                      <span>拒絕</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -175,11 +156,186 @@
         </div>
       </div>
     </section>
+
+    <!-- 詳情模態框 -->
+    <div class="modal" :class="{ 'is-active': showDetailsModal }">
+      <div class="modal-background" @click="closeDetailsModal"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title">課程申請詳情</p>
+          <button class="delete" @click="closeDetailsModal"></button>
+        </header>
+        <section class="modal-card-body" v-if="selectedApplication">
+          <div class="content">
+            <h4 class="title is-4">{{ selectedApplication.course_name }}</h4>
+            <p class="subtitle is-6">
+              講師：{{ selectedApplication.instructor_name || '未知' }} ({{
+                selectedApplication.instructor_email
+              }})
+            </p>
+
+            <div class="field">
+              <label class="label">課程類別</label>
+              <p>{{ selectedApplication.category }}</p>
+            </div>
+
+            <div class="field">
+              <label class="label">目標學員</label>
+              <p>{{ selectedApplication.target_audience }}</p>
+            </div>
+
+            <div class="columns">
+              <div class="column">
+                <div class="field">
+                  <label class="label">課程時長</label>
+                  <p>{{ selectedApplication.duration }} 小時</p>
+                </div>
+              </div>
+              <div class="column">
+                <div class="field">
+                  <label class="label">課程價格</label>
+                  <p>NT$ {{ selectedApplication.price }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label">授課方式</label>
+              <p>{{ selectedApplication.delivery_methods }}</p>
+            </div>
+
+            <div class="field">
+              <label class="label">課程描述</label>
+              <p style="white-space: pre-wrap">{{ selectedApplication.description }}</p>
+            </div>
+
+            <div class="field">
+              <label class="label">課程大綱</label>
+              <p style="white-space: pre-wrap">{{ selectedApplication.syllabus }}</p>
+            </div>
+
+            <div class="field">
+              <label class="label">教學經驗</label>
+              <p style="white-space: pre-wrap">{{ selectedApplication.teaching_experience }}</p>
+            </div>
+
+            <div v-if="selectedApplication.materials" class="field">
+              <label class="label">教材說明</label>
+              <p>{{ selectedApplication.materials }}</p>
+            </div>
+
+            <div v-if="selectedApplication.special_requirements" class="field">
+              <label class="label">特殊需求</label>
+              <p>{{ selectedApplication.special_requirements }}</p>
+            </div>
+
+            <div class="field">
+              <label class="label">申請狀態</label>
+              <span
+                class="tag"
+                :class="{
+                  'is-warning': selectedApplication.status === 'pending',
+                  'is-success': selectedApplication.status === 'approved',
+                  'is-danger': selectedApplication.status === 'rejected'
+                }"
+              >
+                {{ statusText(selectedApplication.status) }}
+              </span>
+            </div>
+
+            <div class="field">
+              <label class="label">提交時間</label>
+              <p>{{ formatDate(selectedApplication.submitted_at) }}</p>
+            </div>
+
+            <div v-if="selectedApplication.reviewed_at" class="field">
+              <label class="label">審核時間</label>
+              <p>{{ formatDate(selectedApplication.reviewed_at) }}</p>
+            </div>
+
+            <div v-if="selectedApplication.review_notes" class="field">
+              <label class="label">審核備註</label>
+              <div class="notification is-info is-light">
+                <p>{{ selectedApplication.review_notes }}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        <footer class="modal-card-foot">
+          <div
+            v-if="selectedApplication && selectedApplication.status === 'pending'"
+            class="buttons"
+          >
+            <button
+              class="button is-success"
+              :class="{ 'is-loading': isReviewing }"
+              :disabled="isReviewing"
+              @click="reviewApplication(selectedApplication.id, 'approved')"
+            >
+              <span class="icon">
+                <i class="fas fa-check"></i>
+              </span>
+              <span>批准</span>
+            </button>
+            <button
+              class="button is-danger"
+              :class="{ 'is-loading': isReviewing }"
+              :disabled="isReviewing"
+              @click="showRejectModal(selectedApplication.id)"
+            >
+              <span class="icon">
+                <i class="fas fa-times"></i>
+              </span>
+              <span>拒絕</span>
+            </button>
+          </div>
+          <button class="button" @click="closeDetailsModal">關閉</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- 拒絕原因模態框 -->
+    <div class="modal" :class="{ 'is-active': showRejectReasonModal }">
+      <div class="modal-background" @click="closeRejectModal"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title">拒絕課程申請</p>
+          <button class="delete" @click="closeRejectModal"></button>
+        </header>
+        <section class="modal-card-body">
+          <div class="field">
+            <label class="label">拒絕原因 <span class="has-text-danger">*</span></label>
+            <div class="control">
+              <textarea
+                class="textarea"
+                v-model="rejectReason"
+                placeholder="請輸入拒絕原因..."
+                rows="4"
+                required
+              ></textarea>
+            </div>
+            <p class="help is-danger" v-if="rejectReasonError">{{ rejectReasonError }}</p>
+          </div>
+        </section>
+        <footer class="modal-card-foot">
+          <button
+            class="button is-danger"
+            :class="{ 'is-loading': isReviewing }"
+            :disabled="isReviewing || !rejectReason.trim()"
+            @click="confirmReject"
+          >
+            確認拒絕
+          </button>
+          <button class="button" @click="closeRejectModal">取消</button>
+        </footer>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+
 import api from '@/services/api'
 
 interface CourseApplication {
@@ -210,6 +366,16 @@ const applications = ref<CourseApplication[]>([])
 const isLoading = ref(false)
 const isReviewing = ref(false)
 const errorMessage = ref('')
+
+// 詳情模態框
+const showDetailsModal = ref(false)
+const selectedApplication = ref<CourseApplication | null>(null)
+
+// 拒絕原因模態框
+const showRejectReasonModal = ref(false)
+const rejectApplicationId = ref<number | null>(null)
+const rejectReason = ref('')
+const rejectReasonError = ref('')
 
 const filters = reactive({
   status: ''
@@ -274,22 +440,75 @@ const loadApplications = async () => {
   } catch (error: any) {
     console.error('Error loading course applications:', error)
     console.error('Error response:', error.response)
-    errorMessage.value = error.response?.data?.error?.message || error.response?.data?.message || '載入申請列表失敗'
+    errorMessage.value =
+      error.response?.data?.error?.message || error.response?.data?.message || '載入申請列表失敗'
   } finally {
     isLoading.value = false
   }
 }
 
-// Review application
-const reviewApplication = async (applicationId: number, status: 'approved' | 'rejected') => {
-  const confirmMessage =
-    status === 'approved' ? '確定要批准此課程申請嗎？' : '確定要拒絕此課程申請嗎？'
+// 查看詳情
+const viewDetails = (application: CourseApplication) => {
+  selectedApplication.value = application
+  showDetailsModal.value = true
+}
 
-  if (!confirm(confirmMessage)) {
+// 關閉詳情模態框
+const closeDetailsModal = () => {
+  showDetailsModal.value = false
+  selectedApplication.value = null
+}
+
+// 顯示拒絕原因模態框
+const showRejectModal = (applicationId: number) => {
+  rejectApplicationId.value = applicationId
+  rejectReason.value = ''
+  rejectReasonError.value = ''
+  showRejectReasonModal.value = true
+  // 如果詳情模態框是開啟的，先關閉它
+  if (showDetailsModal.value) {
+    showDetailsModal.value = false
+  }
+}
+
+// 關閉拒絕原因模態框
+const closeRejectModal = () => {
+  showRejectReasonModal.value = false
+  rejectApplicationId.value = null
+  rejectReason.value = ''
+  rejectReasonError.value = ''
+}
+
+// 確認拒絕
+const confirmReject = async () => {
+  if (!rejectReason.value.trim()) {
+    rejectReasonError.value = '請輸入拒絕原因'
     return
   }
 
-  const reviewNotes = prompt('請輸入審核備註（選填）：')
+  if (rejectApplicationId.value) {
+    try {
+      await reviewApplication(rejectApplicationId.value, 'rejected', rejectReason.value)
+      closeRejectModal()
+    } catch (error) {
+      console.error('拒絕申請失敗:', error)
+      // 不關閉模態框，讓用戶可以重試
+    }
+  }
+}
+
+// Review application
+const reviewApplication = async (
+  applicationId: number,
+  status: 'approved' | 'rejected',
+  reviewNotes?: string
+) => {
+  if (status === 'approved') {
+    const confirmMessage = '確定要批准此課程申請嗎？'
+    if (!confirm(confirmMessage)) {
+      return
+    }
+  }
 
   try {
     isReviewing.value = true
@@ -299,8 +518,14 @@ const reviewApplication = async (applicationId: number, status: 'approved' | 're
     })
     alert(status === 'approved' ? '已批准課程申請' : '已拒絕課程申請')
     await loadApplications()
+    // 關閉詳情模態框（如果開啟的話）
+    if (showDetailsModal.value) {
+      closeDetailsModal()
+    }
   } catch (error: any) {
-    alert(error.response?.data?.message || '審核失敗')
+    console.error('審核失敗:', error)
+    const errorMessage = error.response?.data?.message || error.message || '審核失敗'
+    alert(`審核失敗: ${errorMessage}`)
   } finally {
     isReviewing.value = false
   }
@@ -344,4 +569,3 @@ onMounted(() => {
   }
 }
 </style>
-

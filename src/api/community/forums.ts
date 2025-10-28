@@ -18,7 +18,7 @@ const memberRepo = new GroupMemberRepository()
 
 export function setupForumRoutes(router: ApiRouter): void {
   // 獲取所有論壇主題（支持前端 /forum/topics 端點）
-  router.get('/forum/topics', async (req: ApiRequest): Promise<ApiResponse> => {
+  router.get('/api/v1/forum/topics', async (req: ApiRequest): Promise<ApiResponse> => {
     const query = req.query as Record<string, string | string[] | undefined>
     const { group_id, category, page = '1', limit = '20', sortBy = 'latest' } = query
 
@@ -39,7 +39,14 @@ export function setupForumRoutes(router: ApiRouter): void {
         }
       } else {
         // 獲取所有主題
-        topics = await topicRepo.findAll()
+        if (category) {
+          topics = await topicRepo.queryMany(
+            'SELECT * FROM forum_topics WHERE category = $1 ORDER BY is_pinned DESC, created_at DESC',
+            [category]
+          )
+        } else {
+          topics = await topicRepo.findAll()
+        }
       }
 
       // 排序
@@ -75,7 +82,7 @@ export function setupForumRoutes(router: ApiRouter): void {
   })
 
   // 獲取群組的論壇主題
-  router.get('/groups/:groupId/topics', async (req: ApiRequest): Promise<ApiResponse> => {
+  router.get('/api/v1/groups/:groupId/topics', async (req: ApiRequest): Promise<ApiResponse> => {
     const params = req.params as Record<string, string>
     const query = req.query as Record<string, string | string[] | undefined>
     const { groupId } = params
@@ -103,7 +110,7 @@ export function setupForumRoutes(router: ApiRouter): void {
   })
 
   // 獲取主題詳情
-  router.get('/topics/:id', async (req: ApiRequest): Promise<ApiResponse> => {
+  router.get('/api/v1/topics/:id', async (req: ApiRequest): Promise<ApiResponse> => {
     const params = req.params as Record<string, string>
     const { id } = params
     if (!id) {

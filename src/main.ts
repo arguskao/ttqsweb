@@ -40,7 +40,7 @@ setupApiMetrics(api)
 
 // 設置路由預加載
 const routePreloader = setupRoutePreloading(router)
-;(window as any).__routePreloader = routePreloader
+  ; (window as any).__routePreloader = routePreloader
 
 // Mount app
 app.mount('#app')
@@ -49,11 +49,11 @@ app.mount('#app')
 authServiceEnhanced
   .initializeAuth()
   .then(() => {
-    ;(window as any).__authInitialized = true
+    ; (window as any).__authInitialized = true
   })
   .catch(error => {
     console.error('Failed to initialize auth:', error)
-    ;(window as any).__authInitialized = true // 即使失敗也標記為已初始化
+      ; (window as any).__authInitialized = true // 即使失敗也標記為已初始化
   })
 
 // 開始預加載關鍵路由
@@ -93,66 +93,19 @@ if ('serviceWorker' in navigator) {
 
 // Performance monitoring
 if (typeof window !== 'undefined') {
-  // Web Vitals monitoring with analytics integration
+  // Simple Web Vitals monitoring (console only)
   import('web-vitals')
     .then(mod => {
       const { getCLS, getFID, getFCP, getLCP, getTTFB } = mod as any
-      getCLS((metric: any) => {
-        console.log('CLS:', metric)
-        if (window.gtag) {
-          window.gtag('event', 'CLS', {
-            value: Math.round(metric.value * 1000),
-            event_category: 'Web Vitals'
-          })
-        }
-      })
-
-      getFID((metric: any) => {
-        console.log('FID:', metric)
-        if (window.gtag) {
-          window.gtag('event', 'FID', {
-            value: Math.round(metric.value),
-            event_category: 'Web Vitals'
-          })
-        }
-      })
-
-      getFCP((metric: any) => {
-        console.log('FCP:', metric)
-        if (window.gtag) {
-          window.gtag('event', 'FCP', {
-            value: Math.round(metric.value),
-            event_category: 'Web Vitals'
-          })
-        }
-      })
-
-      getLCP((metric: any) => {
-        console.log('LCP:', metric)
-        if (window.gtag) {
-          window.gtag('event', 'LCP', {
-            value: Math.round(metric.value),
-            event_category: 'Web Vitals'
-          })
-        }
-      })
-
-      getTTFB((metric: any) => {
-        console.log('TTFB:', metric)
-        if (window.gtag) {
-          window.gtag('event', 'TTFB', {
-            value: Math.round(metric.value),
-            event_category: 'Web Vitals'
-          })
-        }
-      })
+      getCLS((metric: any) => console.log('CLS:', metric))
+      getFID((metric: any) => console.log('FID:', metric))
+      getFCP((metric: any) => console.log('FCP:', metric))
+      getLCP((metric: any) => console.log('LCP:', metric))
+      getTTFB((metric: any) => console.log('TTFB:', metric))
     })
     .catch(() => {
       // Silently fail if web-vitals is not available
     })
-
-  // Track additional performance metrics
-  trackWebVitals()
 
   // Monitor memory usage in development
   if (import.meta.env.DEV) {

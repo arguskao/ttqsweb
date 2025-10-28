@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .test {
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>藥助Next學院 - 測試頁面</h1>
+
+    <div class="test">
+        <h2>基本功能測試</h2>
+        <p>如果你能看到這個頁面，說明基本 HTML 正常工作。</p>
+    </div>
+
+    <div class="test">
+        <h2>JavaScript 測試</h2>
+        <p id="js-test">JavaScript 測試中...</p>
+    </div>
+
+    <div class="test">
+        <h2>API 測試</h2>
+        <p id="api-test">API 測試中...</p>
+    </div>
+
+    <div class="test">
+        <h2>課程數據</h2>
+        <div id="courses-data">載入中...</div>
+    </div>
+
+    <script>
+        console.log('=== 開始測試 ===');
+
+        // 測試 1: JavaScript 基本功能
+        try {
+            document.getElementById('js-test').textContent = '✅ JavaScript 正常工作';
+            console.log('✅ JavaScript 基本功能正常');
+        } catch (error) {
+            console.error('❌ JavaScript 基本功能失敗:', error);
+        }
+
+        // 測試 2: API 調用
+        async function testAPI() {
+            try {
+                console.log('開始測試 API...');
+                const response = await fetch('/api/v1/courses');
+                console.log('API 響應狀態:', response.status);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log('API 數據:', data);
+
+                document.getElementById('api-test').innerHTML = '✅ API 正常工作 (返回 ' + data.data.length + ' 個課程)';
+
+                // 顯示課程數據
+                const coursesHtml = data.data.map(course =>
+                    `<div style="border: 1px solid #ccc; padding: 10px; margin: 5px 0;">
+                        <h4>${course.title}</h4>
+                        <p>${course.description}</p>
+                        <p>類型: ${course.course_type} | 時長: ${course.duration_hours}小時 | 價格: NT$${course.price}</p>
+                    </div>`
+                ).join('');
+
+                document.getElementById('courses-data').innerHTML = coursesHtml;
+
+            } catch (error) {
+                console.error('❌ API 測試失敗:', error);
+                document.getElementById('api-test').innerHTML = '❌ API 失敗: ' + error.message;
+                document.getElementById('courses-data').innerHTML = '❌ 無法載入課程數據: ' + error.message;
+            }
+        }
+
+        // 測試 3: Vue 相關檢查
+        function checkVue() {
+            try {
+                if (window.Vue) {
+                    console.log('✅ Vue 已載入');
+                } else {
+                    console.log('❌ Vue 未載入');
+                }
+            } catch (error) {
+                console.error('❌ Vue 檢查失敗:', error);
+            }
+        }
+
+        // 執行測試
+        testAPI();
+
+        // 延遲檢查 Vue
+        setTimeout(checkVue, 2000);
+
+        console.log('=== 測試完成 ===');
+    </script>
+</body>
+
+</html>

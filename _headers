@@ -1,12 +1,48 @@
-# Cloudflare Pages headers configuration
+# MIME type fixes for TypeScript and JavaScript modules
+/src/*.ts
+  Content-Type: application/javascript
 
+/src/**/*.ts
+  Content-Type: application/javascript
+
+/*.ts
+  Content-Type: application/javascript
+
+# Ensure proper MIME types for JavaScript modules
+/src/*.js
+  Content-Type: application/javascript
+
+/src/**/*.js
+  Content-Type: application/javascript
+
+/*.js
+  Content-Type: application/javascript
+
+# Vue files
+/src/*.vue
+  Content-Type: text/plain
+
+/src/**/*.vue
+  Content-Type: text/plain
+
+# CSS files
+/src/*.css
+  Content-Type: text/css
+
+/src/**/*.css
+  Content-Type: text/css
+
+# JSON files
+/src/*.json
+  Content-Type: application/json
+
+/src/**/*.json
+  Content-Type: application/json
+
+# Security headers
 /*
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-
-/api/*
-  Access-Control-Allow-Origin: *
-  Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
-  Access-Control-Allow-Headers: Content-Type, Authorization

@@ -38,7 +38,9 @@ export const csrfProtection: Middleware = async (req, next) => {
 
 // 生成 CSRF token
 export const generateCSRFToken = (): string => {
-  return require('crypto').randomBytes(32).toString('hex')
+  const array = new Uint8Array(32)
+  globalThis.crypto.getRandomValues(array)
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
 // 安全頭部中間件
@@ -228,7 +230,11 @@ export const xssProtection: Middleware = async (req, next) => {
 // 請求日誌中間件
 export const requestLogging: Middleware = async (req, next) => {
   const startTime = Date.now()
-  const requestId = require('crypto').randomBytes(16).toString('hex')
+  const requestId = (() => {
+    const array = new Uint8Array(16)
+    globalThis.crypto.getRandomValues(array)
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
+  })()
 
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - Request ID: ${requestId}`)
 

@@ -88,7 +88,9 @@
                           <span class="icon has-text-warning">
                             <span>⭐</span>
                           </span>
-                          <span>{{ (instructor.average_rating || 0).toFixed(1) }}/5.0</span>
+                          <span
+                            >{{ (parseFloat(instructor.average_rating) || 0).toFixed(1) }}/5.0</span
+                          >
                         </span>
                         <span class="ml-2">({{ instructor.total_ratings ?? 0 }})</span>
                       </p>

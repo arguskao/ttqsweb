@@ -16,11 +16,19 @@ const instructorRepo = new InstructorRepository()
 
 export function setupInstructorManagementRoutes(router: ApiRouter): void {
   // 獲取所有講師
-  router.get('/instructors', async (req: ApiRequest): Promise<ApiResponse> => {
-    const { specialization, min_rating, min_experience, search } = req.query as Record<
-      string,
-      string | undefined
-    >
+  router.get('/api/v1/instructors', async (req: ApiRequest): Promise<ApiResponse> => {
+    const {
+      specialization,
+      min_rating,
+      min_experience,
+      search,
+      is_active,
+      page = '1',
+      limit = '12'
+    } = req.query as Record<string, string | undefined>
+
+    const pageNum = parseInt(page!)
+    const limitNum = parseInt(limit!)
 
     let instructors
     if (search) {
@@ -28,6 +36,7 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
     } else if (specialization) {
       instructors = await instructorRepo.findBySpecialization(specialization as string)
     } else {
+      // 默認只返回活躍講師，除非明確指定 is_active=false
       instructors = await instructorRepo.findActive()
     }
 
@@ -41,28 +50,40 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
       )
     }
 
+    // 手動分頁
+    const total = instructors.length
+    const totalPages = Math.ceil(total / limitNum)
+    const offset = (pageNum - 1) * limitNum
+    const paginatedInstructors = instructors.slice(offset, offset + limitNum)
+
     return {
       success: true,
-      data: instructors
+      data: paginatedInstructors,
+      meta: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages
+      }
     }
   })
 
-  // 獲取講師詳情
-  router.get('/instructors/:id', async (req: ApiRequest): Promise<ApiResponse> => {
-    const { id } = req.params as Record<string, string>
-    const instructorId = parseInt(id!)
+  // 獲取講師詳情 - 使用 user_id
+  router.get('/api/v1/instructors/:userId', async (req: ApiRequest): Promise<ApiResponse> => {
+    const { userId } = req.params as Record<string, string>
+    const instructorUserId = parseInt(userId!)
 
-    if (isNaN(instructorId)) {
-      throw new ValidationError('Invalid instructor ID')
+    if (isNaN(instructorUserId)) {
+      throw new ValidationError('Invalid instructor user ID')
     }
 
-    const instructor = await instructorRepo.findById(instructorId)
+    const instructor = await instructorRepo.findByUserId(instructorUserId)
     if (!instructor) {
       throw new NotFoundError('Instructor not found')
     }
 
     // 獲取講師統計
-    const stats = await instructorRepo.getStats(instructorId)
+    const stats = await instructorRepo.getStats(instructorUserId)
 
     return {
       success: true,
@@ -73,49 +94,22 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
     }
   })
 
-  // 創建講師
-  router.post('/instructors', requireAuth, async (req: ApiRequest): Promise<ApiResponse> => {
-    const { bio, qualifications, specialization, years_of_experience }: CreateInstructorRequest =
-      req.body as CreateInstructorRequest
-
-    if (!bio || !qualifications || !specialization || years_of_experience === undefined) {
-      throw new ValidationError('All fields are required')
-    }
-
-    // 檢查是否已經是講師
-    const existingInstructor = await instructorRepo.findByUserId(req.user!.id)
-    if (existingInstructor) {
-      throw new ValidationError('User is already an instructor')
-    }
-
-    const instructorData = {
-      user_id: req.user!.id,
-      bio,
-      qualifications,
-      specialization,
-      years_of_experience,
-      application_status: 'pending' as const,
-      approval_date: null,
-      approved_by: null,
-      average_rating: 0,
-      total_ratings: 0,
-      is_active: false,
-      created_at: new Date(),
-      updated_at: new Date()
-    }
-
-    const instructor = await instructorRepo.create(instructorData)
-
+  // 創建講師申請 - 重定向到申請流程
+  router.post('/api/v1/instructors', requireAuth, async (req: ApiRequest): Promise<ApiResponse> => {
+    // 這個端點現在重定向到講師申請流程
     return {
-      success: true,
-      data: instructor
+      success: false,
+      error: {
+        code: 'DEPRECATED_ENDPOINT',
+        message: 'Please use /instructor-applications endpoint to apply as instructor'
+      }
     }
   })
 
-  // 更新講師信息
-  router.put('/instructors/:id', requireAuth, async (req: ApiRequest): Promise<ApiResponse> => {
-    const { id } = req.params as Record<string, string>
-    const instructorId = parseInt(id!)
+  // 更新講師信息 - 使用 user_id
+  router.put('/api/v1/instructors/:userId', requireAuth, async (req: ApiRequest): Promise<ApiResponse> => {
+    const { userId } = req.params as Record<string, string>
+    const instructorUserId = parseInt(userId!)
     const {
       bio,
       qualifications,
@@ -124,11 +118,11 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
       is_active
     }: UpdateInstructorRequest = req.body as UpdateInstructorRequest
 
-    if (isNaN(instructorId)) {
-      throw new ValidationError('Invalid instructor ID')
+    if (isNaN(instructorUserId)) {
+      throw new ValidationError('Invalid instructor user ID')
     }
 
-    const instructor = await instructorRepo.findById(instructorId)
+    const instructor = await instructorRepo.findByUserId(instructorUserId)
     if (!instructor) {
       throw new NotFoundError('Instructor not found')
     }
@@ -145,43 +139,56 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
     if (years_of_experience !== undefined) updateData.years_of_experience = years_of_experience
     if (is_active !== undefined && req.user!.userType === 'admin') updateData.is_active = is_active
 
-    const updatedInstructor = await instructorRepo.update(instructorId, updateData)
+    // 使用 user_id 來更新
+    const applications = await instructorRepo.queryMany(
+      'SELECT id FROM instructor_applications WHERE user_id = $1 AND status = $2',
+      [instructorUserId, 'approved']
+    )
 
-    return {
-      success: true,
-      data: updatedInstructor
+    if (applications.length > 0) {
+      const updatedInstructor = await instructorRepo.update(applications[0].id, updateData)
+      return {
+        success: true,
+        data: updatedInstructor
+      }
+    } else {
+      throw new NotFoundError('No approved instructor application found')
     }
   })
 
-  // 刪除講師
-  router.delete('/instructors/:id', requireAuth, async (req: ApiRequest): Promise<ApiResponse> => {
-    const { id } = req.params as Record<string, string>
-    const instructorId = parseInt(id!)
+  // 停用講師 - 使用 user_id
+  router.delete('/api/v1/instructors/:userId', requireAuth, async (req: ApiRequest): Promise<ApiResponse> => {
+    const { userId } = req.params as Record<string, string>
+    const instructorUserId = parseInt(userId!)
 
-    if (isNaN(instructorId)) {
-      throw new ValidationError('Invalid instructor ID')
+    if (isNaN(instructorUserId)) {
+      throw new ValidationError('Invalid instructor user ID')
     }
 
-    const instructor = await instructorRepo.findById(instructorId)
+    const instructor = await instructorRepo.findByUserId(instructorUserId)
     if (!instructor) {
       throw new NotFoundError('Instructor not found')
     }
 
-    // 只有管理員可以刪除講師
+    // 只有管理員可以停用講師
     if (req.user!.userType !== 'admin') {
-      throw new UnauthorizedError('Only admins can delete instructors')
+      throw new UnauthorizedError('Only admins can deactivate instructors')
     }
 
-    await instructorRepo.delete(instructorId)
+    // 停用而不是刪除
+    await instructorRepo.executeRaw(
+      'UPDATE instructor_applications SET is_active = false, updated_at = NOW() WHERE user_id = $1 AND status = $2',
+      [instructorUserId, 'approved']
+    )
 
     return {
       success: true,
-      data: { message: 'Instructor deleted successfully' }
+      data: { message: 'Instructor deactivated successfully' }
     }
   })
 
   // 獲取高評分講師
-  router.get('/instructors/top-rated', async (req: ApiRequest): Promise<ApiResponse> => {
+  router.get('/api/v1/instructors/top-rated', async (req: ApiRequest): Promise<ApiResponse> => {
     const { limit } = req.query as Record<string, string | undefined>
     const limitNum = limit ? parseInt(limit!) : 10
 
@@ -193,21 +200,21 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
     }
   })
 
-  // 獲取講師統計
-  router.get('/instructors/:id/stats', async (req: ApiRequest): Promise<ApiResponse> => {
-    const { id } = req.params as Record<string, string>
-    const instructorId = parseInt(id!)
+  // 獲取講師統計 - 使用 user_id
+  router.get('/api/v1/instructors/:userId/stats', async (req: ApiRequest): Promise<ApiResponse> => {
+    const { userId } = req.params as Record<string, string>
+    const instructorUserId = parseInt(userId!)
 
-    if (isNaN(instructorId)) {
-      throw new ValidationError('Invalid instructor ID')
+    if (isNaN(instructorUserId)) {
+      throw new ValidationError('Invalid instructor user ID')
     }
 
-    const instructor = await instructorRepo.findById(instructorId)
+    const instructor = await instructorRepo.findByUserId(instructorUserId)
     if (!instructor) {
       throw new NotFoundError('Instructor not found')
     }
 
-    const stats = await instructorRepo.getStats(instructorId)
+    const stats = await instructorRepo.getStats(instructorUserId)
 
     return {
       success: true,
@@ -217,7 +224,7 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
 
   // 獲取用戶的講師資料
   router.get(
-    '/users/:userId/instructor',
+    '/api/v1/users/:userId/instructor',
     requireAuth,
     async (req: ApiRequest): Promise<ApiResponse> => {
       const { userId } = req.params as Record<string, string>
@@ -242,7 +249,7 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
   )
 
   // 搜索講師
-  router.get('/instructors/search', async (req: ApiRequest): Promise<ApiResponse> => {
+  router.get('/api/v1/instructors/search', async (req: ApiRequest): Promise<ApiResponse> => {
     const { q } = req.query as Record<string, string | undefined>
 
     if (!q) {

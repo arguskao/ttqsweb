@@ -21,34 +21,53 @@ export function setupDocumentDownloadRoutes(router: ApiRouter): void {
       const documentId = parseInt(req.params?.id || '0', 10)
 
       if (!documentId) {
-        throw new ValidationError('無效的文檔ID')
+        return {
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: '無效的文檔ID',
+            statusCode: 400
+          }
+        }
       }
 
       const document = await documentRepo.findById(documentId)
       if (!document) {
-        throw new NotFoundError('文檔不存在')
+        return {
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: '文檔不存在',
+            statusCode: 404
+          }
+        }
       }
 
-      // 檢查文檔是否公開或用戶有權限
-      if (!document.is_public && (!req.user || document.uploader_id !== req.user.id)) {
-        throw new UnauthorizedError('沒有權限下載此文檔')
+      // 檢查文檔是否公開
+      if (!document.is_public) {
+        return {
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: '沒有權限下載此文檔',
+            statusCode: 403
+          }
+        }
       }
 
-      // 記錄下載
-      const ipAddress = req.ip || 'unknown'
-      const userAgent = req.headers['user-agent'] || 'unknown'
-      await downloadRepo.recordDownload(documentId, req.user?.id || null, ipAddress, userAgent)
-
-      // 增加下載次數
-      await documentRepo.incrementDownloadCount(documentId)
+      // 增加下載次數（簡化版，不需要下載記錄表）
+      await documentRepo.executeRaw(
+        'UPDATE documents SET download_count = download_count + 1 WHERE id = $1',
+        [documentId]
+      )
 
       return {
         success: true,
         data: {
-          downloadUrl: document.file_path,
-          fileName: document.file_name,
-          fileSize: document.file_size,
-          fileType: document.file_type
+          file_url: (document as any).file_url,
+          file_name: document.title,
+          file_type: (document as any).file_type,
+          file_size: (document as any).file_size
         }
       }
     } catch (error) {
@@ -56,23 +75,9 @@ export function setupDocumentDownloadRoutes(router: ApiRouter): void {
       return {
         success: false,
         error: {
-          code:
-            error instanceof ValidationError
-              ? 'VALIDATION_ERROR'
-              : error instanceof NotFoundError
-                ? 'NOT_FOUND'
-                : error instanceof UnauthorizedError
-                  ? 'UNAUTHORIZED'
-                  : 'INTERNAL_ERROR',
-          message: error instanceof Error ? error.message : '下載文檔失敗',
-          statusCode:
-            error instanceof ValidationError
-              ? 400
-              : error instanceof NotFoundError
-                ? 404
-                : error instanceof UnauthorizedError
-                  ? 403
-                  : 500
+          code: 'INTERNAL_ERROR',
+          message: '下載文檔失敗',
+          statusCode: 500
         }
       }
     }
@@ -306,7 +311,7 @@ export function setupDocumentDownloadRoutes(router: ApiRouter): void {
     requireAuth,
     async (req: ApiRequest): Promise<ApiResponse> => {
       try {
-        const documentId = parseInt(req.params?.id || '0', 10)
+        const documentId = parseInt(req.params?.id ?? '0', 10)
 
         if (!documentId) {
           throw new ValidationError('無效的文檔ID')
@@ -368,4 +373,3 @@ export function setupDocumentDownloadRoutes(router: ApiRouter): void {
     }
   )
 }
-

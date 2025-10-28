@@ -95,15 +95,15 @@ export const cacheMiddleware = (config = defaultConfig.cache): Middleware => {
   // 內存緩存存儲 (生產環境應使用Redis)
   const cache = new Map<string, { data: ApiResponse; expiry: number }>()
 
-  // 清理過期緩存
-  setInterval(() => {
+  // 清理過期緩存的函數
+  const cleanupExpiredCache = () => {
     const now = Date.now()
     for (const [key, entry] of cache.entries()) {
       if (now > entry.expiry) {
         cache.delete(key)
       }
     }
-  }, 60000) // 每分鐘清理一次
+  }
 
   return async (req, next) => {
     if (!config.enabled) {
@@ -113,6 +113,11 @@ export const cacheMiddleware = (config = defaultConfig.cache): Middleware => {
     // 只緩存GET請求
     if (req.method !== 'GET') {
       return await next()
+    }
+
+    // 偶爾清理過期緩存 (10% 的機率)
+    if (Math.random() < 0.1) {
+      cleanupExpiredCache()
     }
 
     // 生成緩存鍵

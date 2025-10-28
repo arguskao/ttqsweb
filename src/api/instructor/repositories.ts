@@ -7,21 +7,31 @@ import { BaseRepository } from '../database'
 
 import type { Instructor, InstructorRating, InstructorApplication, InstructorStats } from './types'
 
-// 講師Repository
+// 講師Repository - 使用統一的 instructor_applications 表
 export class InstructorRepository extends BaseRepository<Instructor> {
   constructor() {
-    super('instructors')
+    super('instructor_applications')
   }
 
   // 根據用戶ID查找講師
   async findByUserId(userId: number): Promise<Instructor | null> {
-    return this.queryOne('SELECT * FROM instructors WHERE user_id = $1', [userId])
+    return this.queryOne(
+      `SELECT ia.*, u.first_name, u.last_name, u.email 
+       FROM instructor_applications ia
+       JOIN users u ON u.id = ia.user_id
+       WHERE ia.user_id = $1 AND ia.status = 'approved'`,
+      [userId]
+    )
   }
 
   // 根據專業領域查找講師
   async findBySpecialization(specialization: string): Promise<Instructor[]> {
     return this.queryMany(
-      'SELECT * FROM instructors WHERE specialization ILIKE $1 AND is_active = true ORDER BY average_rating DESC',
+      `SELECT ia.*, u.first_name, u.last_name, u.email 
+       FROM instructor_applications ia
+       JOIN users u ON u.id = ia.user_id
+       WHERE ia.specialization ILIKE $1 AND ia.status = 'approved' AND ia.is_active = true 
+       ORDER BY ia.average_rating DESC`,
       [`%${specialization}%`]
     )
   }
@@ -29,17 +39,23 @@ export class InstructorRepository extends BaseRepository<Instructor> {
   // 獲取活躍講師
   async findActive(): Promise<Instructor[]> {
     return this.queryMany(
-      'SELECT * FROM instructors WHERE is_active = true ORDER BY average_rating DESC'
+      `SELECT ia.*, u.first_name, u.last_name, u.email 
+       FROM instructor_applications ia
+       JOIN users u ON u.id = ia.user_id
+       WHERE ia.status = 'approved' AND ia.is_active = true 
+       ORDER BY ia.average_rating DESC`
     )
   }
 
   // 搜索講師
   async search(searchTerm: string): Promise<Instructor[]> {
     return this.queryMany(
-      `SELECT * FROM instructors 
-       WHERE (bio ILIKE $1 OR qualifications ILIKE $1 OR specialization ILIKE $1) 
-       AND is_active = true 
-       ORDER BY average_rating DESC`,
+      `SELECT ia.*, u.first_name, u.last_name, u.email 
+       FROM instructor_applications ia
+       JOIN users u ON u.id = ia.user_id
+       WHERE (ia.bio ILIKE $1 OR ia.qualifications ILIKE $1 OR ia.specialization ILIKE $1) 
+       AND ia.status = 'approved' AND ia.is_active = true 
+       ORDER BY ia.average_rating DESC`,
       [`%${searchTerm}%`]
     )
   }
@@ -47,32 +63,37 @@ export class InstructorRepository extends BaseRepository<Instructor> {
   // 獲取高評分講師
   async findTopRated(limit = 10): Promise<Instructor[]> {
     return this.queryMany(
-      'SELECT * FROM instructors WHERE is_active = true ORDER BY average_rating DESC LIMIT $1',
+      `SELECT ia.*, u.first_name, u.last_name, u.email 
+       FROM instructor_applications ia
+       JOIN users u ON u.id = ia.user_id
+       WHERE ia.status = 'approved' AND ia.is_active = true 
+       ORDER BY ia.average_rating DESC LIMIT $1`,
       [limit]
     )
   }
 
-  // 更新講師評分
-  async updateRating(instructorId: number): Promise<void> {
+  // 更新講師評分 - 使用 user_id 而不是 instructor_id
+  async updateRating(userId: number): Promise<void> {
     await this.executeRaw(
-      `UPDATE instructors 
+      `UPDATE instructor_applications 
        SET average_rating = (
          SELECT COALESCE(AVG(rating), 0) 
          FROM instructor_ratings 
-         WHERE instructor_id = $1
+         WHERE instructor_user_id = $1
        ),
        total_ratings = (
          SELECT COUNT(*) 
          FROM instructor_ratings 
-         WHERE instructor_id = $1
-       )
-       WHERE id = $1`,
-      [instructorId]
+         WHERE instructor_user_id = $1
+       ),
+       updated_at = NOW()
+       WHERE user_id = $1 AND status = 'approved'`,
+      [userId]
     )
   }
 
-  // 獲取講師統計
-  async getStats(instructorId: number): Promise<InstructorStats | null> {
+  // 獲取講師統計 - 使用 user_id
+  async getStats(userId: number): Promise<InstructorStats | null> {
     const result = await this.queryOne(
       `SELECT 
          COUNT(DISTINCT c.id) as total_courses,
@@ -84,13 +105,13 @@ export class InstructorRepository extends BaseRepository<Instructor> {
            NULLIF(COUNT(ce.id), 0), 0
          ) as completion_rate,
          COALESCE(SUM(c.price), 0) as revenue
-       FROM instructors i
-       LEFT JOIN courses c ON c.instructor_id = i.id
+       FROM instructor_applications ia
+       LEFT JOIN courses c ON c.instructor_user_id = ia.user_id
        LEFT JOIN course_enrollments ce ON ce.course_id = c.id
-       LEFT JOIN instructor_ratings ir ON ir.instructor_id = i.id
-       WHERE i.id = $1
-       GROUP BY i.id`,
-      [instructorId]
+       LEFT JOIN instructor_ratings ir ON ir.instructor_user_id = ia.user_id
+       WHERE ia.user_id = $1 AND ia.status = 'approved'
+       GROUP BY ia.user_id`,
+      [userId]
     )
 
     return result
@@ -108,19 +129,22 @@ export class InstructorRepository extends BaseRepository<Instructor> {
   // 獲取待審核的講師申請
   async findPendingApplications(): Promise<Instructor[]> {
     return this.queryMany(
-      "SELECT * FROM instructors WHERE application_status = 'pending' ORDER BY created_at ASC"
+      `SELECT ia.*, u.first_name, u.last_name, u.email 
+       FROM instructor_applications ia
+       JOIN users u ON u.id = ia.user_id
+       WHERE ia.status = 'pending' ORDER BY ia.created_at ASC`
     )
   }
 
   // 更新申請狀態
   async updateApplicationStatus(
-    instructorId: number,
+    applicationId: number,
     status: 'approved' | 'rejected',
     approvedBy: number
   ): Promise<void> {
     await this.executeRaw(
-      'UPDATE instructors SET application_status = $1, approval_date = NOW(), approved_by = $2 WHERE id = $3',
-      [status, approvedBy, instructorId]
+      'UPDATE instructor_applications SET status = $1, reviewed_at = NOW(), reviewed_by = $2 WHERE id = $3',
+      [status, approvedBy, applicationId]
     )
   }
 }
@@ -131,11 +155,11 @@ export class InstructorRatingRepository extends BaseRepository<InstructorRating>
     super('instructor_ratings')
   }
 
-  // 根據講師ID查找評分
-  async findByInstructor(instructorId: number): Promise<InstructorRating[]> {
+  // 根據講師用戶ID查找評分
+  async findByInstructor(instructorUserId: number): Promise<InstructorRating[]> {
     return this.queryMany(
-      'SELECT * FROM instructor_ratings WHERE instructor_id = $1 ORDER BY created_at DESC',
-      [instructorId]
+      'SELECT * FROM instructor_ratings WHERE instructor_user_id = $1 ORDER BY created_at DESC',
+      [instructorUserId]
     )
   }
 
@@ -156,25 +180,25 @@ export class InstructorRatingRepository extends BaseRepository<InstructorRating>
   }
 
   // 檢查學生是否已對講師評分
-  async hasStudentRated(studentId: number, instructorId: number): Promise<boolean> {
+  async hasStudentRated(studentId: number, instructorUserId: number): Promise<boolean> {
     const result = await this.queryOne(
-      'SELECT 1 FROM instructor_ratings WHERE student_id = $1 AND instructor_id = $2',
-      [studentId, instructorId]
+      'SELECT 1 FROM instructor_ratings WHERE student_id = $1 AND instructor_user_id = $2',
+      [studentId, instructorUserId]
     )
     return !!result
   }
 
   // 獲取講師的平均評分
-  async getAverageRating(instructorId: number): Promise<number> {
+  async getAverageRating(instructorUserId: number): Promise<number> {
     const result = await this.queryOne(
-      'SELECT AVG(rating) as avg_rating FROM instructor_ratings WHERE instructor_id = $1',
-      [instructorId]
+      'SELECT AVG(rating) as avg_rating FROM instructor_ratings WHERE instructor_user_id = $1',
+      [instructorUserId]
     )
     return parseFloat(result?.avg_rating || '0')
   }
 
   // 獲取評分統計
-  async getRatingStats(instructorId: number): Promise<{
+  async getRatingStats(instructorUserId: number): Promise<{
     total: number
     average: number
     distribution: Record<number, number>
@@ -189,8 +213,8 @@ export class InstructorRatingRepository extends BaseRepository<InstructorRating>
          COUNT(CASE WHEN rating = 4 THEN 1 END) as rating_4,
          COUNT(CASE WHEN rating = 5 THEN 1 END) as rating_5
        FROM instructor_ratings 
-       WHERE instructor_id = $1`,
-      [instructorId]
+       WHERE instructor_user_id = $1`,
+      [instructorUserId]
     )
 
     return {

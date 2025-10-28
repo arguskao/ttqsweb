@@ -3,3 +3,5 @@ pages_build_output_dir = "dist"
 
 [vars]
 ENVIRONMENT = "preview"
+DATABASE_URL = "postgresql://neondb_owner:npg_uBHAc2hinfI4@ep-jolly-frost-a1muxrt0-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+JWT_SECRET = "3939889"

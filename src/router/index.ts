@@ -327,6 +327,18 @@ const router = createRouter({
       }
     },
     {
+      path: '/admin/files',
+      name: 'admin-files',
+      component: createAsyncComponent(() => import('../views/admin/FileManagementView.vue')),
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true,
+        title: '文件管理 - 藥助Next學院',
+        description: '上傳和管理系統文件',
+        keepAlive: true
+      }
+    },
+    {
       path: '/training/policy',
       name: 'training-policy',
       component: createAsyncComponent(() => import('../views/training/TrainingPolicyView.vue')),

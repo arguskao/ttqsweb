@@ -146,25 +146,14 @@ export function setupInstructorApplicationRoutes(router: ApiRouter): void {
       // 更新申請狀態
       await applicationRepo.updateStatus(applicationId, status, req.user!.id, review_notes)
 
-      // 如果批准，創建講師記錄
+      // 如果批准，更新申請記錄的狀態字段
       if (status === 'approved') {
-        const instructorData = {
-          user_id: application.user_id,
-          bio: application.bio,
-          qualifications: application.qualifications,
-          specialization: application.specialization,
-          years_of_experience: application.years_of_experience,
-          application_status: 'approved' as const,
-          approval_date: new Date(),
-          approved_by: req.user!.id,
-          average_rating: 0,
-          total_ratings: 0,
-          is_active: true,
-          created_at: new Date(),
-          updated_at: new Date()
-        }
-
-        await instructorRepo.create(instructorData)
+        await applicationRepo.executeRaw(
+          `UPDATE instructor_applications 
+           SET is_active = true, average_rating = 0, total_ratings = 0, updated_at = NOW()
+           WHERE id = $1`,
+          [applicationId]
+        )
       }
 
       return {

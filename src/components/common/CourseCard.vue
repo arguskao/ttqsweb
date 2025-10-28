@@ -3,12 +3,12 @@
     <div class="course-tag" :class="tagClass">
       {{ courseTypeText }}
     </div>
-    <div class="course-price">NT$ {{ course.price.toLocaleString() }}</div>
+    <div class="course-price">NT$ {{ formatPrice(course.price) }}</div>
     <h3 class="course-title">{{ course.title }}</h3>
     <p class="course-subtitle">{{ course.description }}</p>
     <div class="course-duration">
       <span class="duration-icon">⏰</span>
-      <span>{{ course.durationHours }} 小時</span>
+      <span>{{ course.durationHours || course.duration_hours || 0 }} 小時</span>
     </div>
     <div class="course-actions">
       <button class="button is-light is-success" @click="viewDetails">
@@ -58,6 +58,11 @@ const tagClass = computed(() => {
   const courseType = props.course.courseType || props.course.course_type
   return classMap[courseType as keyof typeof classMap] || 'basic'
 })
+
+const formatPrice = (price: number | string) => {
+  const numPrice = typeof price === 'string' ? parseFloat(price) : price
+  return numPrice.toLocaleString()
+}
 
 const viewDetails = () => {
   emit('viewDetails', props.course)

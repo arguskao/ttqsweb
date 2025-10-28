@@ -172,6 +172,18 @@
               <span>數據分析</span>
             </router-link>
 
+            <router-link
+              v-if="currentUser?.userType === 'admin'"
+              to="/admin/files"
+              class="navbar-item"
+              @click="closeMenus"
+            >
+              <span class="icon">
+                <span>📁</span>
+              </span>
+              <span>文件管理</span>
+            </router-link>
+
             <hr class="navbar-divider" />
 
             <a class="navbar-item" @click="handleLogout">

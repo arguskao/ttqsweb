@@ -1,4 +1,4 @@
-import { apiService } from './api'
+import { apiService } from './api-enhanced'
 
 import type { Course, CourseEnrollment, CourseFilters } from '@/types'
 
@@ -15,75 +15,52 @@ export interface PaginatedResponse<T> {
 class CourseService {
   // Get all courses with filters
   async getCourses(filters?: CourseFilters): Promise<PaginatedResponse<Course>> {
-    // 模擬數據 - 用於測試篩選功能
-    const mockCourses: Course[] = [
-      {
-        id: 1,
-        title: '藥局助理基礎課程',
-        description: '學習藥局基本作業流程、藥品管理等基礎知識',
-        course_type: 'basic',
-        duration_hours: 40,
-        price: 5000,
-        instructor_id: 1,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: 2,
-        title: '進階藥學知識',
-        description: '深入學習藥理學、藥物交互作用等進階知識',
-        course_type: 'advanced',
-        duration_hours: 60,
-        price: 8000,
-        instructor_id: 1,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: 3,
-        title: '實習實作課程',
-        description: '實際藥局工作環境體驗與實務操作',
-        course_type: 'internship',
-        duration_hours: 80,
-        price: 12000,
-        instructor_id: 1,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+    try {
+      // 從 API 獲取真實的課程數據
+      const params: Record<string, string> = {}
+
+      // 轉換篩選參數
+      if (filters?.courseType) {
+        params.course_type = filters.courseType
       }
-    ]
+      if (filters?.search) {
+        params.search = filters.search
+      }
+      if (filters?.page) {
+        params.page = filters.page.toString()
+      }
+      if (filters?.limit) {
+        params.limit = filters.limit.toString()
+      }
 
-    // 應用篩選
-    let filteredCourses = mockCourses
+      const response = await apiService.get<any>('/courses', { params })
 
-    if (filters?.courseType) {
-      filteredCourses = filteredCourses.filter(course => course.courseType === filters.courseType)
-    }
+      if (response && response.success && response.data) {
+        return {
+          data: response.data,
+          meta: (response.meta as any) || {
+            page: filters?.page ?? 1,
+            limit: filters?.limit ?? 10,
+            total: 0,
+            totalPages: 0
+          }
+        }
+      }
 
-    if (filters?.search) {
-      const searchTerm = filters.search.toLowerCase()
-      filteredCourses = filteredCourses.filter(
-        course =>
-          course.title.toLowerCase().includes(searchTerm) ||
-          course.description?.toLowerCase().includes(searchTerm)
-      )
-    }
+      throw new Error('獲取課程列表失敗')
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Error loading courses:', err)
 
-    // 分頁
-    const page = filters?.page || 1
-    const limit = filters?.limit || 10
-    const offset = (page - 1) * limit
-    const paginatedCourses = filteredCourses.slice(offset, offset + limit)
-
-    return {
-      data: paginatedCourses,
-      meta: {
-        page,
-        limit,
-        total: filteredCourses.length,
-        totalPages: Math.ceil(filteredCourses.length / limit)
+      // 如果 API 調用失敗，返回空列表而不是硬編碼的數據
+      return {
+        data: [],
+        meta: {
+          page: filters?.page ?? 1,
+          limit: filters?.limit ?? 10,
+          total: 0,
+          totalPages: 0
+        }
       }
     }
   }
@@ -91,9 +68,9 @@ class CourseService {
   // Get featured courses (fallback: take first N from list)
   async getFeaturedCourses(limit = 3): Promise<Course[]> {
     try {
-      const res = await this.getCourses({ page: 1, limit: limit })
+      const res = await this.getCourses({ page: 1, limit })
       return res.data.slice(0, limit)
-    } catch (_e) {
+    } catch {
       return []
     }
   }

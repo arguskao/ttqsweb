@@ -1,11 +1,4 @@
-// Google Analytics integration
-
-declare global {
-    interface Window {
-        gtag: (...args: any[]) => void
-        dataLayer: any[]
-    }
-}
+// Simple analytics stub (no external tracking)
 
 export class Analytics {
   private readonly trackingId: string
@@ -16,125 +9,81 @@ export class Analytics {
   }
 
   init() {
-    if (this.isInitialized || !this.trackingId) return
-
-    // Load Google Analytics script
-    const script1 = document.createElement('script')
-    script1.async = true
-    script1.src = `https://www.googletagmanager.com/gtag/js?id=${this.trackingId}`
-    document.head.appendChild(script1)
-
-    // Initialize gtag
-    window.dataLayer = window.dataLayer ?? []
-    window.gtag = function () {
-      window.dataLayer.push(arguments)
-    }
-
-    window.gtag('js', new Date())
-    window.gtag('config', this.trackingId, {
-      page_title: document.title,
-      page_location: window.location.href
-    })
-
+    // No-op: analytics disabled
     this.isInitialized = true
   }
 
-  // Track page views
+  // Track page views (console only)
   trackPageView(path: string, title?: string) {
-    if (!this.isInitialized) return
-
-    window.gtag('config', this.trackingId, {
-      page_path: path,
-      page_title: title || document.title
-    })
+    console.log('Analytics: Page view', { path, title })
   }
 
-  // Track events
+  // Track events (console only)
   trackEvent(action: string, category: string, label?: string, value?: number) {
-    if (!this.isInitialized) return
-
-    window.gtag('event', action, {
-      event_category: category,
-      event_label: label,
-      value: value
-    })
+    console.log('Analytics: Event', { action, category, label, value })
   }
 
-  // Track course enrollment
+  // Track course enrollment (console only)
   trackCourseEnrollment(courseId: string, courseName: string) {
     this.trackEvent('enroll', 'Course', `${courseId}: ${courseName}`)
   }
 
-  // Track job application
+  // Track job application (console only)
   trackJobApplication(jobId: string, jobTitle: string) {
     this.trackEvent('apply', 'Job', `${jobId}: ${jobTitle}`)
   }
 
-  // Track document download
+  // Track document download (console only)
   trackDocumentDownload(documentId: string, documentName: string) {
     this.trackEvent('download', 'Document', `${documentId}: ${documentName}`)
   }
 
-  // Track user registration
+  // Track user registration (console only)
   trackUserRegistration(userType: 'job_seeker' | 'employer') {
     this.trackEvent('sign_up', 'User', userType)
   }
 
-  // Track user login
+  // Track user login (console only)
   trackUserLogin(userType: 'job_seeker' | 'employer') {
     this.trackEvent('login', 'User', userType)
   }
 
-  // Track search
+  // Track search (console only)
   trackSearch(searchTerm: string, category: string) {
     this.trackEvent('search', category, searchTerm)
   }
 
-  // Track form submission
+  // Track form submission (console only)
   trackFormSubmission(formName: string) {
     this.trackEvent('submit', 'Form', formName)
   }
 
-  // Track video play (if you have video content)
+  // Track video play (console only)
   trackVideoPlay(videoTitle: string) {
     this.trackEvent('play', 'Video', videoTitle)
   }
 
-  // Track scroll depth
+  // Track scroll depth (console only)
   trackScrollDepth(percentage: number) {
     this.trackEvent('scroll', 'Engagement', `${percentage}%`, percentage)
   }
 
-  // Track time on page
+  // Track time on page (console only)
   trackTimeOnPage(seconds: number) {
     this.trackEvent('timing_complete', 'Engagement', 'time_on_page', seconds)
   }
 
-  // Enhanced ecommerce tracking (for course purchases)
+  // Enhanced ecommerce tracking (console only)
   trackPurchase(transactionId: string, items: any[]) {
-    if (!this.isInitialized) return
-
-    window.gtag('event', 'purchase', {
-      transaction_id: transactionId,
-      value: items.reduce((total, item) => total + item.price, 0),
-      currency: 'TWD',
-      items: items.map(item => ({
-        item_id: item.id,
-        item_name: item.name,
-        category: item.category,
-        quantity: 1,
-        price: item.price
-      }))
-    })
+    console.log('Analytics: Purchase', { transactionId, items })
   }
 }
 
-// Create analytics instance
-const trackingId = import.meta.env.VITE_GA_TRACKING_ID
-export const analytics = new Analytics(trackingId)
+// Create analytics instance (disabled)
+export const analytics = new Analytics('')
 
-// Auto-initialize if tracking ID is available
-if (trackingId && typeof window !== 'undefined') {
+// Initialize (no-op)
+if (typeof window !== 'undefined') {
   analytics.init()
 }
 

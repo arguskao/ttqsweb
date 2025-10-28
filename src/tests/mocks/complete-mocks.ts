@@ -89,18 +89,26 @@ export const setupDatabaseMocks = () => {
       ]
     }
 
-    if (typeof query === 'string' && query.includes('SELECT * FROM instructors')) {
+    if (typeof query === 'string' && (query.includes('SELECT * FROM instructors') || query.includes('FROM instructor_applications'))) {
       return [
         {
           id: 1,
+          user_id: 1,
           first_name: '張',
           last_name: '老師',
           email: 'instructor@example.com',
           phone: '0912345678',
           specialization: '藥學',
-          experience_years: 10,
+          years_of_experience: 10,
+          bio: '資深藥學講師',
+          qualifications: '藥師執照',
+          status: 'approved',
           is_active: true,
-          created_at: new Date()
+          average_rating: 4.5,
+          total_ratings: 10,
+          created_at: new Date(),
+          submitted_at: new Date(),
+          reviewed_at: new Date()
         }
       ]
     }

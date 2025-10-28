@@ -20,37 +20,59 @@ export function setupDocumentManagementRoutes(router: ApiRouter): void {
   router.get('/api/v1/documents', async (req: ApiRequest): Promise<ApiResponse> => {
     try {
       const {
-        page,
-        limit,
+        page = '1',
+        limit = '12',
         category,
-        search,
-        is_public,
-        uploader_id,
-        file_type,
-        date_from,
-        date_to
+        search
       } = req.query ?? {}
 
-      const searchParams: DocumentSearchParams = {
-        page: page ? parseInt(page as string, 10) : 1,
-        limit: limit ? parseInt(limit as string, 10) : 12,
-        category: category as string,
-        search: search as string,
-        isPublic: is_public ? is_public === 'true' : undefined,
-        uploader_id: uploader_id ? parseInt(uploader_id as string) : undefined,
-        file_type: file_type as string,
-        date_from: date_from as string,
-        date_to: date_to as string
+      const pageNum = parseInt(page as string, 10)
+      const limitNum = parseInt(limit as string, 10)
+
+      // 簡化查詢，直接從數據庫獲取
+      let whereConditions = ['is_public = true']
+      let params: any[] = []
+      let paramIndex = 1
+
+      if (category) {
+        whereConditions.push(`category = $${paramIndex}`)
+        params.push(category)
+        paramIndex++
       }
 
-      const result = await documentRepo.searchDocuments(searchParams)
+      if (search) {
+        whereConditions.push(`(title ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`)
+        params.push(`%${search}%`)
+        paramIndex++
+      }
+
+      const whereClause = whereConditions.join(' AND ')
+
+      // 獲取總數
+      const countResult = await documentRepo.queryOne(
+        `SELECT COUNT(*) as total FROM documents WHERE ${whereClause}`,
+        params
+      )
+      const total = parseInt(countResult?.total || '0')
+
+      // 獲取分頁數據
+      const offset = (pageNum - 1) * limitNum
+      const documents = await documentRepo.queryMany(
+        `SELECT * FROM documents WHERE ${whereClause} ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+        [...params, limitNum, offset]
+      )
+
+      const meta = {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      }
 
       return {
         success: true,
-        data: {
-          documents: result.data
-        },
-        meta: result.meta
+        data: documents,
+        meta
       }
     } catch (error) {
       console.error('Get documents error:', error)
@@ -384,11 +406,19 @@ export function setupDocumentManagementRoutes(router: ApiRouter): void {
   // 獲取文檔分類列表
   router.get('/api/v1/files/categories/list', async (req: ApiRequest): Promise<ApiResponse> => {
     try {
-      const categories = await documentRepo.getCategories()
+      // 直接從數據庫獲取分類
+      const categories = await documentRepo.queryMany(
+        `SELECT DISTINCT category 
+         FROM documents 
+         WHERE category IS NOT NULL AND is_public = true 
+         ORDER BY category`
+      )
+
+      const categoryList = categories.map(row => row.category)
 
       return {
         success: true,
-        data: categories
+        data: categoryList
       }
     } catch (error) {
       console.error('Get categories error:', error)

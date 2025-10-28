@@ -23,6 +23,13 @@ export class DocumentRepository extends BaseRepository<Document> {
     super('documents')
   }
 
+  // 簡化的獲取所有文檔方法
+  async findAllPublic(): Promise<Document[]> {
+    return this.queryMany(
+      'SELECT * FROM documents WHERE is_public = true ORDER BY created_at DESC'
+    )
+  }
+
   // 搜索文檔（帶篩選和分頁）
   async searchDocuments(
     params: DocumentSearchParams

@@ -220,63 +220,38 @@ export const performanceMonitor = PerformanceMonitor.getInstance()
 export function trackWebVitals(): void {
   if (typeof window === 'undefined') return
 
-  // Track Core Web Vitals
+  // Track Core Web Vitals (console only)
   import('web-vitals')
     .then((mod: any) => {
       const { getCLS, getFID, getFCP, getLCP, getTTFB } = mod as any
 
       if (getCLS) {
         getCLS((metric: any) => {
-          analytics.trackEvent(
-            'web_vital',
-            'Web Vitals',
-            `CLS: ${metric.rating}`,
-            Math.round(metric.value * 1000)
-          )
+          console.log('Web Vital - CLS:', metric)
         })
       }
 
       if (getFID) {
         getFID((metric: any) => {
-          analytics.trackEvent(
-            'web_vital',
-            'Web Vitals',
-            `FID: ${metric.rating}`,
-            Math.round(metric.value)
-          )
+          console.log('Web Vital - FID:', metric)
         })
       }
 
       if (getFCP) {
         getFCP((metric: any) => {
-          analytics.trackEvent(
-            'web_vital',
-            'Web Vitals',
-            `FCP: ${metric.rating}`,
-            Math.round(metric.value)
-          )
+          console.log('Web Vital - FCP:', metric)
         })
       }
 
       if (getLCP) {
         getLCP((metric: any) => {
-          analytics.trackEvent(
-            'web_vital',
-            'Web Vitals',
-            `LCP: ${metric.rating}`,
-            Math.round(metric.value)
-          )
+          console.log('Web Vital - LCP:', metric)
         })
       }
 
       if (getTTFB) {
         getTTFB((metric: any) => {
-          analytics.trackEvent(
-            'web_vital',
-            'Web Vitals',
-            `TTFB: ${metric.rating}`,
-            Math.round(metric.value)
-          )
+          console.log('Web Vital - TTFB:', metric)
         })
       }
     })

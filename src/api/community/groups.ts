@@ -18,9 +18,12 @@ const memberRepo = new GroupMemberRepository()
 
 export function setupGroupRoutes(router: ApiRouter): void {
   // 獲取所有群組
-  router.get('/groups', async (req: ApiRequest): Promise<ApiResponse> => {
+  router.get('/api/v1/groups', async (req: ApiRequest): Promise<ApiResponse> => {
     const query = req.query as Record<string, string | string[] | undefined>
-    const { groupType, search } = query
+    const { groupType, search, page = '1', limit = '12' } = query
+
+    const pageNum = parseInt(page as string) || 1
+    const limitNum = parseInt(limit as string) || 12
 
     let groups
     if (search) {
@@ -31,38 +34,65 @@ export function setupGroupRoutes(router: ApiRouter): void {
       groups = await groupRepo.getActiveGroups()
     }
 
+    // 手動分頁
+    const total = groups.length
+    const totalPages = Math.ceil(total / limitNum)
+    const offset = (pageNum - 1) * limitNum
+    const paginatedGroups = groups.slice(offset, offset + limitNum)
+
     return {
       success: true,
-      data: groups
+      data: paginatedGroups,
+      meta: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages
+      }
     }
   })
 
   // 獲取群組詳情
-  router.get('/groups/:id', async (req: ApiRequest): Promise<ApiResponse> => {
-    const params = req.params as Record<string, string>
-    const { id } = params
-    const groupId = validateIntParam(id, 'id')
+  router.get('/api/v1/groups/:id', async (req: ApiRequest): Promise<ApiResponse> => {
+    try {
+      const params = req.params as Record<string, string>
+      const { id } = params
 
-    const group = await groupRepo.findById(groupId)
-    if (!group) {
-      throw new NotFoundError('Group not found')
-    }
+      console.log('群組詳情API - 收到參數:', { id, params })
 
-    // 獲取群組成員
-    const members = await memberRepo.findByGroup(groupId)
+      const groupId = validateIntParam(id, 'id')
+      console.log('群組詳情API - 解析後的ID:', groupId)
 
-    return {
-      success: true,
-      data: {
-        ...group,
-        members
+      const group = await groupRepo.findById(groupId)
+      console.log('群組詳情API - 查詢結果:', group)
+
+      if (!group) {
+        throw new NotFoundError('Group not found')
       }
+
+      // 獲取群組成員
+      const members = await memberRepo.findByGroup(groupId)
+      console.log('群組詳情API - 成員列表:', members)
+
+      const response = {
+        success: true,
+        data: {
+          ...group,
+          members
+        }
+      }
+
+      console.log('群組詳情API - 最終響應:', response)
+      return response
+    } catch (error) {
+      console.error('群組詳情API - 錯誤:', error)
+      throw error
     }
   })
 
   // 創建群組
   router.post(
-    '/groups',
+    '/api/v1/groups',
     withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       const { name, description, groupType, maxMembers, isPublic }: CreateGroupRequest =
         req.body as CreateGroupRequest
@@ -105,7 +135,7 @@ export function setupGroupRoutes(router: ApiRouter): void {
 
   // 更新群組
   router.put(
-    '/groups/:id',
+    '/api/v1/groups/:id',
     withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       const params = req.params as Record<string, string>
       const { id } = params
@@ -148,7 +178,7 @@ export function setupGroupRoutes(router: ApiRouter): void {
 
   // 刪除群組
   router.delete(
-    '/groups/:id',
+    '/api/v1/groups/:id',
     withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       const params = req.params as Record<string, string>
       const { id } = params
@@ -176,7 +206,7 @@ export function setupGroupRoutes(router: ApiRouter): void {
 
   // 加入群組
   router.post(
-    '/groups/:id/join',
+    '/api/v1/groups/:id/join',
     withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       const params = req.params as Record<string, string>
       const { id } = params
@@ -219,7 +249,7 @@ export function setupGroupRoutes(router: ApiRouter): void {
 
   // 離開群組
   router.delete(
-    '/groups/:id/leave',
+    '/api/v1/groups/:id/leave',
     withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       const params = req.params as Record<string, string>
       const { id } = params
@@ -249,7 +279,7 @@ export function setupGroupRoutes(router: ApiRouter): void {
 
   // 更新成員角色
   router.put(
-    '/groups/:id/members/:userId/role',
+    '/api/v1/groups/:id/members/:userId/role',
     withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       const params = req.params as Record<string, string>
       const { id, userId } = params
@@ -289,7 +319,7 @@ export function setupGroupRoutes(router: ApiRouter): void {
 
   // 移除成員
   router.delete(
-    '/groups/:id/members/:userId',
+    '/api/v1/groups/:id/members/:userId',
     withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       const params = req.params as Record<string, string>
       const { id, userId } = params

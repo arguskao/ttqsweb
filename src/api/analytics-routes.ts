@@ -328,17 +328,18 @@ async function getCourseSatisfactionStats(req: ApiRequest): Promise<ApiResponse>
     // 按講師統計滿意度
     const instructorStatsQuery = `
             SELECT 
-                i.id,
-                i.name,
+                ia.id,
+                CONCAT(u.first_name, ' ', u.last_name) as name,
                 COUNT(DISTINCT e.course_id) as courses_taught,
                 COUNT(e.id) as evaluation_count,
                 ROUND(AVG((e.reaction_score + e.learning_score + e.behavior_score + e.result_score) / 4.0), 2) as avg_score,
                 COUNT(CASE WHEN (e.reaction_score + e.learning_score + e.behavior_score + e.result_score) / 4.0 >= 80 THEN 1 END) as satisfactory_count
-            FROM instructors i
-            JOIN courses c ON i.id = c.instructor_id
+            FROM instructor_applications ia
+            JOIN users u ON u.id = ia.user_id
+            JOIN courses c ON ia.user_id = c.instructor_user_id
             LEFT JOIN evaluations e ON c.id = e.course_id ${dateFilter.replace('e.created_at', 'e.created_at')}
-            WHERE i.status = 'approved'
-            GROUP BY i.id, i.name
+            WHERE ia.status = 'approved'
+            GROUP BY ia.id, u.first_name, u.last_name
             HAVING COUNT(e.id) > 0
             ORDER BY avg_score DESC
         `
@@ -396,7 +397,7 @@ async function getDashboardStats(req: ApiRequest): Promise<ApiResponse> {
                 (SELECT COUNT(*) FROM users WHERE user_type = 'job_seeker') as total_learners,
                 (SELECT COUNT(*) FROM courses WHERE is_active = true) as active_courses,
                 (SELECT COUNT(*) FROM jobs WHERE is_active = true) as active_jobs,
-                (SELECT COUNT(*) FROM instructors WHERE status = 'approved') as active_instructors,
+                (SELECT COUNT(*) FROM instructor_applications WHERE status = 'approved') as active_instructors,
                 (SELECT COUNT(*) FROM course_enrollments WHERE status = 'in_progress') as ongoing_enrollments,
                 (SELECT COUNT(*) FROM job_applications WHERE status = 'pending') as pending_applications
         `

@@ -1,13 +1,9 @@
 /**
  * Cloudflare Pages Function 主入口
- * 使用模組化結構處理所有API v1路由
+ * 使用完整的API路由系統
  */
 
-// 導入各個模組的處理器
-import { handleSystemRoutes } from './handlers/system'
-import { handleDatabaseRoutes } from './handlers/database'
-import { handleDocumentationRoutes } from './handlers/documentation'
-import { handleApiRequest } from './handlers/api'
+import { handleApiRequest } from '../../../src/api/index'
 
 interface Env {
   DATABASE_URL?: string
@@ -15,65 +11,84 @@ interface Env {
   ENVIRONMENT?: string
 }
 
-export const onRequest: PagesFunction<Env> = async context => {
+interface PagesContext {
+  request: Request
+  env: Env
+  params: Record<string, string>
+  waitUntil: (promise: Promise<any>) => void
+}
+
+export const onRequest = async (context: PagesContext) => {
   const { request } = context
 
-  // Handle CORS preflight requests
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 200,
+  try {
+    // Handle CORS preflight requests
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-ID',
+          'Access-Control-Max-Age': '86400'
+        }
+      })
+    }
+
+    // 設置環境變量
+    if (context.env.DATABASE_URL) {
+      process.env.DATABASE_URL = context.env.DATABASE_URL
+    }
+    if (context.env.JWT_SECRET) {
+      process.env.JWT_SECRET = context.env.JWT_SECRET
+    }
+
+    // 解析請求
+    const url = new URL(request.url)
+    const method = request.method
+    const headers: Record<string, string> = {}
+
+    // 轉換 Headers 對象為普通對象
+    request.headers.forEach((value: string, key: string) => {
+      headers[key] = value
+    })
+
+    // 解析請求體
+    let body: unknown = undefined
+    if (method !== 'GET' && method !== 'HEAD') {
+      const contentType = request.headers.get('content-type')
+      if (contentType?.includes('application/json')) {
+        try {
+          body = await request.json()
+        } catch (error) {
+          // 忽略JSON解析錯誤
+        }
+      }
+    }
+
+    // 使用我們的API路由系統
+    const apiResponse = await handleApiRequest(method, url.pathname + url.search, headers, body)
+
+    // 轉換響應
+    return new Response(JSON.stringify(apiResponse), {
+      status: apiResponse.error?.statusCode || (apiResponse.success ? 200 : 500),
       headers: {
+        'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-ID',
-        'Access-Control-Max-Age': '86400'
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-ID'
       }
     })
-  }
-
-  // Handle API routes
-  const url = new URL(request.url)
-  const path = url.pathname.replace('/api/v1', '')
-
-  // 系統相關路由
-  if (
-    path.startsWith('/optimization') ||
-    path.startsWith('/errors') ||
-    path.startsWith('/batch') ||
-    path.startsWith('/info')
-  ) {
-    return await handleSystemRoutes(context, path)
-  }
-
-  // 數據庫相關路由
-  if (path.startsWith('/db/')) {
-    return await handleDatabaseRoutes(context, path)
-  }
-
-  // API文檔相關路由
-  if (path.startsWith('/docs')) {
-    return await handleDocumentationRoutes(context, path)
-  }
-
-  // 其他API路由
-  try {
-    return await handleApiRequest(context, path)
   } catch (error) {
     console.error('API Error:', error)
-    console.error('Environment check:', {
-      hasDatabaseUrl: !!context.env.DATABASE_URL,
-      environment: context.env.ENVIRONMENT
-    })
+
     return new Response(
       JSON.stringify({
         success: false,
         error: {
           code: 'INTERNAL_ERROR',
           message: 'Internal server error',
-          debug: {
-            hasDatabaseUrl: !!context.env.DATABASE_URL,
-            environment: context.env.ENVIRONMENT
-          }
+          details: error instanceof Error ? error.message : 'Unknown error'
         }
       }),
       {

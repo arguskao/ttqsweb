@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages Function 主入口
- * 負責路由分發和CORS處理
+ * 簡化版本，只處理基本路由
  */
 
 interface Env {
@@ -8,12 +8,6 @@ interface Env {
   JWT_SECRET?: string
   ENVIRONMENT?: string
 }
-
-// 導入各個模組的處理器
-import { handleSystemRoutes } from './handlers/system'
-import { handleDatabaseRoutes } from './handlers/database'
-import { handleDocumentationRoutes } from './handlers/documentation'
-import { handleApiRequest } from './handlers/api'
 
 export const onRequest: PagesFunction<Env> = async context => {
   const { request } = context
@@ -35,49 +29,21 @@ export const onRequest: PagesFunction<Env> = async context => {
   const url = new URL(request.url)
   const path = url.pathname.replace('/api/v1', '')
 
-  // 系統相關路由
-  if (
-    path.startsWith('/optimization') ||
-    path.startsWith('/errors') ||
-    path.startsWith('/batch') ||
-    path.startsWith('/info')
-  ) {
-    return await handleSystemRoutes(context, path)
-  }
-
-  // 數據庫相關路由
-  if (path.startsWith('/db/')) {
-    return await handleDatabaseRoutes(context, path)
-  }
-
-  // API文檔相關路由
-  if (path.startsWith('/docs')) {
-    return await handleDocumentationRoutes(context, path)
-  }
-
-  // 其他API路由
-  try {
-    return await handleApiRequest(context, path)
-  } catch (error) {
-    console.error('API Error:', error)
-    console.error('Environment check:', {
-      hasDatabaseUrl: !!context.env.DATABASE_URL,
-      environment: context.env.ENVIRONMENT
-    })
+  // 健康檢查端點
+  if (path === '/health') {
     return new Response(
       JSON.stringify({
-        success: false,
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Internal server error',
-          debug: {
-            hasDatabaseUrl: !!context.env.DATABASE_URL,
-            environment: context.env.ENVIRONMENT
-          }
+        success: true,
+        data: {
+          status: 'healthy',
+          timestamp: new Date().toISOString(),
+          version: '1.0.0',
+          environment: context.env.ENVIRONMENT || 'production',
+          database: context.env.DATABASE_URL ? 'connected' : 'not configured'
         }
       }),
       {
-        status: 500,
+        status: 200,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
@@ -85,5 +51,24 @@ export const onRequest: PagesFunction<Env> = async context => {
       }
     )
   }
+
+  // 其他路由返回 404
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: {
+        code: 'NOT_FOUND',
+        message: 'API endpoint not found',
+        path: path
+      }
+    }),
+    {
+      status: 404,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    }
+  )
 }
 

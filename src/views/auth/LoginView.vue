@@ -28,6 +28,7 @@
                         placeholder="請輸入電子郵件"
                         v-model="form.email"
                         :disabled="isLoading"
+                        autocomplete="off"
                       />
                       <span class="icon is-small is-left">
                         <span>✉️</span>
@@ -46,6 +47,7 @@
                         placeholder="請輸入密碼"
                         v-model="form.password"
                         :disabled="isLoading"
+                        autocomplete="off"
                       />
                       <span class="icon is-small is-left">
                         <span>🔒</span>
@@ -145,6 +147,13 @@ const handleLogin = async () => {
 
   isLoading.value = true
   errorMessage.value = ''
+
+  // 調試：記錄發送的數據
+  console.log('🔍 登入調試:', {
+    email: form.email,
+    passwordLength: form.password.length,
+    passwordFirst10: form.password.substring(0, 10)
+  })
 
   try {
     await authService.login(form)

@@ -1,0 +1,64 @@
+{
+  "executionTime": "2025-10-28T11:31:58.717Z",
+  "beforeOptimization": {
+    "documents": {
+      "exists": true,
+      "count": 0
+    },
+    "ttqs_documents": {
+      "exists": true,
+      "count": 0
+    },
+    "instructor_applications": {
+      "exists": true,
+      "count": 0
+    },
+    "instructor_development": {
+      "exists": true,
+      "count": 0
+    },
+    "instructor_ratings": {
+      "exists": true,
+      "count": 0
+    },
+    "uploaded_files": {
+      "exists": true,
+      "count": 0
+    }
+  },
+  "afterOptimization": {
+    "documents": {
+      "exists": true,
+      "count": 0
+    },
+    "ttqs_documents": {
+      "exists": true,
+      "count": 0
+    },
+    "instructor_applications": {
+      "exists": true,
+      "count": 0
+    },
+    "instructor_development": {
+      "exists": true,
+      "count": 0
+    },
+    "instructor_ratings": {
+      "exists": true,
+      "count": 0
+    },
+    "uploaded_files": {
+      "exists": true,
+      "count": 0
+    }
+  },
+  "changes": {},
+  "recommendations": [
+    "監控系統性能，確保查詢速度正常",
+    "測試所有文件上傳和管理功能",
+    "測試講師申請和管理流程",
+    "檢查 API 端點是否正常工作",
+    "一週後可刪除備份表（*_backup_20241028）",
+    "定期執行 VACUUM ANALYZE 維護性能"
+  ]
+}

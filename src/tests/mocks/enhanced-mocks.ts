@@ -139,13 +139,13 @@ export const createMockDatabase = () => {
       const user = mockTestData.users.find(u => u.email === email)
       return user ? [user] : []
     }
-    
+
     if (query.includes('SELECT * FROM users WHERE id')) {
       const id = values?.[0]
       const user = mockTestData.users.find(u => u.id === id)
       return user ? [user] : []
     }
-    
+
     if (query.includes('INSERT INTO users')) {
       const newUser = {
         id: Date.now(),
@@ -161,7 +161,7 @@ export const createMockDatabase = () => {
       mockTestData.users.push(newUser)
       return [newUser]
     }
-    
+
     if (query.includes('UPDATE users SET')) {
       const id = values?.[values.length - 1]
       const user = mockTestData.users.find(u => u.id === id)
@@ -172,23 +172,23 @@ export const createMockDatabase = () => {
       }
       return []
     }
-    
+
     if (query.includes('SELECT * FROM courses')) {
       return mockTestData.courses
     }
-    
+
     if (query.includes('SELECT * FROM jobs')) {
       return mockTestData.jobs
     }
-    
-    if (query.includes('SELECT * FROM instructors')) {
+
+    if (query.includes('SELECT * FROM instructors') || query.includes('FROM instructor_applications')) {
       return mockTestData.instructors
     }
-    
+
     if (query.includes('SELECT * FROM documents')) {
       return mockTestData.documents
     }
-    
+
     return []
   })
 
@@ -226,7 +226,7 @@ export const createMockDatabase = () => {
 // Setup all mocks
 export const setupAllMocks = () => {
   const mockDb = createMockDatabase()
-  
+
   // Mock @neondatabase/serverless's neon function
   vi.mock('@neondatabase/serverless', () => ({
     neon: vi.fn(() => mockDb.query)

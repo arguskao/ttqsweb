@@ -50,6 +50,16 @@
     "deploy:pages:production": "npm run build:production && wrangler pages deploy dist --project-name=pharmacy-assistant-academy",
     "deploy:pages:preview": "npm run build && wrangler pages deploy dist --project-name=pharmacy-assistant-academy --branch=preview",
     "deploy:pages:production:safe": "npm run build-only && sh -c 'mv wrangler.toml wrangler.worker.toml && printf \"name = \\\"pharmacy-assistant-academy\\\"\\npages_build_output_dir = \\\"dist\\\"\\n\\n[vars]\\nENVIRONMENT = \\\"production\\\"\\n\" > wrangler.toml && wrangler pages deploy dist --project-name=pharmacy-assistant-academy && mv wrangler.toml wrangler.pages.backup.toml && mv wrangler.worker.toml wrangler.toml'",
+    "migrate:file-system": "node scripts/migrate-file-system.js",
+    "cleanup:old-tables": "node scripts/cleanup-old-tables.js",
+    "optimize:database": "node scripts/comprehensive-db-optimization.js",
+    "cleanup:all-tables": "node scripts/cleanup-old-tables.js",
+    "db:migrate:014": "psql \"$DATABASE_URL\" -f src/database/migrations/014_consolidate_file_management.sql",
+    "db:migrate:015": "psql \"$DATABASE_URL\" -f src/database/migrations/015_cleanup_redundant_tables.sql",
+    "db:migrate:016": "node scripts/execute-sql-migration.js",
+    "db:migrate:017": "node scripts/execute-sql-migration.js",
+    "db:fix-documents": "node scripts/fix-documents-table.js",
+    "db:execute-sql": "node scripts/execute-sql-migration.js",
     "prepare": "husky"
   },
   "dependencies": {

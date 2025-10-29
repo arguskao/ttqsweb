@@ -419,14 +419,7 @@ export function setupDocumentManagementRoutes(router: ApiRouter): void {
 
       return {
         success: true,
-        data: categoryKeys,
-        meta: {
-          categories: categories.map(row => ({
-            key: row.category_key,
-            name: row.category_name,
-            description: row.description
-          }))
-        }
+        data: categoryKeys
       }
     } catch (error) {
       console.error('Get categories error:', error)

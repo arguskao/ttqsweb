@@ -34,7 +34,7 @@
                     <select v-model="selectedCategory" @change="handleCategoryChange">
                       <option value="">所有分類</option>
                       <option v-for="category in categories" :key="category" :value="category">
-                        {{ categoryLabels.value[category] || category }}
+                        {{ categoryLabels[category] || category }}
                       </option>
                     </select>
                   </div>
@@ -66,7 +66,7 @@
             <div v-for="stat in downloadStats" :key="stat.category" class="column is-3">
               <div class="has-text-centered">
                 <p class="heading">
-                  {{ categoryLabels.value[stat.category] || stat.category || '其他' }}
+                  {{ categoryLabels[stat.category] || stat.category || '其他' }}
                 </p>
                 <p class="title is-4">{{ stat.total_downloads ?? 0 }}</p>
                 <p class="subtitle is-6">{{ stat.document_count }} 個文件</p>
@@ -258,7 +258,14 @@ const totalPages = ref(1)
 const itemsPerPage = 12
 
 // 分類映射（英文值 -> 中文顯示）- 從 API 動態載入
-const categoryLabels = ref<Record<string, string>>({})
+const categoryLabels = ref<Record<string, string>>({
+  general: '一般文件',
+  course: '課程資料',
+  documents: '文檔',
+  images: '圖片',
+  reference: '參考資料',
+  ttqs: 'TTQS文件'
+})
 
 // Preview Modal
 const showPreviewModal = ref(false)
@@ -363,10 +370,11 @@ const fetchCategories = async () => {
       categories.value = categoryDetails.map((cat: any) => cat.key)
 
       // 設置分類映射（英文 -> 中文）
-      categoryLabels.value = categoryDetails.reduce((acc: Record<string, string>, cat: any) => {
-        acc[cat.key] = cat.name
-        return acc
-      }, {})
+      const labels: Record<string, string> = {}
+      categoryDetails.forEach((cat: any) => {
+        labels[cat.key] = cat.name
+      })
+      categoryLabels.value = labels
     }
   } catch (err) {
     console.error('載入分類失敗:', err)
@@ -377,10 +385,12 @@ const fetchDownloadStats = async () => {
   try {
     const response = await api.get('/files/stats/downloads')
     if (response.data.success) {
-      downloadStats.value = response.data.data
+      downloadStats.value = response.data.data || []
     }
   } catch (err) {
     console.error('載入統計資料失敗:', err)
+    // 忽略錯誤，統計資料是可選的
+    downloadStats.value = []
   }
 }
 

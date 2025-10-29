@@ -83,10 +83,9 @@ export function setupDocumentDownloadRoutes(router: ApiRouter): void {
     }
   })
 
-  // 獲取下載統計
+  // 獲取下載統計（公開端點）
   router.get(
     '/api/v1/files/stats/downloads',
-    requireAuth,
     async (req: ApiRequest): Promise<ApiResponse> => {
       try {
         const stats = await downloadRepo.getDownloadStats()

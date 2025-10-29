@@ -223,7 +223,7 @@ const loadInstructors = async () => {
     console.log('響應狀態:', response.status)
     console.log('響應數據:', response.data)
 
-    if (response.data && response.data.success) {
+    if (response.data?.success) {
       const responseData = response.data.data
       console.log('提取的數據:', responseData)
       console.log('數據類型:', typeof responseData)

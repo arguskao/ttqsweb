@@ -119,4 +119,3 @@ export type ApplicationStatus = 'pending' | 'approved' | 'rejected'
 
 // 講師狀態
 export type InstructorStatus = 'active' | 'inactive' | 'suspended'
-

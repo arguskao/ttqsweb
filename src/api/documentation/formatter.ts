@@ -106,12 +106,12 @@ export class DocumentationFormatter {
 
     const securitySchemes = this.options.includeSecurity
       ? {
-          bearerAuth: {
-            type: 'http',
-            scheme: 'bearer',
-            bearerFormat: 'JWT'
-          }
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT'
         }
+      }
       : undefined
 
     return {

@@ -153,4 +153,3 @@ export interface UserGroupStats {
   repliesPosted: number
   experiencesShared: number
 }
-

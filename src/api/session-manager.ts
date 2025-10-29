@@ -210,4 +210,3 @@ export const verifySecureToken = (token: string): any => {
 
   return payload
 }
-

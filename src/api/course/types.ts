@@ -273,4 +273,3 @@ export interface CourseApplicationListResponse {
   applications: CourseApplicationWithInstructor[]
   meta: CoursePaginationMeta
 }
-

@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 
 import { neon } from '@neondatabase/serverless'
 import dotenv from 'dotenv'
@@ -21,7 +20,7 @@ async function fixInstructorData() {
 
     // 1. 清理測試數據
     console.log('🧹 清理測試數據:')
-    
+
     // 刪除沒有對應用戶的講師記錄
     const testInstructors = await sql`
       SELECT * FROM instructors 
@@ -50,7 +49,7 @@ async function fixInstructorData() {
 
     // 2. 檢查表結構並修復
     console.log('\n🔧 檢查和修復表結構:')
-    
+
     // 檢查 instructors 表是否有 user_id 欄位
     const columns = await sql`
       SELECT column_name 
@@ -60,7 +59,7 @@ async function fixInstructorData() {
 
     if (columns.length === 0) {
       console.log('  ⚠️  instructors 表缺少 user_id 欄位')
-      
+
       const confirm = process.argv.includes('--confirm')
       if (confirm) {
         // 添加 user_id 欄位
@@ -68,7 +67,7 @@ async function fixInstructorData() {
           ALTER TABLE instructors 
           ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
         `
-        
+
         // 添加其他缺少的欄位
         await sql`
           ALTER TABLE instructors 
@@ -81,7 +80,7 @@ async function fixInstructorData() {
           ADD COLUMN IF NOT EXISTS average_rating DECIMAL(3,2) DEFAULT 0.00,
           ADD COLUMN IF NOT EXISTS total_ratings INTEGER DEFAULT 0
         `
-        
+
         console.log('  ✅ 已添加缺少的欄位')
       } else {
         console.log('  ⚠️  使用 --confirm 參數來執行表結構修復')
@@ -92,7 +91,7 @@ async function fixInstructorData() {
 
     // 3. 為已批准的申請創建講師記錄
     console.log('\n👨‍🏫 為已批准的申請創建講師記錄:')
-    
+
     const approvedApplications = await sql`
       SELECT ia.*, u.first_name, u.last_name, u.email
       FROM instructor_applications ia
@@ -102,10 +101,10 @@ async function fixInstructorData() {
 
     if (approvedApplications.length > 0) {
       console.log(`  發現 ${approvedApplications.length} 個已批准的申請:`)
-      
+
       for (const app of approvedApplications) {
         console.log(`    - ${app.first_name} ${app.last_name} (${app.email})`)
-        
+
         // 檢查是否已經有講師記錄
         const existingInstructor = await sql`
           SELECT id FROM instructors WHERE email = ${app.email}
@@ -130,12 +129,12 @@ async function fixInstructorData() {
                 0.00, 0, true, NOW(), NOW()
               )
             `
-            console.log(`      ✅ 已創建講師記錄`)
+            console.log('      ✅ 已創建講師記錄')
           } else {
-            console.log(`      ⚠️  需要創建講師記錄（使用 --confirm 執行）`)
+            console.log('      ⚠️  需要創建講師記錄（使用 --confirm 執行）')
           }
         } else {
-          console.log(`      ✅ 講師記錄已存在`)
+          console.log('      ✅ 講師記錄已存在')
         }
       }
     } else {
@@ -144,15 +143,15 @@ async function fixInstructorData() {
 
     // 4. 驗證修復結果
     console.log('\n✅ 修復完成，驗證結果:')
-    
+
     const finalApplications = await sql`
       SELECT COUNT(*) as count FROM instructor_applications WHERE status = 'approved'
     `
-    
+
     const finalInstructors = await sql`
       SELECT COUNT(*) as count FROM instructors
     `
-    
+
     const finalInstructorUsers = await sql`
       SELECT COUNT(*) as count FROM users WHERE user_type = 'instructor'
     `

@@ -265,4 +265,3 @@ export interface DocumentationOptions {
   customSchemas?: Record<string, ApiSchema>
   customTags?: ApiTag[]
 }
-

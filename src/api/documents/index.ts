@@ -24,4 +24,3 @@ export function setupDocumentRoutes(router: ApiRouter): void {
   // 設置文檔下載路由
   setupDocumentDownloadRoutes(router)
 }
-

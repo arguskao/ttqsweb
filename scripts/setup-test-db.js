@@ -186,4 +186,3 @@ if (command === 'cleanup') {
 } else {
   setupTestDatabase()
 }
-

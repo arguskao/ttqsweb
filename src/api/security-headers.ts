@@ -68,4 +68,3 @@ export const secureCorsMiddleware: Middleware = async (req, next) => {
 
   return response
 }
-

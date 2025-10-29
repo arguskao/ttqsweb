@@ -174,4 +174,3 @@ defineProps<Props>()
   color: #ffdd57;
 }
 </style>
-

@@ -32,4 +32,3 @@ export function setupInstructorRoutes(router: ApiRouter): void {
   // 設置講師申請路由
   setupInstructorApplicationRoutes(router)
 }
-

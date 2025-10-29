@@ -40,7 +40,7 @@ export const onRequestPost: PagesFunction<Env> = async context => {
       WHERE id = 'roles_migration_production'
     `
 
-    let migrationResult = {
+    const migrationResult = {
       alreadyMigrated: false,
       adminCreated: false,
       userStats: null as any

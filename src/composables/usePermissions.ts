@@ -4,7 +4,8 @@
  */
 
 import { computed } from 'vue'
-import { useAuthStore } from '../stores/auth'
+
+import type { UserType } from '../services/auth'
 import {
   hasPermission,
   isAdmin,
@@ -12,7 +13,7 @@ import {
   isEmployerOrHigher
 } from '../services/permissions'
 import type { Permission } from '../services/permissions'
-import type { UserType } from '../services/auth'
+import { useAuthStore } from '../stores/auth'
 
 export function usePermissions() {
   const authStore = useAuthStore()

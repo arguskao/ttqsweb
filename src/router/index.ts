@@ -417,7 +417,7 @@ router.beforeEach(async (to, from, next) => {
   if (!(window as any).__authInitialized) {
     try {
       await authServiceEnhanced.initializeAuth()
-        ; (window as any).__authInitialized = true
+      ; (window as any).__authInitialized = true
     } catch (error) {
       console.error('Auth initialization failed in router guard:', error)
     }

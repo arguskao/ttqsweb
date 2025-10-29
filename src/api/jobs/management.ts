@@ -541,4 +541,3 @@ export function setupJobManagementRoutes(router: ApiRouter): void {
     }
   )
 }
-

@@ -13,4 +13,3 @@ export { DocumentationFormatter } from './formatter'
 
 // 導出預定義資源
 export { defaultSchemas, defaultTags, defaultResponses } from './schemas'
-

@@ -361,9 +361,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { authService } from '@/services/auth-service'
-import { apiService } from '@/services/api'
+
 import type { CreateApplicationRequest, InstructorApplication } from '@/api/instructor/types'
+import { apiService } from '@/services/api'
+import { authService } from '@/services/auth-service'
 
 const router = useRouter()
 
@@ -456,7 +457,7 @@ const checkExistingApplication = async () => {
 
     const result = await apiService.get(`/users/${user.id}/instructor-application`)
     if (result.success && result.data) {
-      existingApplication.value = result.data
+      existingApplication.value = result.data as InstructorApplication
     }
   } catch (error) {
     console.error('檢查申請狀態失敗:', error)

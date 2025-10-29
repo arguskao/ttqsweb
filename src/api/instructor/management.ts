@@ -9,7 +9,7 @@ import type { ApiRouter } from '../router'
 import type { ApiRequest, ApiResponse } from '../types'
 
 import { InstructorRepository } from './repositories'
-import type { CreateInstructorRequest, UpdateInstructorRequest } from './types'
+import type { UpdateInstructorRequest } from './types'
 
 // Repository實例
 const instructorRepo = new InstructorRepository()

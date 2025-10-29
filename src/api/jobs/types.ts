@@ -278,4 +278,3 @@ export interface JobAuditLog {
   user_agent: string
   created_at: Date
 }
-

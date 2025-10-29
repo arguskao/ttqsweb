@@ -97,4 +97,3 @@ export const generalApiRateLimit = createRateLimit({
   maxAttempts: 100, // 100 requests per 15 minutes
   blockDurationMs: 15 * 60 * 1000 // Block for 15 minutes
 })
-

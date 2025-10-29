@@ -148,7 +148,7 @@ const loadCourses = async () => {
       }
     })
 
-    if (response.data && response.data.success) {
+    if (response.data?.success) {
       courses.value = response.data.data || []
       if (response.data.meta) {
         meta.value = response.data.meta
@@ -243,4 +243,3 @@ onMounted(() => {
   flex: 1;
 }
 </style>
-

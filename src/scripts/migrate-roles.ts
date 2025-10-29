@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 
 /**
  * 用戶角色系統遷移腳本
@@ -6,8 +5,9 @@
  */
 
 import 'dotenv/config'
-import { getDatabasePool } from '../config/database'
 import bcrypt from 'bcryptjs'
+
+import { getDatabasePool } from '../config/database'
 
 async function runMigration() {
   const pool = getDatabasePool()

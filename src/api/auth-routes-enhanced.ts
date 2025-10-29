@@ -20,7 +20,7 @@ export const csrfTokenHandler: RouteHandler = async req => {
 
     // 將 token 存儲到 session 中
     if ((req as any).session) {
-      ;(req as any).session.csrfToken = token
+      (req as any).session.csrfToken = token
     }
 
     return {

@@ -29,4 +29,3 @@ export function setupJobRoutes(router: ApiRouter): void {
   // 設置工作申請路由
   setupJobApplicationRoutes(router)
 }
-

@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 
 /**
  * 用戶角色系統遷移腳本 (Neon Serverless 版本)

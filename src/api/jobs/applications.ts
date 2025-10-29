@@ -568,4 +568,3 @@ export function setupJobApplicationRoutes(router: ApiRouter): void {
     }
   )
 }
-

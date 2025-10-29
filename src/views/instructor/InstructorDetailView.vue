@@ -228,7 +228,7 @@ const loadInstructor = async () => {
     const response = await api.get(`/instructors/${instructorId}`)
     console.log('講師詳情 API 響應:', response.data)
 
-    if (response.data && response.data.success) {
+    if (response.data?.success) {
       instructor.value = response.data.data
       console.log('設置講師資料:', instructor.value)
     } else {

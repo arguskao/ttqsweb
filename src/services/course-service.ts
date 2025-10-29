@@ -49,7 +49,7 @@ class CourseService {
 
       throw new Error('獲取課程列表失敗')
     } catch (err) {
-      // eslint-disable-next-line no-console
+       
       console.error('Error loading courses:', err)
 
       // 如果 API 調用失敗，返回空列表而不是硬編碼的數據

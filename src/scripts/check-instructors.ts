@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 
 import { neon } from '@neondatabase/serverless'
 import dotenv from 'dotenv'
@@ -34,10 +33,10 @@ async function checkInstructors() {
       applicationStats.forEach(stat => {
         const statusText = {
           'pending': '待審核',
-          'approved': '已批准', 
+          'approved': '已批准',
           'rejected': '已拒絕'
         }[stat.status] || stat.status
-        
+
         console.log(`  ${statusText}: ${stat.count} 個`)
       })
     } else {
@@ -68,7 +67,7 @@ async function checkInstructors() {
     const totalInstructors = await sql`
       SELECT COUNT(*) as total FROM instructors
     `
-    
+
     const totalApplications = await sql`
       SELECT COUNT(*) as total FROM instructor_applications
     `
@@ -86,7 +85,7 @@ async function checkInstructors() {
         WHERE table_name = 'instructors' 
         ORDER BY ordinal_position
       `
-      
+
       if (tableStructure.length > 0) {
         console.log('  欄位列表:')
         tableStructure.forEach(col => {
@@ -110,7 +109,7 @@ async function checkInstructors() {
       if (instructorDetails.length > 0) {
         instructorDetails.forEach((instructor, index) => {
           console.log(`\n  ${index + 1}. 講師 ID: ${instructor.id}`)
-          console.log(`     資料:`, JSON.stringify(instructor, null, 6))
+          console.log('     資料:', JSON.stringify(instructor, null, 6))
         })
       } else {
         console.log('  沒有講師資料')
@@ -138,7 +137,7 @@ async function checkInstructors() {
           'job_seeker': '求職者',
           'employer': '雇主'
         }[stat.user_type] || stat.user_type
-        
+
         console.log(`  ${typeText}: ${stat.count} 個`)
       })
     }

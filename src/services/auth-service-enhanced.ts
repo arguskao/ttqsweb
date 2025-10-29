@@ -209,16 +209,16 @@ export class AuthServiceEnhanced {
     const sessionToken = sessionStorage.getItem(this.accessTokenKey)
     const localToken = localStorage.getItem('auth_token')
     const token = sessionToken || localToken
-    
+
     if (!token) return true
 
     try {
       // 簡單的 JWT 解析 (不驗證簽名)
       const parts = token.split('.')
       if (parts.length !== 3) return true
-      
+
       const payload = JSON.parse(atob(parts[1] || ''))
-      
+
       // 如果沒有 exp 字段，檢查是否是我們的測試 token
       if (!payload.exp) {
         console.warn('[Auth] Token 沒有過期時間')
@@ -327,7 +327,7 @@ export class AuthServiceEnhanced {
       const sessionUser = sessionStorage.getItem('user')
       const localUser = localStorage.getItem('auth_user')
       const userStr = sessionUser || localUser
-      
+
       if (userStr) {
         try {
           const userData = JSON.parse(userStr)

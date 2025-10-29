@@ -4,6 +4,7 @@
  */
 
 import type { ApiRouter, Route } from '../router'
+
 import type {
   ApiEndpointMetadata,
   ApiParameter,
@@ -406,7 +407,7 @@ export class RouteExtractor {
     total: number
     byMethod: Record<string, number>
     byTag: Record<string, number>
-  } {
+    } {
     const stats = {
       total: this.endpoints.size,
       byMethod: {} as Record<string, number>,

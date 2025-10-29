@@ -18,8 +18,7 @@ import type {
   CourseApplication,
   CourseApplicationWithInstructor,
   CreateCourseApplicationRequest,
-  CourseApplicationSearchParams,
-  CourseApplicationStatus
+  CourseApplicationSearchParams
 } from './types'
 
 // 課程Repository
@@ -736,4 +735,3 @@ export class CourseApplicationRepository extends BaseRepository<CourseApplicatio
     }
   }
 }
-

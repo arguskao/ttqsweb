@@ -37,4 +37,3 @@ export function setupSupportRoutes(router: ApiRouter): void {
   // 設置講師發展路由
   setupInstructorDevelopmentRoutes(router)
 }
-

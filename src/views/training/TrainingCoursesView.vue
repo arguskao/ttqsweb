@@ -468,7 +468,3 @@ onMounted(() => {
   vertical-align: middle;
 }
 </style>
-
-
-
-

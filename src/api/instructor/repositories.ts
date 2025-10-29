@@ -272,4 +272,3 @@ export class InstructorApplicationRepository extends BaseRepository<InstructorAp
     )
   }
 }
-

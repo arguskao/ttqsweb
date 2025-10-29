@@ -11,7 +11,7 @@ import { container, SERVICE_KEYS } from './services/container'
 import { customErrorHandler } from './services/error-handler'
 import { analytics } from './utils/analytics'
 import { setupApiMetrics } from './utils/api-metrics'
-import { loadCriticalResources, trackWebVitals } from './utils/performance'
+import { loadCriticalResources } from './utils/performance'
 import { setupRoutePreloading } from './utils/route-preloader'
 
 // Load critical resources early
@@ -49,11 +49,11 @@ app.mount('#app')
 authServiceEnhanced
   .initializeAuth()
   .then(() => {
-    ; (window as any).__authInitialized = true
+    (window as any).__authInitialized = true
   })
   .catch(error => {
     console.error('Failed to initialize auth:', error)
-      ; (window as any).__authInitialized = true // 即使失敗也標記為已初始化
+    ; (window as any).__authInitialized = true // 即使失敗也標記為已初始化
   })
 
 // 開始預加載關鍵路由

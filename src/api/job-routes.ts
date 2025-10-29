@@ -1,6 +1,5 @@
 import { validateIntParam } from '../utils/param-validation'
 
-import { requireEmployer } from './auth-middleware'
 import { BaseRepository } from './database'
 import { ValidationError, NotFoundError } from './errors'
 import { withAuth } from './middleware-helpers'

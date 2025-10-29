@@ -3,8 +3,8 @@
  * 管理員專用的用戶管理功能
  */
 
-import { query } from '../database'
 import { requireAdmin, requireHigherRole, type AuthenticatedRequest } from '../auth-middleware'
+import { query } from '../database'
 import type { UserType } from '../types'
 
 // 獲取所有用戶列表

@@ -28,4 +28,3 @@ export function setupCourseRoutes(router: ApiRouter): void {
   // 設置課程申請路由
   setupCourseApplicationRoutes(router)
 }
-

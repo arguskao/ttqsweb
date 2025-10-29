@@ -368,7 +368,7 @@ const loadProfile = async () => {
     const response = await api.get('/instructors/profile')
 
     // 檢查響應格式
-    if (response.data && response.data.success === false) {
+    if (response.data?.success === false) {
       // API 返回錯誤
       if (response.status === 404) {
         instructor.value = null

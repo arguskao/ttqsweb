@@ -390,4 +390,3 @@ export class DocumentDownloadRepository extends BaseRepository<DocumentDownload>
     )
   }
 }
-

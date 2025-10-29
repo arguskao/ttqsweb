@@ -275,8 +275,8 @@ const reviewApplication = async (applicationId: number, status: 'approved' | 're
     alert(status === 'approved' ? '已批准申請' : '已拒絕申請')
     await loadApplications()
   } catch (error: unknown) {
-    console.error('審核失敗:', error.response?.data)
-    alert(error.response?.data?.error?.message || '審核失敗')
+    console.error('審核失敗:', (error as any)?.response?.data)
+    alert((error as any)?.response?.data?.error?.message || '審核失敗')
   } finally {
     isReviewing.value = false
   }

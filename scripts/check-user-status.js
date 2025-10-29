@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 
 /**
  * 檢查特定用戶的講師申請狀態
@@ -64,7 +63,7 @@ async function checkUserStatus() {
     console.log('📊 狀態分析:')
     if (user[0].user_type === 'instructor') {
       console.log('  ✅ 用戶已經是講師')
-      
+
       const approvedApp = applications.find(app => app.status === 'approved')
       if (approvedApp) {
         console.log('  ✅ 有已批准的申請')
@@ -74,7 +73,7 @@ async function checkUserStatus() {
       }
     } else {
       console.log('  ❌ 用戶還不是講師')
-      
+
       const pendingApp = applications.find(app => app.status === 'pending')
       if (pendingApp) {
         console.log('  ⏳ 有待審核的申請')

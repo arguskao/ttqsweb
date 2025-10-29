@@ -439,7 +439,7 @@ const handleDownload = async (documentId: number) => {
       // await fetchDownloadStats()
     }
   } catch (err: unknown) {
-    error.value = err?.response?.data?.error?.message || '下載文件失敗'
+    error.value = (err as any)?.response?.data?.error?.message || '下載文件失敗'
   }
 }
 

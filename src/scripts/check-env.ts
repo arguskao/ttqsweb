@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 
 /**
  * 環境變數檢查腳本
@@ -67,7 +66,7 @@ function checkEnvironment() {
     }
   }
 
-  console.log('\n' + '='.repeat(50))
+  console.log(`\n${'='.repeat(50)}`)
 
   if (hasErrors) {
     console.log('❌ 環境配置有問題，請檢查上述錯誤')

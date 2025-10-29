@@ -163,4 +163,3 @@ canvas {
   height: auto;
 }
 </style>
-

@@ -35,4 +35,3 @@ export function setupCommunityRoutes(router: ApiRouter): void {
   // 設置經驗分享路由
   setupExperienceRoutes(router)
 }
-

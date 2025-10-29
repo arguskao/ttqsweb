@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 
 import { neon } from '@neondatabase/serverless'
 import dotenv from 'dotenv'

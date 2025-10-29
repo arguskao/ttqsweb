@@ -287,4 +287,3 @@ canvas {
   color: #3273dc;
 }
 </style>
-

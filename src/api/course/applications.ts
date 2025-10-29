@@ -3,13 +3,14 @@
  * 處理講師申請開課的相關功能
  */
 
-import type { ApiRouter } from '../router'
-import { withAuth } from '../middleware-helpers'
 import { requireRole } from '../auth-middleware'
-import type { ApiRequest, ApiResponse } from '../types'
 import { ValidationError, NotFoundError, UnauthorizedError } from '../errors'
-import { CourseApplicationRepository } from './repositories'
 import { InstructorApplicationRepository } from '../instructor/repositories'
+import { withAuth } from '../middleware-helpers'
+import type { ApiRouter } from '../router'
+import type { ApiRequest, ApiResponse } from '../types'
+
+import { CourseApplicationRepository } from './repositories'
 import type { CreateCourseApplicationRequest, ReviewCourseApplicationRequest } from './types'
 
 const applicationRepo = new CourseApplicationRepository()

@@ -302,7 +302,7 @@ const formatContentPreview = (content: string, maxLength = 200) => {
 
   // 截斷長度
   if (preview.length > maxLength) {
-    preview = preview.substring(0, maxLength) + '...'
+    preview = `${preview.substring(0, maxLength)}...`
   }
 
   return preview

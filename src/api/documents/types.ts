@@ -256,4 +256,3 @@ export interface DocumentAuditLog {
   user_agent: string
   created_at: Date
 }
-

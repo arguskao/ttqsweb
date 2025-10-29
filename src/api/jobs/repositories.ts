@@ -472,4 +472,3 @@ export class JobFavoriteRepository extends BaseRepository<JobFavorite> {
     )
   }
 }
-

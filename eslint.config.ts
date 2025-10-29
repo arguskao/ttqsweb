@@ -233,12 +233,6 @@ export default defineConfigWithVueTs(
 
   {
     files: ['functions/**/*.ts'],
-    languageOptions: {
-      parserOptions: {
-        project: './functions/tsconfig.json',
-        tsconfigRootDir: import.meta.dirname
-      }
-    },
     rules: {
       'no-console': 'off',
       '@typescript-eslint/no-explicit-any': 'off',

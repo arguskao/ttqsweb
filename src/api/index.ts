@@ -20,12 +20,12 @@ import { setupApiDocumentationRoutes, initializePredefinedEndpoints } from './ap
 import { setupAuthRoutes } from './auth-routes'
 
 // Setup Community routes
-import { setupCommunityRoutes } from './community-routes'
-import { setupCourseRoutesNeon } from './course-routes-neon'
-import { setupDocumentRoutesNeon } from './documents-routes-neon'
+import { setupCommunityRoutes } from './community'
+import { setupCourseRoutes } from './course'
+import { setupDocumentRoutes } from './documents'
 import { enhancedErrorHandlingMiddlewareChain } from './enhanced-error-handling'
-import { setupInstructorRoutes } from './instructor-routes'
-import { setupJobRoutesNeon } from './jobs-routes-neon'
+import { setupInstructorRoutes } from './instructor'
+import { setupJobRoutes } from './jobs'
 import {
   loggingMiddleware
 } from './middleware'
@@ -39,9 +39,8 @@ import { securityHeadersMiddleware, secureCorsMiddleware } from './security-head
 // 導入API文檔功能
 
 // Setup Support routes
-import { setupSupportRoutes } from './support-routes'
-import { setupTTQSAnalyticsRoutes } from './ttqs-analytics-routes'
-import { setupTTQSRoutes } from './ttqs-routes'
+import { setupSupportRoutes } from './support'
+import { setupTTQSAnalyticsRoutes } from './ttqs'
 import type { ApiRequest, ApiResponse } from './types'
 
 // Setup global middlewares
@@ -158,12 +157,11 @@ router.get('/api/v1/info', async (req: ApiRequest): Promise<ApiResponse> => {
 initializePredefinedEndpoints()
 
 setupAuthRoutes(router)
-// 使用新的 Neon 兼容路由
-setupCourseRoutesNeon(router)
-setupJobRoutesNeon(router)
-setupDocumentRoutesNeon(router)
+// 使用模組化路由
+setupCourseRoutes(router)
+setupJobRoutes(router)
+setupDocumentRoutes(router)
 setupInstructorRoutes(router)
-setupTTQSRoutes(router)
 setupTTQSAnalyticsRoutes(router)
 setupAnalyticsRoutes(router)
 setupCommunityRoutes(router)

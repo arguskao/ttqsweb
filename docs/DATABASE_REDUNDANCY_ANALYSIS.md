@@ -49,16 +49,18 @@ title, file_url, file_size, document_type, uploaded_by
 | `instructor_applications` | 講師申請和基本資訊 | `user_id`, `status`, `created_at` |
 | `instructor_development` | 講師發展路徑追蹤 | `user_id`, `application_status` |
 
-### 3. 評分系統複雜度 ⭐
+### 3. 評分系統簡化 ⭐
 
-#### 多重評分表結構
+#### 當前評分表結構
 - `instructor_ratings` - 講師評分（簡單評分）
-- `reaction_evaluations` - TTQS 反應評估
-- `learning_evaluations` - TTQS 學習評估  
-- `behavior_evaluations` - TTQS 行為評估
-- `result_evaluations` - TTQS 結果評估
 
-**分析：** TTQS 評估是專業要求，應保留。但 `instructor_ratings` 可考慮整合。
+#### ✅ 已清理的未使用評估表
+- ~~`reaction_evaluations`~~ - TTQS 反應評估（已刪除 - 未使用）
+- ~~`learning_evaluations`~~ - TTQS 學習評估（已刪除 - 未使用）
+- ~~`behavior_evaluations`~~ - TTQS 行為評估（已刪除 - 未使用）
+- ~~`result_evaluations`~~ - TTQS 結果評估（已刪除 - 未使用）
+
+**分析：** TTQS 四層評估表已刪除，因為在代碼中完全未被使用。保留 `instructor_ratings` 因為前端有顯示需求。
 
 ---
 
@@ -119,8 +121,11 @@ ALTER TABLE instructor_applications ADD COLUMN IF NOT EXISTS certifications TEXT
 
 ### 低優先級 🟢
 
-#### 3. 評分系統優化
-**建議動作：** 保持 TTQS 評估系統，優化 `instructor_ratings` 整合
+#### 3. 評分系統優化 ✅ 已完成
+**已完成動作：** 
+- ✅ 刪除未使用的 TTQS 四層評估表
+- ✅ 保留 `instructor_ratings`（前端有使用）
+- ⏳ 可考慮進一步優化 `instructor_ratings` 的 API 實現
 
 ---
 
@@ -152,7 +157,13 @@ ALTER TABLE instructor_applications ADD COLUMN IF NOT EXISTS certifications TEXT
 3. ✅ 更新相關業務邏輯
 4. ✅ 測試講師管理功能
 
-### Phase 3: 性能優化 (1 週)
+### Phase 3: 評分系統清理 (已完成)
+1. ✅ 分析評分表使用情況
+2. ✅ 刪除未使用的 TTQS 四層評估表
+3. ✅ 清理相關索引、序列和觸發器
+4. ✅ 刪除相關 API 文件
+
+### Phase 4: 性能優化 (1 週)
 1. ✅ 重新評估索引策略
 2. ✅ 優化查詢語句
 3. ✅ 性能測試和調優

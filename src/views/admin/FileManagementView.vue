@@ -21,7 +21,7 @@
                 :disabled="isSyncing"
               >
                 <span class="icon">
-                  <i class="fas fa-sync-alt"></i>
+                  <span>🔄</span>
                 </span>
                 <span>同步 R2 文件</span>
               </button>
@@ -35,7 +35,7 @@
             <li :class="{ 'is-active': activeTab === 'upload' }">
               <a @click="activeTab = 'upload'">
                 <span class="icon is-small">
-                  <i class="fas fa-upload"></i>
+                  <span>⬆️</span>
                 </span>
                 <span>上傳文件</span>
               </a>
@@ -43,7 +43,7 @@
             <li :class="{ 'is-active': activeTab === 'list' }">
               <a @click="activeTab = 'list'">
                 <span class="icon is-small">
-                  <i class="fas fa-list"></i>
+                  <span>📋</span>
                 </span>
                 <span>文件列表</span>
               </a>
@@ -73,7 +73,7 @@
                       @input="handleSearch"
                     />
                     <span class="icon is-left">
-                      <i class="fas fa-search"></i>
+                      <span>🔍</span>
                     </span>
                   </div>
                 </div>
@@ -102,7 +102,7 @@
                   <label class="label">&nbsp;</label>
                   <button class="button is-light is-fullwidth" @click="resetFilters">
                     <span class="icon">
-                      <i class="fas fa-redo"></i>
+                      <span>🔄</span>
                     </span>
                     <span>重置</span>
                   </button>
@@ -127,7 +127,7 @@
           <div v-else-if="files.length === 0" class="notification is-info">
             <p class="has-text-centered">
               <span class="icon">
-                <i class="fas fa-info-circle"></i>
+                <span>ℹ️</span>
               </span>
               沒有找到文件
             </p>
@@ -151,7 +151,7 @@
                     <td>
                       <div class="is-flex is-align-items-center">
                         <span class="icon mr-2">
-                          <i :class="getFileIcon(file.file_type)"></i>
+                          <span>{{ getFileIcon(file.file_type) }}</span>
                         </span>
                         <div>
                           <p class="has-text-weight-semibold">{{ file.title }}</p>
@@ -176,7 +176,7 @@
                           title="複製 URL"
                         >
                           <span class="icon">
-                            <i class="fas fa-copy"></i>
+                            <span>📋</span>
                           </span>
                         </button>
                         <a
@@ -186,7 +186,7 @@
                           title="查看文件"
                         >
                           <span class="icon">
-                            <i class="fas fa-external-link-alt"></i>
+                            <span>🔗</span>
                           </span>
                         </a>
                         <button
@@ -195,7 +195,7 @@
                           title="刪除文件"
                         >
                           <span class="icon">
-                            <i class="fas fa-trash"></i>
+                            <span>🗑️</span>
                           </span>
                         </button>
                       </div>
@@ -497,15 +497,14 @@ const formatDate = (dateString: string): string => {
 }
 
 const getFileIcon = (fileType: string | null): string => {
-  if (!fileType) return 'fas fa-file'
-  if (fileType.includes('image')) return 'fas fa-file-image'
-  if (fileType.includes('pdf')) return 'fas fa-file-pdf'
-  if (fileType.includes('word')) return 'fas fa-file-word'
-  if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'fas fa-file-excel'
-  if (fileType.includes('powerpoint') || fileType.includes('presentation'))
-    return 'fas fa-file-powerpoint'
-  if (fileType.includes('video')) return 'fas fa-file-video'
-  return 'fas fa-file'
+  if (!fileType) return '📄'
+  if (fileType.includes('image')) return '🖼️'
+  if (fileType.includes('pdf')) return '📄'
+  if (fileType.includes('word')) return '📝'
+  if (fileType.includes('excel') || fileType.includes('spreadsheet')) return '📊'
+  if (fileType.includes('powerpoint') || fileType.includes('presentation')) return '📊'
+  if (fileType.includes('video')) return '🎥'
+  return '📄'
 }
 
 const getCategoryLabel = (category: string | null): string => {

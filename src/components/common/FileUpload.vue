@@ -9,7 +9,7 @@
     >
       <div v-if="!isUploading" class="upload-content">
         <span class="icon is-large has-text-primary">
-          <i class="fas fa-cloud-upload-alt fa-3x"></i>
+          <span style="font-size: 3rem;">☁️</span>
         </span>
         <p class="title is-5 mt-4">拖曳文件到此處或點擊上傳</p>
         <p class="subtitle is-6 has-text-grey">
@@ -25,7 +25,7 @@
         />
         <button class="button is-primary mt-3" @click="triggerFileInput">
           <span class="icon">
-            <i class="fas fa-upload"></i>
+            <span>📁</span>
           </span>
           <span>選擇文件</span>
         </button>
@@ -33,7 +33,7 @@
 
       <div v-else class="upload-progress">
         <span class="icon is-large has-text-info">
-          <i class="fas fa-spinner fa-pulse fa-3x"></i>
+          <span style="font-size: 3rem; animation: spin 1s linear infinite;">⏳</span>
         </span>
         <p class="title is-5 mt-4">上傳中...</p>
         <progress class="progress is-primary" :value="uploadProgress" max="100">
@@ -98,7 +98,7 @@
         <div class="control">
           <button class="button is-primary" @click="uploadFile" :disabled="!fileInfo.title">
             <span class="icon">
-              <i class="fas fa-upload"></i>
+              <span>⬆️</span>
             </span>
             <span>開始上傳</span>
           </button>
@@ -358,5 +358,14 @@ const formatFileSize = (bytes: number): string => {
   width: 100%;
   max-width: 400px;
   margin-top: 1rem;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

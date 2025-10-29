@@ -85,8 +85,8 @@
                     <div class="column">
                       <p>
                         <strong>平均評分：</strong
-                        >{{ (application.average_rating ?? 0).toFixed(1) }}/5.0 ({{
-                          application.total_ratings ?? 0
+                        >{{ Number(application.average_rating || 0).toFixed(1) }}/5.0 ({{
+                          Number(application.total_ratings || 0)
                         }}
                         評價)
                       </p>
@@ -228,20 +228,24 @@ const loadApplications = async () => {
     errorMessage.value = ''
 
     // 根據狀態選擇不同的端點
-    let endpoint = '/instructor-applications/pending' // 預設載入待審核
+    let allApplications: any[] = []
 
-    if (filters.value.status === 'approved' || filters.value.status === 'rejected') {
-      endpoint = '/instructor-applications/reviewed'
+    if (!filters.value.status || filters.value.status === '') {
+      // 全部：同時載入待審核和已審核
+      const [pendingRes, reviewedRes] = await Promise.all([
+        api.get('/instructor-applications/pending'),
+        api.get('/instructor-applications/reviewed')
+      ])
+      allApplications = [...(pendingRes.data?.data ?? []), ...(reviewedRes.data?.data ?? [])]
     } else if (filters.value.status === 'pending') {
-      endpoint = '/instructor-applications/pending'
-    }
-
-    const response = await api.get(endpoint)
-    let allApplications = response.data?.data ?? []
-
-    // 如果有特定狀態篩選，進一步過濾
-    if (filters.value.status && filters.value.status !== 'pending') {
-      allApplications = allApplications.filter((app: any) => app.status === filters.value.status)
+      const response = await api.get('/instructor-applications/pending')
+      allApplications = response.data?.data ?? []
+    } else {
+      // approved 或 rejected
+      const response = await api.get('/instructor-applications/reviewed')
+      allApplications = (response.data?.data ?? []).filter(
+        (app: any) => app.status === filters.value.status
+      )
     }
 
     applications.value = allApplications
@@ -270,7 +274,7 @@ const reviewApplication = async (applicationId: number, status: 'approved' | 're
     console.log('審核響應:', response.data)
     alert(status === 'approved' ? '已批准申請' : '已拒絕申請')
     await loadApplications()
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('審核失敗:', error.response?.data)
     alert(error.response?.data?.error?.message || '審核失敗')
   } finally {

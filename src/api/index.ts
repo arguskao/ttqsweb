@@ -24,7 +24,6 @@ import { setupCommunityRoutes } from './community-routes'
 import { setupCourseRoutesNeon } from './course-routes-neon'
 import { setupDocumentRoutesNeon } from './documents-routes-neon'
 import { enhancedErrorHandlingMiddlewareChain } from './enhanced-error-handling'
-import { setupEvaluationRoutes } from './evaluation-routes'
 import { setupInstructorRoutes } from './instructor-routes'
 import { setupJobRoutesNeon } from './jobs-routes-neon'
 import {
@@ -165,7 +164,6 @@ setupJobRoutesNeon(router)
 setupDocumentRoutesNeon(router)
 setupInstructorRoutes(router)
 setupTTQSRoutes(router)
-setupEvaluationRoutes(router)
 setupTTQSAnalyticsRoutes(router)
 setupAnalyticsRoutes(router)
 setupCommunityRoutes(router)
@@ -319,7 +317,7 @@ router.delete('/api/v1/documents/:id', async (req: ApiRequest): Promise<ApiRespo
       }
     }
 
-    const id = parseInt(req.params?.id || '0', 10)
+    const id = parseInt(req.params?.id ?? '0', 10)
     if (!id) {
       return {
         success: false,

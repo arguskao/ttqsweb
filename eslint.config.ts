@@ -229,5 +229,23 @@ export default defineConfigWithVueTs(
       'no-console': 'off',
       'n/no-process-exit': 'off'
     }
+  },
+
+  {
+    files: ['functions/**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: './functions/tsconfig.json',
+        tsconfigRootDir: import.meta.dirname
+      }
+    },
+    rules: {
+      'no-console': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      'import/no-unresolved': 'off',
+      'n/no-missing-import': 'off',
+      '@typescript-eslint/prefer-nullish-coalescing': 'off',
+      '@typescript-eslint/no-unused-vars': 'off'
+    }
   }
 )

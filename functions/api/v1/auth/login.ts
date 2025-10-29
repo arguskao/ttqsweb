@@ -105,33 +105,33 @@ export const onRequest = async (context: any) => {
 
         const user = result[0];
 
-        // 驗證密碼
-        const bcrypt = await import('bcryptjs');
+        // 驗證密碼 - 支援 bcrypt 和舊的 SHA-256 格式
+        let isPasswordValid = false;
 
-        // 調試：記錄密碼信息
-        console.log('密碼驗證調試:', {
-            email,
-            passwordLength: password.length,
-            passwordFirst10: password.substring(0, 10),
-            hashLength: user.password_hash.length,
-            hashPrefix: user.password_hash.substring(0, 10)
-        });
-
-        const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-
-        console.log('密碼驗證結果:', isPasswordValid);
+        // 檢查密碼格式
+        if (user.password_hash.startsWith('$2')) {
+            // bcrypt 格式
+            const bcrypt = await import('bcryptjs');
+            isPasswordValid = await bcrypt.compare(password, user.password_hash);
+        } else if (user.password_hash.length === 64 && /^[a-f0-9]+$/.test(user.password_hash)) {
+            // SHA-256 格式（舊格式）
+            const crypto = await import('crypto');
+            const sha256Hash = crypto.createHash('sha256').update(password).digest('hex');
+            isPasswordValid = sha256Hash === user.password_hash;
+        } else {
+            // 未知格式
+            console.error('未知的密碼格式:', {
+                hashLength: user.password_hash.length,
+                hashPrefix: user.password_hash.substring(0, 10)
+            });
+        }
 
         if (!isPasswordValid) {
             return new Response(JSON.stringify({
                 success: false,
                 error: {
                     code: 'UNAUTHORIZED',
-                    message: '電子郵件或密碼不正確',
-                    debug: {
-                        passwordLength: password.length,
-                        hashLength: user.password_hash.length,
-                        hashPrefix: user.password_hash.substring(0, 10)
-                    }
+                    message: '電子郵件或密碼不正確'
                 }
             }), {
                 status: 401,

@@ -34,7 +34,7 @@
                     <select v-model="selectedCategory" @change="handleCategoryChange">
                       <option value="">所有分類</option>
                       <option v-for="category in categories" :key="category" :value="category">
-                        {{ category }}
+                        {{ categoryLabels.value[category] || category }}
                       </option>
                     </select>
                   </div>
@@ -65,7 +65,9 @@
           <div class="columns is-multiline">
             <div v-for="stat in downloadStats" :key="stat.category" class="column is-3">
               <div class="has-text-centered">
-                <p class="heading">{{ stat.category || '其他' }}</p>
+                <p class="heading">
+                  {{ categoryLabels.value[stat.category] || stat.category || '其他' }}
+                </p>
                 <p class="title is-4">{{ stat.total_downloads ?? 0 }}</p>
                 <p class="subtitle is-6">{{ stat.document_count }} 個文件</p>
               </div>
@@ -255,6 +257,9 @@ const currentPage = ref(1)
 const totalPages = ref(1)
 const itemsPerPage = 12
 
+// 分類映射（英文值 -> 中文顯示）- 從 API 動態載入
+const categoryLabels = ref<Record<string, string>>({})
+
 // Preview Modal
 const showPreviewModal = ref(false)
 const previewDocument = ref<Document | null>(null)
@@ -349,9 +354,19 @@ const fetchDocuments = async () => {
 
 const fetchCategories = async () => {
   try {
-    const response = await api.get('/files/categories/list')
+    // 獲取分類詳細資訊（包含中文名稱）
+    const response = await api.get('/files/categories/details')
     if (response.data.success) {
-      categories.value = response.data.data
+      const categoryDetails = response.data.data
+
+      // 設置分類鍵值列表
+      categories.value = categoryDetails.map((cat: any) => cat.key)
+
+      // 設置分類映射（英文 -> 中文）
+      categoryLabels.value = categoryDetails.reduce((acc: Record<string, string>, cat: any) => {
+        acc[cat.key] = cat.name
+        return acc
+      }, {})
     }
   } catch (err) {
     console.error('載入分類失敗:', err)

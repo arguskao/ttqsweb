@@ -9,7 +9,7 @@
     >
       <div v-if="!isUploading" class="upload-content">
         <span class="icon is-large has-text-primary">
-          <span style="font-size: 3rem;">☁️</span>
+          <span style="font-size: 3rem">☁️</span>
         </span>
         <p class="title is-5 mt-4">拖曳文件到此處或點擊上傳</p>
         <p class="subtitle is-6 has-text-grey">
@@ -33,7 +33,7 @@
 
       <div v-else class="upload-progress">
         <span class="icon is-large has-text-info">
-          <span style="font-size: 3rem; animation: spin 1s linear infinite;">⏳</span>
+          <span style="font-size: 3rem; animation: spin 1s linear infinite">⏳</span>
         </span>
         <p class="title is-5 mt-4">上傳中...</p>
         <progress class="progress is-primary" :value="uploadProgress" max="100">
@@ -49,12 +49,7 @@
       <div class="field">
         <label class="label">文件名稱</label>
         <div class="control">
-          <input
-            v-model="fileInfo.title"
-            class="input"
-            type="text"
-            placeholder="輸入文件標題"
-          />
+          <input v-model="fileInfo.title" class="input" type="text" placeholder="輸入文件標題" />
         </div>
       </div>
 
@@ -75,13 +70,9 @@
         <div class="control">
           <div class="select is-fullwidth">
             <select v-model="fileInfo.category">
-              <option value="general">一般文件</option>
-              <option value="course_materials">課程資料</option>
-              <option value="user_avatars">用戶頭像</option>
-              <option value="documents">文檔</option>
-              <option value="images">圖片</option>
-              <option value="videos">視頻</option>
-              <option value="ttqs">TTQS文件</option>
+              <option v-for="cat in categories" :key="cat.key" :value="cat.key">
+                {{ cat.name }}
+              </option>
             </select>
           </div>
         </div>
@@ -139,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 
 const emit = defineEmits(['upload-success', 'upload-error'])
@@ -153,12 +144,38 @@ const isUploading = ref(false)
 const uploadProgress = ref(0)
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
+const categories = ref<Array<{ key: string; name: string }>>([])
 
 const fileInfo = ref({
   title: '',
   description: '',
   category: 'general',
   isPublic: true
+})
+
+// 載入分類列表
+const fetchCategories = async () => {
+  try {
+    const response = await api.get('/files/categories/details')
+    if (response.data.success) {
+      categories.value = response.data.data
+    }
+  } catch (err) {
+    console.error('載入分類失敗:', err)
+    // 使用預設分類
+    categories.value = [
+      { key: 'general', name: '一般文件' },
+      { key: 'course', name: '課程資料' },
+      { key: 'documents', name: '文檔' },
+      { key: 'images', name: '圖片' },
+      { key: 'reference', name: '參考資料' },
+      { key: 'ttqs', name: 'TTQS文件' }
+    ]
+  }
+}
+
+onMounted(() => {
+  fetchCategories()
 })
 
 // Accepted file types
@@ -219,7 +236,7 @@ const processFile = (file: File) => {
     'video/'
   ]
 
-  const isAllowed = allowedTypes.some((type) => file.type.startsWith(type))
+  const isAllowed = allowedTypes.some(type => file.type.startsWith(type))
   if (!isAllowed) {
     error.value = '不支持的文件類型'
     return
@@ -231,7 +248,7 @@ const processFile = (file: File) => {
   // Generate preview for images
   if (file.type.startsWith('image/')) {
     const reader = new FileReader()
-    reader.onload = (e) => {
+    reader.onload = e => {
       filePreview.value = e.target?.result as string
     }
     reader.readAsDataURL(file)
@@ -262,7 +279,7 @@ const uploadFile = async () => {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
-      onUploadProgress: (progressEvent) => {
+      onUploadProgress: progressEvent => {
         if (progressEvent.total) {
           uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total)
         }

@@ -280,7 +280,7 @@ router.put('/api/v1/documents/:id', async (req: ApiRequest): Promise<ApiResponse
       id,
       title: title || '更新後的標題',
       description: description || '更新後的描述',
-      category: category || 'general',
+      category: category ?? 'general',
       is_public: is_public !== undefined ? is_public : true,
       updated_at: new Date().toISOString()
     }

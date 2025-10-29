@@ -403,22 +403,30 @@ export function setupDocumentManagementRoutes(router: ApiRouter): void {
     }
   )
 
-  // 獲取文檔分類列表
+  // 獲取文檔分類列表（從 file_categories 表）
   router.get('/api/v1/files/categories/list', async (req: ApiRequest): Promise<ApiResponse> => {
     try {
-      // 直接從數據庫獲取分類
+      // 從 file_categories 表獲取啟用的分類
       const categories = await documentRepo.queryMany(
-        `SELECT DISTINCT category 
-         FROM documents 
-         WHERE category IS NOT NULL AND is_public = true 
-         ORDER BY category`
+        `SELECT category_key, category_name, description, display_order
+         FROM file_categories 
+         WHERE is_active = true 
+         ORDER BY display_order, category_name`
       )
 
-      const categoryList = categories.map(row => row.category)
+      // 返回分類鍵值列表（用於篩選）
+      const categoryKeys = categories.map(row => row.category_key)
 
       return {
         success: true,
-        data: categoryList
+        data: categoryKeys,
+        meta: {
+          categories: categories.map(row => ({
+            key: row.category_key,
+            name: row.category_name,
+            description: row.description
+          }))
+        }
       }
     } catch (error) {
       console.error('Get categories error:', error)
@@ -427,6 +435,38 @@ export function setupDocumentManagementRoutes(router: ApiRouter): void {
         error: {
           code: 'INTERNAL_ERROR',
           message: '獲取分類列表失敗',
+          statusCode: 500
+        }
+      }
+    }
+  })
+
+  // 獲取文檔分類詳細資訊（包含中文名稱）
+  router.get('/api/v1/files/categories/details', async (req: ApiRequest): Promise<ApiResponse> => {
+    try {
+      const categories = await documentRepo.queryMany(
+        `SELECT category_key, category_name, description, display_order
+         FROM file_categories 
+         WHERE is_active = true 
+         ORDER BY display_order, category_name`
+      )
+
+      return {
+        success: true,
+        data: categories.map(row => ({
+          key: row.category_key,
+          name: row.category_name,
+          description: row.description,
+          order: row.display_order
+        }))
+      }
+    } catch (error) {
+      console.error('Get category details error:', error)
+      return {
+        success: false,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: '獲取分類詳細資訊失敗',
           statusCode: 500
         }
       }

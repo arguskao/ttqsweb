@@ -86,11 +86,10 @@
                       <select v-model="selectedCategory" @change="fetchFiles">
                         <option value="">所有分類</option>
                         <option value="general">一般文件</option>
-                        <option value="course_materials">課程資料</option>
-                        <option value="user_avatars">用戶頭像</option>
+                        <option value="course">課程資料</option>
                         <option value="documents">文檔</option>
                         <option value="images">圖片</option>
-                        <option value="videos">視頻</option>
+                        <option value="reference">參考資料</option>
                         <option value="ttqs">TTQS文件</option>
                       </select>
                     </div>

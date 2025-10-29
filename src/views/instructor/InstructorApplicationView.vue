@@ -362,6 +362,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { authService } from '@/services/auth-service'
+import { apiService } from '@/services/api'
 import type { CreateApplicationRequest, InstructorApplication } from '@/api/instructor/types'
 
 const router = useRouter()
@@ -453,17 +454,9 @@ const checkExistingApplication = async () => {
     const user = currentUser.value
     if (!user) return
 
-    const response = await fetch(`/api/v1/users/${user.id}/instructor-application`, {
-      headers: {
-        Authorization: `Bearer ${authService.getToken()}`
-      }
-    })
-
-    if (response.ok) {
-      const result = await response.json()
-      if (result.success && result.data) {
-        existingApplication.value = result.data
-      }
+    const result = await apiService.get(`/users/${user.id}/instructor-application`)
+    if (result.success && result.data) {
+      existingApplication.value = result.data
     }
   } catch (error) {
     console.error('檢查申請狀態失敗:', error)
@@ -477,8 +470,8 @@ const submitApplication = async () => {
   isSubmitting.value = true
   try {
     const endpoint = showResubmitForm.value
-      ? `/api/v1/instructor-applications/${existingApplication.value!.id}/resubmit`
-      : '/api/v1/instructor-applications'
+      ? `/instructor-applications/${existingApplication.value!.id}/resubmit`
+      : '/instructor-applications'
 
     const submitData = {
       bio: form.value.bio,
@@ -488,16 +481,10 @@ const submitApplication = async () => {
       target_audiences: form.value.target_audiences?.join(', ') || ''
     }
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${authService.getToken()}`
-      },
-      body: JSON.stringify(submitData)
-    })
+    console.log('提交申請數據:', submitData)
+    console.log('提交到端點:', endpoint)
 
-    const result = await response.json()
+    const result = await apiService.post(endpoint, submitData)
 
     if (result.success) {
       // 顯示成功訊息

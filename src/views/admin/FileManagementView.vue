@@ -370,8 +370,10 @@ const fetchFiles = async () => {
     const response = await api.get('/documents', { params })
 
     if (response.data.success) {
-      files.value = response.data.data.files || []
-      totalPages.value = response.data.data.pagination?.totalPages || 1
+      // API 直接返回文件陣列
+      files.value = Array.isArray(response.data.data) ? response.data.data : []
+      // 從 meta 中獲取分頁信息（如果有）
+      totalPages.value = response.data.meta?.pagination?.totalPages || 1
     }
   } catch (err: any) {
     error.value = err.response?.data?.message || '載入文件失敗'

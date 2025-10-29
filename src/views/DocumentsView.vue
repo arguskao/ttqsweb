@@ -438,7 +438,7 @@ const handleDownload = async (documentId: number) => {
       // TODO: 實現API端點後再啟用
       // await fetchDownloadStats()
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     error.value = err?.response?.data?.error?.message || '下載文件失敗'
   }
 }

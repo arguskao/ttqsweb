@@ -18,7 +18,7 @@ const instructorRepo = new InstructorRepository()
 export function setupInstructorApplicationRoutes(router: ApiRouter): void {
   // 提交講師申請
   router.post(
-    '/instructor-applications',
+    '/api/v1/instructor-applications',
     requireAuth,
     async (req: ApiRequest): Promise<ApiResponse> => {
       const { bio, qualifications, specialization, years_of_experience }: CreateApplicationRequest =
@@ -64,7 +64,7 @@ export function setupInstructorApplicationRoutes(router: ApiRouter): void {
 
   // 獲取用戶的申請
   router.get(
-    '/users/:userId/instructor-application',
+    '/api/v1/users/:userId/instructor-application',
     requireAuth,
     async (req: ApiRequest): Promise<ApiResponse> => {
       const { userId } = req.params as Record<string, string>
@@ -90,7 +90,7 @@ export function setupInstructorApplicationRoutes(router: ApiRouter): void {
 
   // 獲取所有待審核的申請（管理員）
   router.get(
-    '/instructor-applications/pending',
+    '/api/v1/instructor-applications/pending',
     requireRole(['admin']),
     async (req: ApiRequest): Promise<ApiResponse> => {
       const applications = await applicationRepo.findPending()
@@ -104,7 +104,7 @@ export function setupInstructorApplicationRoutes(router: ApiRouter): void {
 
   // 獲取所有已審核的申請（管理員）
   router.get(
-    '/instructor-applications/reviewed',
+    '/api/v1/instructor-applications/reviewed',
     requireRole(['admin']),
     async (req: ApiRequest): Promise<ApiResponse> => {
       const applications = await applicationRepo.findReviewed()
@@ -118,7 +118,7 @@ export function setupInstructorApplicationRoutes(router: ApiRouter): void {
 
   // 審核講師申請（管理員）
   router.put(
-    '/instructor-applications/:id/review',
+    '/api/v1/instructor-applications/:id/review',
     requireRole(['admin']),
     async (req: ApiRequest): Promise<ApiResponse> => {
       const { id } = req.params as Record<string, string>
@@ -165,7 +165,7 @@ export function setupInstructorApplicationRoutes(router: ApiRouter): void {
 
   // 獲取申請詳情（管理員）
   router.get(
-    '/instructor-applications/:id',
+    '/api/v1/instructor-applications/:id',
     requireRole(['admin']),
     async (req: ApiRequest): Promise<ApiResponse> => {
       const { id } = req.params as Record<string, string>
@@ -189,7 +189,7 @@ export function setupInstructorApplicationRoutes(router: ApiRouter): void {
 
   // 取消申請
   router.delete(
-    '/instructor-applications/:id',
+    '/api/v1/instructor-applications/:id',
     requireAuth,
     async (req: ApiRequest): Promise<ApiResponse> => {
       const { id } = req.params as Record<string, string>
@@ -224,7 +224,7 @@ export function setupInstructorApplicationRoutes(router: ApiRouter): void {
 
   // 獲取申請統計（管理員）
   router.get(
-    '/instructor-applications/stats',
+    '/api/v1/instructor-applications/stats',
     requireRole(['admin']),
     async (req: ApiRequest): Promise<ApiResponse> => {
       const pending = await applicationRepo.findPending()
@@ -246,7 +246,7 @@ export function setupInstructorApplicationRoutes(router: ApiRouter): void {
 
   // 重新提交申請
   router.post(
-    '/instructor-applications/:id/resubmit',
+    '/api/v1/instructor-applications/:id/resubmit',
     requireAuth,
     async (req: ApiRequest): Promise<ApiResponse> => {
       const { id } = req.params as Record<string, string>

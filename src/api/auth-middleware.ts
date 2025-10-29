@@ -149,7 +149,7 @@ export const requireRole = (allowedRoles: string[]): Middleware => {
           isActive: true,
           user_type: payload.userType || 'job_seeker',
           first_name: payload.firstName || '',
-          last_name: payload.lastName || '',
+          last_name: payload.lastName ?? '',
           is_active: true
         }
       } catch (error) {

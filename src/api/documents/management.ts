@@ -10,7 +10,7 @@ import type { ApiRouter } from '../router'
 import type { ApiRequest, ApiResponse } from '../types'
 
 import { DocumentRepository } from './repositories'
-import type { CreateDocumentRequest, UpdateDocumentRequest, DocumentSearchParams } from './types'
+import type { CreateDocumentRequest, UpdateDocumentRequest } from './types'
 
 // Repository實例
 const documentRepo = new DocumentRepository()
@@ -30,8 +30,8 @@ export function setupDocumentManagementRoutes(router: ApiRouter): void {
       const limitNum = parseInt(limit as string, 10)
 
       // 簡化查詢，直接從數據庫獲取
-      let whereConditions = ['is_public = true']
-      let params: any[] = []
+      const whereConditions = ['is_public = true']
+      const params: any[] = []
       let paramIndex = 1
 
       if (category) {
@@ -466,4 +466,3 @@ export function setupDocumentManagementRoutes(router: ApiRouter): void {
     }
   })
 }
-

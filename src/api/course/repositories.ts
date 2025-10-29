@@ -565,7 +565,7 @@ export class CourseApplicationRepository extends BaseRepository<CourseApplicatio
     const data = await this.queryMany(
       `SELECT
         ca.*,
-        u.name as instructor_name,
+        (u.first_name || ' ' || u.last_name) as instructor_name,
         u.email as instructor_email,
         ia.bio as instructor_bio,
         ia.user_id
@@ -595,7 +595,7 @@ export class CourseApplicationRepository extends BaseRepository<CourseApplicatio
     const result = await this.queryOne(
       `SELECT
         ca.*,
-        u.name as instructor_name,
+        (u.first_name || ' ' || u.last_name) as instructor_name,
         u.email as instructor_email,
         ia.bio as instructor_bio,
         ia.user_id
@@ -653,7 +653,7 @@ export class CourseApplicationRepository extends BaseRepository<CourseApplicatio
     const data = await this.queryMany(
       `SELECT
         ca.*,
-        u.name as instructor_name,
+        (u.first_name || ' ' || u.last_name) as instructor_name,
         u.email as instructor_email,
         ia.bio as instructor_bio,
         ia.user_id

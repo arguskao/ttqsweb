@@ -5,6 +5,7 @@
 
 import type { ApiRouter } from '../router'
 import { withAuth } from '../middleware-helpers'
+import { requireRole } from '../auth-middleware'
 import type { ApiRequest, ApiResponse } from '../types'
 import { ValidationError, NotFoundError, UnauthorizedError } from '../errors'
 import { CourseApplicationRepository } from './repositories'
@@ -143,19 +144,8 @@ export function setupCourseApplicationRoutes(router: ApiRouter): void {
   // 獲取所有課程申請（管理員用）
   router.get(
     '/api/v1/course-applications',
-    withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
-      // 調試日誌
-      console.log('Course applications request - User:', req.user)
-      console.log('User type:', req.user?.userType)
-      console.log('User type (snake_case):', req.user?.user_type)
-
-      // 只有管理員可以查看所有申請
-      const userType = req.user!.userType || req.user!.user_type
-      if (userType !== 'admin') {
-        console.error('Permission denied - userType:', userType)
-        throw new UnauthorizedError('只有管理員可以查看所有課程申請')
-      }
-
+    requireRole(['admin']),
+    async (req: ApiRequest): Promise<ApiResponse> => {
       // 獲取查詢參數
       const query = req.query as Record<string, string | undefined>
       const { instructor_id, status, category, page, limit } = query
@@ -176,18 +166,14 @@ export function setupCourseApplicationRoutes(router: ApiRouter): void {
         data: result.data,
         meta: result.meta
       }
-    })
+    }
   )
 
   // 審核課程申請（管理員用）
   router.put(
     '/api/v1/course-applications/:id/review',
-    withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
-      // 只有管理員可以審核
-      if (req.user!.userType !== 'admin') {
-        throw new UnauthorizedError('只有管理員可以審核課程申請')
-      }
-
+    requireRole(['admin']),
+    async (req: ApiRequest): Promise<ApiResponse> => {
       const applicationId = parseInt(req.params?.id || '0')
       if (isNaN(applicationId)) {
         throw new ValidationError('無效的申請ID')
@@ -225,25 +211,21 @@ export function setupCourseApplicationRoutes(router: ApiRouter): void {
           message: `課程申請已${data.status === 'approved' ? '批准' : '拒絕'}`
         }
       }
-    })
+    }
   )
 
   // 獲取課程申請統計（管理員用）
   router.get(
     '/api/v1/course-applications/stats',
-    withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
-      // 只有管理員可以查看統計
-      if (req.user!.userType !== 'admin') {
-        throw new UnauthorizedError('只有管理員可以查看課程申請統計')
-      }
-
+    requireRole(['admin']),
+    async (req: ApiRequest): Promise<ApiResponse> => {
       const stats = await applicationRepo.getApplicationStats()
 
       return {
         success: true,
         data: stats
       }
-    })
+    }
   )
 
   // 獲取講師的課程申請統計

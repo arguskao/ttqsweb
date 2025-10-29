@@ -40,33 +40,26 @@ export const authMiddleware: Middleware = async (req, next) => {
     // Verify JWT token
     const payload = verifyToken(token)
 
-    // Get user from database using the user ID from token
+    // Get user info from token payload
     const userId = payload.userId || payload.id
     if (!userId) {
       throw new AuthenticationError('令牌中缺少用戶ID')
     }
 
-    // Get user from database
-    const user = await getUserById(userId)
-
-    if (!user) {
-      throw new AuthenticationError('用戶不存在或已被停用')
-    }
-
-    // Add user to request object
+    // 直接使用 token 中的用戶信息（避免在 Cloudflare Workers 中查詢資料庫）
     req.user = {
-      id: user.id,
-      email: user.email,
-      userType: user.userType,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      phone: user.phone,
-      isActive: user.isActive,
+      id: userId,
+      email: payload.email || '',
+      userType: payload.userType || 'job_seeker',
+      firstName: payload.firstName || '',
+      lastName: payload.lastName || '',
+      phone: payload.phone,
+      isActive: true,
       // 兼容舊的屬性名稱
-      user_type: user.userType,
-      first_name: user.firstName,
-      last_name: user.lastName,
-      is_active: user.isActive
+      user_type: payload.userType || 'job_seeker',
+      first_name: payload.firstName || '',
+      last_name: payload.lastName || '',
+      is_active: true
     }
 
     // Continue to next middleware or route handler

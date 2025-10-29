@@ -61,8 +61,10 @@
                         class="tag is-medium"
                         :class="{
                           'is-warning': application.status === 'pending',
-                          'is-success': application.status === 'approved' && application.is_active !== false,
-                          'is-dark': application.status === 'approved' && application.is_active === false,
+                          'is-success':
+                            application.status === 'approved' && application.is_active !== false,
+                          'is-dark':
+                            application.status === 'approved' && application.is_active === false,
                           'is-danger': application.status === 'rejected'
                         }"
                       >
@@ -102,8 +104,6 @@
                     <p>{{ application.qualifications || '未提供' }}</p>
                   </div>
                 </div>
-
-
 
                 <!-- Action buttons for pending applications -->
                 <div v-if="application.status === 'pending'" class="field is-grouped">
@@ -227,28 +227,31 @@ const loadApplications = async () => {
     isLoading.value = true
     errorMessage.value = ''
 
-    const params: any = {
-      page: meta.value.page,
-      limit: meta.value.limit
+    // 根據狀態選擇不同的端點
+    let endpoint = '/instructor-applications/pending' // 預設載入待審核
+
+    if (filters.value.status === 'approved' || filters.value.status === 'rejected') {
+      endpoint = '/instructor-applications/reviewed'
+    } else if (filters.value.status === 'pending') {
+      endpoint = '/instructor-applications/pending'
     }
 
-    if (filters.value.status) {
-      params.status = filters.value.status
+    const response = await api.get(endpoint)
+    let allApplications = response.data?.data ?? []
+
+    // 如果有特定狀態篩選，進一步過濾
+    if (filters.value.status && filters.value.status !== 'pending') {
+      allApplications = allApplications.filter((app: any) => app.status === filters.value.status)
     }
 
-    const response = await api.get('/instructor-applications', { params })
-    applications.value = response.data?.data ?? []
-
-    if (response.data?.meta) {
-      meta.value = response.data.meta
-    }
+    applications.value = allApplications
   } catch (error: any) {
+    console.error('載入申請列表錯誤:', error)
     errorMessage.value = error.response?.data?.error?.message || '載入申請列表失敗'
   } finally {
     isLoading.value = false
   }
 }
-
 
 // Review application
 const reviewApplication = async (applicationId: number, status: 'approved' | 'rejected') => {

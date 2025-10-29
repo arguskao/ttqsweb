@@ -112,11 +112,49 @@ export const optionalAuthMiddleware: Middleware = async (req, next) => {
   return await next()
 }
 
-// Role-based authorization middleware
+// Role-based authorization middleware (includes authentication)
 export const requireRole = (allowedRoles: string[]): Middleware => {
   return async (req, next) => {
+    // 先執行認證檢查
     if (!req.user) {
-      throw new AuthenticationError('需要登入才能訪問此資源')
+      // 嘗試從 token 獲取用戶信息
+      try {
+        const authHeader = req.headers.authorization || (req.headers.Authorization as string)
+
+        if (!authHeader) {
+          throw new AuthenticationError('需要登入才能訪問此資源')
+        }
+
+        const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader
+
+        if (!token) {
+          throw new AuthenticationError('認證令牌格式錯誤')
+        }
+
+        const payload = verifyToken(token)
+        const userId = payload.userId || payload.id
+
+        if (!userId) {
+          throw new AuthenticationError('令牌中缺少用戶ID')
+        }
+
+        // 設置用戶信息
+        req.user = {
+          id: userId,
+          email: payload.email || '',
+          userType: payload.userType || 'job_seeker',
+          firstName: payload.firstName || '',
+          lastName: payload.lastName || '',
+          phone: payload.phone,
+          isActive: true,
+          user_type: payload.userType || 'job_seeker',
+          first_name: payload.firstName || '',
+          last_name: payload.lastName || '',
+          is_active: true
+        }
+      } catch (error) {
+        throw new AuthenticationError('需要登入才能訪問此資源')
+      }
     }
 
     if (!allowedRoles.includes(req.user.userType || req.user.user_type)) {

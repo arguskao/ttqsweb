@@ -317,7 +317,7 @@ const fetchDocuments = async () => {
       params.search = searchTerm.value
     }
 
-    const response = await api.get('/documents', { params })
+    const response = await api.get('/api/v1/documents', { params })
 
     if (response.data.success) {
       // API直接返回文檔數組在data中
@@ -349,7 +349,7 @@ const fetchDocuments = async () => {
 
 const fetchCategories = async () => {
   try {
-    const response = await api.get('/files/categories/list')
+    const response = await api.get('/api/v1/files/categories/list')
     if (response.data.success) {
       categories.value = response.data.data
     }
@@ -360,7 +360,7 @@ const fetchCategories = async () => {
 
 const fetchDownloadStats = async () => {
   try {
-    const response = await api.get('/files/stats/downloads')
+    const response = await api.get('/api/v1/files/stats/downloads')
     if (response.data.success) {
       downloadStats.value = response.data.data
     }
@@ -457,9 +457,7 @@ const isImageFile = (document: Document): boolean => {
 
 // Lifecycle
 onMounted(async () => {
-  await fetchDocuments()
-  // TODO: 實現這些API端點後再啟用
-  // await Promise.all([fetchDocuments(), fetchCategories(), fetchDownloadStats()])
+  await Promise.all([fetchDocuments(), fetchCategories(), fetchDownloadStats()])
 })
 </script>
 

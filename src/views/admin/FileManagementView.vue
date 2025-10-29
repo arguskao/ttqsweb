@@ -367,7 +367,7 @@ const fetchFiles = async () => {
       params.search = searchTerm.value
     }
 
-    const response = await api.get('/upload', { params })
+    const response = await api.get('/documents', { params })
 
     if (response.data.success) {
       files.value = response.data.data.files || []

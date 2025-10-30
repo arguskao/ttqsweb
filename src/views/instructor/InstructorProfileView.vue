@@ -366,10 +366,12 @@ const formatDate = (dateString: string): string => {
 
 // Load instructor profile
 const loadProfile = async () => {
+  console.log('[loadProfile] Function called!')
   try {
     isLoading.value = true
     errorMessage.value = ''
 
+    console.log('[loadProfile] About to call API...')
     const response = await api.get('/instructors/profile')
 
     console.log('[loadProfile] Full response:', response)
@@ -498,6 +500,7 @@ const updateProfile = async () => {
 
 // Load profile on component mount
 onMounted(() => {
+  console.log('[InstructorProfileView] Component mounted, calling loadProfile...')
   loadProfile()
 })
 </script>

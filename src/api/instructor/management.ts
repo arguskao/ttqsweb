@@ -68,34 +68,57 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
     }
   })
 
-  // 獲取當前用戶的講師資料 - 必須在 :userId 路由之前
-  router.get('/api/v1/instructors/profile', requireAuth, async (req: ApiRequest): Promise<ApiResponse> => {
-    console.log('[instructors/profile] Handler called')
-    console.log('[instructors/profile] req.user:', req.user)
-
-    if (!req.user) {
-      console.error('[instructors/profile] req.user is undefined!')
-      throw new Error('User not authenticated')
-    }
-
-    const userId = req.user.id
-    console.log('[instructors/profile] userId:', userId)
-
-    const instructor = await instructorRepo.findByUserId(userId)
-    console.log('[instructors/profile] instructor found:', !!instructor)
-
-    if (!instructor) {
-      throw new NotFoundError('Instructor profile not found')
-    }
-
-    // 獲取講師統計
-    const stats = await instructorRepo.getStats(userId)
-
+  // 測試端點 - 不需要認證
+  router.get('/api/v1/instructors/test', async (req: ApiRequest): Promise<ApiResponse> => {
     return {
       success: true,
       data: {
-        ...instructor,
-        stats
+        message: 'Test endpoint works',
+        timestamp: new Date().toISOString()
+      }
+    }
+  })
+
+  // 獲取當前用戶的講師資料 - 必須在 :userId 路由之前
+  router.get('/api/v1/instructors/profile', requireAuth, async (req: ApiRequest): Promise<ApiResponse> => {
+    try {
+      if (!req.user) {
+        return {
+          success: false,
+          error: {
+            code: 'DEBUG',
+            message: 'req.user is undefined in handler',
+            statusCode: 500
+          }
+        }
+      }
+
+      const userId = req.user.id
+
+      const instructor = await instructorRepo.findByUserId(userId)
+
+      if (!instructor) {
+        throw new NotFoundError('Instructor profile not found')
+      }
+
+      // 獲取講師統計
+      const stats = await instructorRepo.getStats(userId)
+
+      return {
+        success: true,
+        data: {
+          ...instructor,
+          stats
+        }
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'DEBUG_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          statusCode: 500
+        }
       }
     }
   })

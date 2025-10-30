@@ -374,6 +374,7 @@ const loadProfile = async () => {
 
     console.log('[loadProfile] Full response:', response)
     console.log('[loadProfile] response.data:', response.data)
+    console.log('[loadProfile] response.data.data:', response.data?.data)
 
     // 檢查響應格式
     if (response.data?.success === false) {
@@ -383,34 +384,41 @@ const loadProfile = async () => {
       } else {
         errorMessage.value = response.data.error?.message || '載入講師資料失敗'
       }
-    } else {
-      // API 返回的格式是 { success: true, data: {...} }
-      const instructorData = response.data.data || response.data
-      console.log('[loadProfile] Instructor data:', instructorData)
-      instructor.value = instructorData
-
-      // 初始化編輯表單
-      editForm.value = {
-        bio: instructor.value.bio ?? '',
-        qualifications: instructor.value.qualifications ?? '',
-        specialization: instructor.value.specialization ?? '',
-        years_of_experience: instructor.value.years_of_experience ?? 0
-      }
-
-      // Set status class
-      if (instructor.value.application_status === 'approved') {
-        statusClass.value = 'is-success'
-      } else if (instructor.value.status === 'approved') {
-        statusClass.value = 'is-success'
-      } else if (instructor.value.application_status === 'rejected') {
-        statusClass.value = 'is-danger'
-      } else {
-        statusClass.value = 'is-info'
-      }
-
-      // Load stats and ratings
-      await Promise.all([loadStats(), loadRatings()])
+      return
     }
+
+    // 提取講師資料（支援兩種格式）
+    if (response.data?.success === true && response.data?.data) {
+      // API 返回的格式是 { success: true, data: {...} }
+      instructor.value = response.data.data
+      console.log('[loadProfile] Instructor set to:', instructor.value)
+    } else {
+      // 直接返回數據（舊格式）
+      instructor.value = response.data
+      console.log('[loadProfile] Instructor set to (legacy):', instructor.value)
+    }
+
+    // 初始化編輯表單
+    editForm.value = {
+      bio: instructor.value.bio ?? '',
+      qualifications: instructor.value.qualifications ?? '',
+      specialization: instructor.value.specialization ?? '',
+      years_of_experience: instructor.value.years_of_experience ?? 0
+    }
+
+    // Set status class
+    if (instructor.value.application_status === 'approved') {
+      statusClass.value = 'is-success'
+    } else if (instructor.value.status === 'approved') {
+      statusClass.value = 'is-success'
+    } else if (instructor.value.application_status === 'rejected') {
+      statusClass.value = 'is-danger'
+    } else {
+      statusClass.value = 'is-info'
+    }
+
+    // Load stats and ratings
+    await Promise.all([loadStats(), loadRatings()])
   } catch (error: any) {
     if (error.response?.status === 404) {
       // User is not an instructor yet
@@ -423,9 +431,9 @@ const loadProfile = async () => {
   }
 }
 
-// Load instructor statistics (暫時停用)
+// Load instructor statistics
 const loadStats = async () => {
-  console.log('講師個人資料頁面 - 統計 API 暫時停用')
+  // TODO: 實作統計 API 調用
   stats.value = {
     total_courses: 0,
     total_students: 0,
@@ -433,9 +441,9 @@ const loadStats = async () => {
   }
 }
 
-// Load instructor ratings (暫時停用)
+// Load instructor ratings
 const loadRatings = async () => {
-  console.log('講師個人資料頁面 - 評價 API 暫時停用')
+  // TODO: 實作評價 API 調用
   ratings.value = []
 }
 
@@ -481,7 +489,7 @@ const updateProfile = async () => {
     isEditing.value = false
     alert('資料已更新')
     await loadProfile()
-  } catch (error: any) {
+  } catch (error: unknown) {
     alert(error.response?.data?.error?.message || '更新資料失敗')
   } finally {
     isSaving.value = false

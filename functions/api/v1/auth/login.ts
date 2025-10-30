@@ -80,9 +80,9 @@ export const onRequest = async (context: any) => {
 
     // 查詢用戶
     const result = await sql`
-      SELECT id, email, password_hash, user_type, first_name, last_name, phone, 
+      SELECT id, email, password_hash, user_type, first_name, last_name, phone,
              created_at, updated_at, is_active
-      FROM users 
+      FROM users
       WHERE email = ${email} AND is_active = true
       LIMIT 1
     `
@@ -154,7 +154,10 @@ export const onRequest = async (context: any) => {
       {
         userId: user.id,
         email: user.email,
-        userType: user.user_type
+        userType: user.user_type,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        phone: user.phone
       },
       secret,
       {

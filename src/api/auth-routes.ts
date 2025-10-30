@@ -130,7 +130,7 @@ export const profileHandler: RouteHandler = async req => {
           firstName: req.user.firstName || req.user.first_name,
           lastName: req.user.lastName || req.user.last_name,
           phone: req.user.phone,
-          isActive: req.user.isActive || req.user.is_active
+          isActive: req.user.isActive ?? req.user.is_active
         }
       }
     }

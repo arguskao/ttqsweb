@@ -142,7 +142,7 @@ export const onRequest = async (context: any) => {
     const result = await sql`
             INSERT INTO users (email, password_hash, user_type, first_name, last_name, phone)
             VALUES (${email}, ${passwordHash}, ${userType}, ${firstName}, ${lastName}, ${phone || null})
-            RETURNING id, email, user_type, first_name, last_name, phone, 
+            RETURNING id, email, user_type, first_name, last_name, phone,
                       created_at, updated_at, is_active
         `
 
@@ -164,7 +164,10 @@ export const onRequest = async (context: any) => {
       {
         userId: user.id,
         email: user.email,
-        userType: user.user_type
+        userType: user.user_type,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        phone: user.phone
       },
       secret,
       {

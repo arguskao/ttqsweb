@@ -68,6 +68,28 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
     }
   })
 
+  // 獲取當前用戶的講師資料 - 必須在 :userId 路由之前
+  router.get('/api/v1/instructors/profile', requireAuth, async (req: ApiRequest): Promise<ApiResponse> => {
+    const userId = req.user!.id
+
+    const instructor = await instructorRepo.findByUserId(userId)
+
+    if (!instructor) {
+      throw new NotFoundError('Instructor profile not found')
+    }
+
+    // 獲取講師統計
+    const stats = await instructorRepo.getStats(userId)
+
+    return {
+      success: true,
+      data: {
+        ...instructor,
+        stats
+      }
+    }
+  })
+
   // 獲取講師詳情 - 使用 user_id
   router.get('/api/v1/instructors/:userId', async (req: ApiRequest): Promise<ApiResponse> => {
     const { userId } = req.params as Record<string, string>
@@ -261,28 +283,6 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
     return {
       success: true,
       data: instructors
-    }
-  })
-
-  // 獲取當前用戶的講師資料
-  router.get('/api/v1/instructors/profile', requireAuth, async (req: ApiRequest): Promise<ApiResponse> => {
-    const userId = req.user!.id
-
-    const instructor = await instructorRepo.findByUserId(userId)
-
-    if (!instructor) {
-      throw new NotFoundError('Instructor profile not found')
-    }
-
-    // 獲取講師統計
-    const stats = await instructorRepo.getStats(userId)
-
-    return {
-      success: true,
-      data: {
-        ...instructor,
-        stats
-      }
     }
   })
 }

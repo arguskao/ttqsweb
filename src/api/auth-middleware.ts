@@ -35,8 +35,12 @@ const verifyToken = (token: string) => {
 // Authentication middleware
 export const authMiddleware: Middleware = async (req, next) => {
   try {
+    console.log('[authMiddleware] Starting authentication')
+
     // Get token from Authorization header
     const authHeader = req.headers.authorization || (req.headers.Authorization as string)
+
+    console.log('[authMiddleware] authHeader:', authHeader ? 'present' : 'missing')
 
     if (!authHeader) {
       throw new AuthenticationError('未提供認證令牌')
@@ -49,8 +53,12 @@ export const authMiddleware: Middleware = async (req, next) => {
       throw new AuthenticationError('認證令牌格式錯誤')
     }
 
+    console.log('[authMiddleware] Token extracted, verifying...')
+
     // Verify JWT token
     const payload = verifyToken(token)
+
+    console.log('[authMiddleware] Token verified, payload:', payload)
 
     // Get user info from token payload
     const userId = payload.userId || payload.id
@@ -73,6 +81,8 @@ export const authMiddleware: Middleware = async (req, next) => {
       last_name: payload.lastName || '',
       is_active: true
     }
+
+    console.log('[authMiddleware] req.user set:', req.user)
 
     // Continue to next middleware or route handler
     return await next()

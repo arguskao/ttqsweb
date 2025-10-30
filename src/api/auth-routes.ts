@@ -123,13 +123,15 @@ export const profileHandler: RouteHandler = async req => {
     return {
       success: true,
       data: {
-        id: req.user.id,
-        email: req.user.email,
-        userType: req.user.userType || req.user.user_type,
-        firstName: req.user.firstName || req.user.first_name,
-        lastName: req.user.lastName || req.user.last_name,
-        phone: req.user.phone,
-        isActive: req.user.isActive || req.user.is_active
+        user: {
+          id: req.user.id,
+          email: req.user.email,
+          userType: req.user.userType || req.user.user_type,
+          firstName: req.user.firstName || req.user.first_name,
+          lastName: req.user.lastName || req.user.last_name,
+          phone: req.user.phone,
+          isActive: req.user.isActive || req.user.is_active
+        }
       }
     }
   } catch (error) {
@@ -229,11 +231,11 @@ export const updateProfileHandler: RouteHandler = async req => {
     values.push(req.user.id)
 
     const query = `
-            UPDATE users 
+            UPDATE users
             SET ${updates.join(', ')}
             WHERE id = $${paramIndex}
-            RETURNING id, email, user_type as "userType", first_name as "firstName", 
-                      last_name as "lastName", phone, created_at as "createdAt", 
+            RETURNING id, email, user_type as "userType", first_name as "firstName",
+                      last_name as "lastName", phone, created_at as "createdAt",
                       updated_at as "updatedAt", is_active as "isActive"
         `
 

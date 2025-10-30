@@ -143,7 +143,7 @@ export const profileHandler: RouteHandler = async req => {
 export const logoutHandler: RouteHandler = async req => {
   try {
     // Get token from Authorization header
-    const authHeader = req.headers.authorization || (req.headers.Authorization as string)
+    const authHeader = req.headers.authorization ?? (req.headers.Authorization as string)
 
     if (authHeader) {
       const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader
@@ -264,7 +264,7 @@ export const setupAuthRoutes = (router: any) => {
   router.post('/api/v1/auth/logout', logoutHandler)
 
   // Protected routes
-  router.get('/api/v1/auth/profile', profileHandler, [requireAuth])
-  router.put('/api/v1/auth/profile', updateProfileHandler, [requireAuth])
-  router.put('/api/v1/users/profile', updateProfileHandler, [requireAuth])
+  router.get('/api/v1/auth/profile', [requireAuth], profileHandler)
+  router.put('/api/v1/auth/profile', [requireAuth], updateProfileHandler)
+  router.put('/api/v1/users/profile', [requireAuth], updateProfileHandler)
 }

@@ -13,8 +13,21 @@ export class InstructorRepository extends BaseRepository<Instructor> {
     super('instructor_applications')
   }
 
-  // 根據用戶ID查找講師
+  // 根據用戶ID查找講師（包含所有狀態，用於個人資料頁面）
   async findByUserId(userId: number): Promise<Instructor | null> {
+    return this.queryOne(
+      `SELECT ia.*, ia.status as application_status, u.first_name, u.last_name, u.email
+       FROM instructor_applications ia
+       JOIN users u ON u.id = ia.user_id
+       WHERE ia.user_id = $1
+       ORDER BY ia.submitted_at DESC
+       LIMIT 1`,
+      [userId]
+    )
+  }
+
+  // 根據用戶ID查找已核准的講師（用於公開講師列表）
+  async findApprovedByUserId(userId: number): Promise<Instructor | null> {
     return this.queryOne(
       `SELECT ia.*, ia.status as application_status, u.first_name, u.last_name, u.email
        FROM instructor_applications ia
@@ -27,7 +40,7 @@ export class InstructorRepository extends BaseRepository<Instructor> {
   // 根據專業領域查找講師
   async findBySpecialization(specialization: string): Promise<Instructor[]> {
     return this.queryMany(
-      `SELECT ia.*, u.first_name, u.last_name, u.email
+      `SELECT ia.*, ia.status as application_status, u.first_name, u.last_name, u.email
        FROM instructor_applications ia
        JOIN users u ON u.id = ia.user_id
        WHERE ia.specialization ILIKE $1 AND ia.status = 'approved' AND ia.is_active = true

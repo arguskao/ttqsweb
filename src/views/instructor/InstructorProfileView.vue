@@ -33,21 +33,17 @@
 
             <!-- Instructor profile -->
             <div v-else>
-              <!-- Status banner -->
-              <div class="notification" :class="statusClass">
+              <!-- Status banner → robust 寫法，顯示正確狀態與顏色 -->
+              <div
+                class="notification"
+                :class="[isApproved ? 'is-success' : isPending ? 'is-warning' : 'is-danger']"
+              >
                 <strong>申請狀態：</strong>
-                <span v-if="(instructor.application_status || instructor.status) === 'pending'"
-                  >審核中</span
-                >
-                <span
-                  v-else-if="(instructor.application_status || instructor.status) === 'approved'"
-                  >已批准</span
-                >
+                <span v-if="isApproved">已核准</span>
+                <span v-else-if="isPending">審核中</span>
                 <span v-else>已拒絕</span>
-
-                <span v-if="!instructor.is_active" class="ml-3">
-                  <span class="tag is-danger">已停用</span>
-                </span>
+                <span v-if="instructor.is_active === false" class="ml-3 tag is-danger">已停用</span>
+                <!-- <span style="color:gray;font-size:12px">({{ instructor.application_status }}/{{ instructor.status }})</span> -->
               </div>
 
               <!-- Statistics -->
@@ -55,7 +51,7 @@
                 <div class="column is-3">
                   <div class="box has-text-centered">
                     <p class="heading">平均評分</p>
-                    <p class="title">{{ (instructor.average_rating ?? 0).toFixed(1) }}/5.0</p>
+                    <p class="title">{{ (Number(instructor.average_rating) || 0).toFixed(1) }}/5.0</p>
                     <p class="subtitle is-6">({{ instructor.total_ratings ?? 0 }} 評價)</p>
                   </div>
                 </div>
@@ -63,7 +59,7 @@
                   <div class="box has-text-centered">
                     <p class="heading">百分制評分</p>
                     <p class="title">
-                      {{ ((instructor.average_rating ?? 0) * 20).toFixed(0) }}/100
+                      {{ ((Number(instructor.average_rating) || 0) * 20).toFixed(0) }}/100
                     </p>
                   </div>
                 </div>
@@ -93,13 +89,31 @@
                 </header>
                 <div class="card-content">
                   <div v-if="!isEditing">
-                    <div class="field">
-                      <label class="label">姓名</label>
-                      <p>{{ instructor.first_name }} {{ instructor.last_name }}</p>
-                    </div>
-                    <div class="field">
-                      <label class="label">電子郵件</label>
-                      <p>{{ instructor.email }}</p>
+                    <div class="columns">
+                      <div class="column is-3">
+                        <div class="field">
+                          <label class="label">姓名</label>
+                          <p>{{ instructor.last_name }}{{ instructor.first_name }}</p>
+                        </div>
+                      </div>
+                      <div class="column is-3">
+                        <div class="field">
+                          <label class="label">電子郵件</label>
+                          <p>{{ instructor.email }}</p>
+                        </div>
+                      </div>
+                      <div class="column is-3">
+                        <div class="field">
+                          <label class="label">專業領域</label>
+                          <p>{{ instructor.specialization || '未提供' }}</p>
+                        </div>
+                      </div>
+                      <div class="column is-3">
+                        <div class="field">
+                          <label class="label">工作年資</label>
+                          <p>{{ instructor.years_of_experience ?? 0 }} 年</p>
+                        </div>
+                      </div>
                     </div>
                     <div class="field">
                       <label class="label">個人簡介</label>
@@ -108,14 +122,6 @@
                     <div class="field">
                       <label class="label">資格證明</label>
                       <p>{{ instructor.qualifications || '未提供' }}</p>
-                    </div>
-                    <div class="field">
-                      <label class="label">專業領域</label>
-                      <p>{{ instructor.specialization || '未提供' }}</p>
-                    </div>
-                    <div class="field">
-                      <label class="label">工作年資</label>
-                      <p>{{ instructor.years_of_experience ?? 0 }} 年</p>
                     </div>
                   </div>
 
@@ -199,7 +205,7 @@
                     </router-link>
                     <router-link to="/courses" class="button is-info">
                       <span class="icon">
-                        <i class="fas fa-book"></i>
+                        <i class="fas fa-graduation-cap"></i>
                       </span>
                       <span>瀏覽所有課程</span>
                     </router-link>
@@ -322,7 +328,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
 import { api } from '@/services/api'
 
@@ -354,6 +360,20 @@ const applicationForm = ref({
 
 // Computed status class
 const statusClass = ref('is-info')
+
+// Robust status checks
+const isApproved = computed(
+  () =>
+    (instructor.value.application_status &&
+      instructor.value.application_status.toLowerCase().trim() === 'approved') ||
+    (instructor.value.status && instructor.value.status.toLowerCase().trim() === 'approved')
+)
+const isPending = computed(
+  () =>
+    (instructor.value.application_status &&
+      instructor.value.application_status.toLowerCase().trim() === 'pending') ||
+    (instructor.value.status && instructor.value.status.toLowerCase().trim() === 'pending')
+)
 
 // Format date helper
 const formatDate = (dateString: string): string => {
@@ -491,7 +511,7 @@ const updateProfile = async () => {
     isEditing.value = false
     alert('資料已更新')
     await loadProfile()
-  } catch (error: unknown) {
+  } catch (error: any) {
     alert(error.response?.data?.error?.message || '更新資料失敗')
   } finally {
     isSaving.value = false
@@ -502,6 +522,8 @@ const updateProfile = async () => {
 onMounted(() => {
   console.log('[InstructorProfileView] Component mounted, calling loadProfile...')
   loadProfile()
+  // 掛載講師資料在 window，方便主控台檢查
+  ;(window as any).__instructorDebug = instructor
 })
 </script>
 

@@ -23,8 +23,10 @@ async function fixInstructorData() {
 
     // 刪除沒有對應用戶的講師記錄
     const testInstructors = await sql`
-      SELECT * FROM instructors 
-      WHERE email NOT IN (SELECT email FROM users)
+      SELECT ia.*, u.email 
+      FROM instructor_applications ia
+      LEFT JOIN users u ON ia.user_id = u.id
+      WHERE u.id IS NULL
     `
 
     if (testInstructors.length > 0) {
@@ -36,8 +38,8 @@ async function fixInstructorData() {
       const confirm = process.argv.includes('--confirm')
       if (confirm) {
         await sql`
-          DELETE FROM instructors 
-          WHERE email NOT IN (SELECT email FROM users)
+          DELETE FROM instructor_applications 
+          WHERE user_id NOT IN (SELECT id FROM users)
         `
         console.log('  ✅ 已刪除測試數據')
       } else {
@@ -107,7 +109,9 @@ async function fixInstructorData() {
 
         // 檢查是否已經有講師記錄
         const existingInstructor = await sql`
-          SELECT id FROM instructors WHERE email = ${app.email}
+          SELECT ia.id FROM instructor_applications ia
+          JOIN users u ON ia.user_id = u.id
+          WHERE u.email = ${app.email}
         `
 
         if (existingInstructor.length === 0) {
@@ -115,18 +119,15 @@ async function fixInstructorData() {
           if (confirm) {
             // 創建講師記錄
             await sql`
-              INSERT INTO instructors (
-                user_id, first_name, last_name, email, specialization, 
-                experience_years, bio, qualifications, years_of_experience,
-                application_status, approval_date, approved_by, 
-                average_rating, total_ratings, is_active, created_at, updated_at
+              INSERT INTO instructor_applications (
+                user_id, bio, qualifications, specialization, 
+                years_of_experience, status, 
+                is_active, created_at, updated_at
               )
               VALUES (
-                ${app.user_id}, ${app.first_name}, ${app.last_name}, ${app.email},
+                ${app.user_id}, ${app.bio}, ${app.qualifications}, 
                 ${app.specialization}, ${app.years_of_experience || 0},
-                ${app.bio}, ${app.qualifications}, ${app.years_of_experience || 0},
-                'approved', ${app.reviewed_at}, ${app.reviewed_by},
-                0.00, 0, true, NOW(), NOW()
+                'approved', true, NOW(), NOW()
               )
             `
             console.log('      ✅ 已創建講師記錄')
@@ -149,7 +150,7 @@ async function fixInstructorData() {
     `
 
     const finalInstructors = await sql`
-      SELECT COUNT(*) as count FROM instructors
+      SELECT COUNT(*) as count FROM instructor_applications
     `
 
     const finalInstructorUsers = await sql`

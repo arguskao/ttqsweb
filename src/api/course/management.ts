@@ -17,7 +17,7 @@ const courseRepo = new CourseRepository()
 
 export function setupCourseManagementRoutes(router: ApiRouter): void {
   // 獲取所有課程
-  router.get('/courses', async (req: ApiRequest): Promise<ApiResponse> => {
+  router.get('/api/v1/courses', async (req: ApiRequest): Promise<ApiResponse> => {
     const query = req.query as Record<string, string | string[] | undefined>
     const { course_type, search, instructor_id, is_active, min_price, max_price, page, limit } =
       query
@@ -42,7 +42,7 @@ export function setupCourseManagementRoutes(router: ApiRouter): void {
   })
 
   // 獲取課程詳情
-  router.get('/courses/:id', async (req: ApiRequest): Promise<ApiResponse> => {
+  router.get('/api/v1/courses/:id', async (req: ApiRequest): Promise<ApiResponse> => {
     const params = req.params as Record<string, string>
     const { id } = params
     const courseId = validateIntParam(id, 'id')
@@ -60,7 +60,7 @@ export function setupCourseManagementRoutes(router: ApiRouter): void {
 
   // 創建課程
   router.post(
-    '/courses',
+    '/api/v1/courses',
     withRole('instructor', async (req: ApiRequest): Promise<ApiResponse> => {
       const {
         title,
@@ -100,7 +100,7 @@ export function setupCourseManagementRoutes(router: ApiRouter): void {
 
   // 更新課程
   router.put(
-    '/courses/:id',
+    '/api/v1/courses/:id',
     withRole('instructor', async (req: ApiRequest): Promise<ApiResponse> => {
       const params = req.params as Record<string, string>
       const { id } = params
@@ -150,7 +150,7 @@ export function setupCourseManagementRoutes(router: ApiRouter): void {
 
   // 軟刪除課程（設為非活躍）
   router.delete(
-    '/courses/:id',
+    '/api/v1/courses/:id',
     withRole('instructor', async (req: ApiRequest): Promise<ApiResponse> => {
       const params = req.params as Record<string, string>
       const { id } = params
@@ -177,7 +177,7 @@ export function setupCourseManagementRoutes(router: ApiRouter): void {
 
   // 切換課程狀態
   router.put(
-    '/courses/:id/toggle-status',
+    '/api/v1/courses/:id/toggle-status',
     withRole('instructor', async (req: ApiRequest): Promise<ApiResponse> => {
       const params = req.params as Record<string, string>
       const { id } = params
@@ -209,7 +209,7 @@ export function setupCourseManagementRoutes(router: ApiRouter): void {
 
   // 獲取講師的課程
   router.get(
-    '/instructors/:instructorId/courses',
+    '/api/v1/instructors/:instructorId/courses',
     async (req: ApiRequest): Promise<ApiResponse> => {
       const params = req.params as Record<string, string>
       const { instructorId } = params
@@ -226,7 +226,7 @@ export function setupCourseManagementRoutes(router: ApiRouter): void {
 
   // 獲取課程統計
   router.get(
-    '/courses/stats',
+    '/api/v1/courses/stats',
     withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       const stats = await courseRepo.getCourseStats(req.user!.id)
 
@@ -238,7 +238,7 @@ export function setupCourseManagementRoutes(router: ApiRouter): void {
   )
 
   // 獲取熱門課程
-  router.get('/courses/popular', async (req: ApiRequest): Promise<ApiResponse> => {
+  router.get('/api/v1/courses/popular', async (req: ApiRequest): Promise<ApiResponse> => {
     const query = req.query as Record<string, string | string[] | undefined>
     const { limit } = query
     const limitNum = limit ? parseInt(limit as string) : 10

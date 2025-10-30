@@ -138,6 +138,10 @@ export const profileHandler: RouteHandler = async req => {
 
     const user = result[0]
 
+    if (!user) {
+      throw new ValidationError('用戶資料不完整')
+    }
+
     return {
       success: true,
       data: {

@@ -66,8 +66,10 @@ async function analyzeInstructorData() {
     // 3. 檢查 instructors 表的詳細資料
     console.log('\n👨‍🏫 講師表詳細資料:')
     const instructors = await sql`
-      SELECT * FROM instructors
-      ORDER BY created_at DESC
+      SELECT ia.*, u.first_name, u.last_name, u.email 
+      FROM instructor_applications ia
+      JOIN users u ON ia.user_id = u.id
+      ORDER BY ia.created_at DESC
     `
 
     if (instructors.length > 0) {

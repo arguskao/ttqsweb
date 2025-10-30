@@ -93,7 +93,12 @@ router.get('/api/v1/debug/jwt', async (req: ApiRequest): Promise<ApiResponse> =>
     '3939889'
   ].filter(Boolean)
 
-  const results = []
+  const results: Array<{
+    secret: string | undefined;
+    success: boolean;
+    decoded?: string | import('jsonwebtoken').JwtPayload;
+    error?: string;
+  }> = []
 
   for (const secret of secrets) {
     try {

@@ -141,16 +141,16 @@ export class CourseRepository extends BaseRepository<Course> {
   async findWithInstructor(courseId: number): Promise<CourseWithInstructor | null> {
     const result = await this.queryOne(
       `SELECT c.*, 
-              i.first_name || ' ' || i.last_name as instructor_name,
-              i.bio as instructor_bio,
+              CONCAT(u.first_name, ' ', u.last_name) as instructor_name,
+              ia.bio as instructor_bio,
               COUNT(ce.id) as enrollment_count,
-              AVG(cr.rating) as average_rating
+              0 as average_rating
        FROM courses c
-       LEFT JOIN instructors i ON c.instructor_id = i.user_id
+       LEFT JOIN instructor_applications ia ON c.instructor_id = ia.user_id AND ia.status = 'approved'
+       LEFT JOIN users u ON ia.user_id = u.id
        LEFT JOIN course_enrollments ce ON c.id = ce.course_id
-       LEFT JOIN course_ratings cr ON c.id = cr.course_id
        WHERE c.id = $1
-       GROUP BY c.id, i.first_name, i.last_name, i.bio`,
+       GROUP BY c.id, u.first_name, u.last_name, ia.bio`,
       [courseId]
     )
 

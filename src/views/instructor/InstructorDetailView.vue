@@ -188,7 +188,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { api } from '@/services/api'
@@ -208,6 +208,20 @@ const ratingsMeta = ref({
   total: 0,
   totalPages: 0
 })
+
+// Computed properties for status display
+const isApproved = computed(
+  () =>
+    (instructor.value.application_status &&
+      instructor.value.application_status.toLowerCase().trim() === 'approved') ||
+    (instructor.value.status && instructor.value.status.toLowerCase().trim() === 'approved')
+)
+const isPending = computed(
+  () =>
+    (instructor.value.application_status &&
+      instructor.value.application_status.toLowerCase().trim() === 'pending') ||
+    (instructor.value.status && instructor.value.status.toLowerCase().trim() === 'pending')
+)
 
 // Format date helper
 const formatDate = (dateString: string): string => {

@@ -43,21 +43,21 @@
                   <div class="card">
                     <div class="card-content">
                       <h3 class="title is-5">{{ course.title }}</h3>
-                      <p class="subtitle is-6 has-text-grey">{{ course.category }}</p>
+                      <p class="subtitle is-6 has-text-grey">{{ getCourseTypeText(course.course_type) }}</p>
 
                       <div class="content">
                         <p class="is-size-7">{{ truncateText(course.description, 100) }}</p>
 
                         <div class="tags">
-                          <span class="tag is-info">{{ course.level }}</span>
-                          <span v-if="course.duration" class="tag">{{ course.duration }} 小時</span>
+                          <span class="tag is-info">{{ getCourseTypeText(course.course_type) }}</span>
+                          <span v-if="course.duration_hours" class="tag">{{ course.duration_hours }} 小時</span>
                         </div>
 
                         <div class="field is-grouped mt-3">
                           <div class="control">
                             <span class="tag is-success">
                               <span class="icon">
-                                <i class="fas fa-users"></i>
+                                <i class="fas fa-user-graduate"></i>
                               </span>
                               <span>{{ course.enrollment_count ?? 0 }} 學員</span>
                             </span>
@@ -135,20 +135,66 @@ const truncateText = (text: string, maxLength: number): string => {
   return `${text.substring(0, maxLength)}...`
 }
 
+// Get course type text
+const getCourseTypeText = (courseType: string): string => {
+  const typeMap: Record<string, string> = {
+    'basic': '基礎課程',
+    'advanced': '進階課程', 
+    'internship': '實習課程'
+  }
+  return typeMap[courseType] || courseType || '未分類'
+}
+
 // Load courses
 const loadCourses = async () => {
   try {
     isLoading.value = true
     errorMessage.value = ''
 
-    const response = await api.get('/instructor/my-courses', {
-      params: {
-        page: meta.value.page,
-        limit: meta.value.limit
-      }
-    })
+    // 首先獲取當前用戶的講師資料以取得 instructor ID
+    const profileResponse = await api.get('/instructors/profile')
+    
+    if (!profileResponse.data?.success || !profileResponse.data?.data) {
+      throw new Error('無法獲取講師資料')
+    }
 
-    if (response.data?.success) {
+    const profile = profileResponse.data.data || {}
+    // 依序嘗試可用的講師識別鍵（因實際 schema 可能為 instructor_id 或 application_id 等）
+    const instructorIdentifier =
+      profile.instructor_id ??
+      profile.application_id ??
+      profile.instructor_application_id ??
+      profile.id // 某些實作中 profile 本身即為講師/申請的 id
+
+    const userIdFallback = profile.user_id ?? profile.userId ?? profile.user?.id
+
+    let response
+    // 優先以講師識別鍵查課程（符合 courses.instructor_id = instructor_applications.id 的關聯）
+    if (instructorIdentifier != null) {
+      try {
+        response = await api.get(`/instructors/${instructorIdentifier}/courses`, {
+          params: { page: meta.value.page, limit: meta.value.limit }
+        })
+      } catch (e: any) {
+        // 若此路由不存在或 404，再回退嘗試以 userId 的路由（避免舊版後端影響）
+        if (userIdFallback != null) {
+          response = await api.get(`/instructors/${userIdFallback}/courses`, {
+            params: { page: meta.value.page, limit: meta.value.limit }
+          })
+        } else {
+          throw e
+        }
+      }
+    } else if (userIdFallback != null) {
+      // 沒有講師識別鍵時，退而求其次用 userId 路由
+      response = await api.get(`/instructors/${userIdFallback}/courses`, {
+        params: { page: meta.value.page, limit: meta.value.limit }
+      })
+    } else {
+      throw new Error('講師識別資訊缺失（instructor_id/application_id/user_id 均不存在）')
+    }
+
+    if (response?.data?.success) {
       courses.value = response.data.data || []
       if (response.data.meta) {
         meta.value = response.data.meta
@@ -159,7 +205,7 @@ const loadCourses = async () => {
   } catch (error: any) {
     console.error('載入課程失敗:', error)
     if (error.response?.status === 404) {
-      // 如果 API 不存在，顯示空列表
+      // 如果沒有課程，顯示空列表
       courses.value = []
     } else {
       errorMessage.value = error.response?.data?.error?.message || '載入課程失敗'

@@ -23,7 +23,7 @@ const courseRepo = new CourseRepository()
 export function setupCourseEnrollmentRoutes(router: ApiRouter): void {
   // 獲取所有註冊
   router.get(
-    '/enrollments',
+    '/api/v1/enrollments',
     withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       const query = req.query as Record<string, string | string[] | undefined>
       const { user_id, course_id, status, enrollment_date_from, enrollment_date_to, page, limit } =
@@ -55,7 +55,7 @@ export function setupCourseEnrollmentRoutes(router: ApiRouter): void {
 
   // 獲取註冊詳情
   router.get(
-    '/enrollments/:id',
+    '/api/v1/enrollments/:id',
     withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       const params = req.params as Record<string, string>
       const { id } = params
@@ -87,7 +87,7 @@ export function setupCourseEnrollmentRoutes(router: ApiRouter): void {
 
   // 創建註冊
   router.post(
-    '/enrollments',
+    '/api/v1/enrollments',
     withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       const { course_id }: CreateEnrollmentRequest = req.body as CreateEnrollmentRequest
 
@@ -135,7 +135,7 @@ export function setupCourseEnrollmentRoutes(router: ApiRouter): void {
 
   // 更新註冊進度
   router.put(
-    '/enrollments/:id/progress',
+    '/api/v1/enrollments/:id/progress',
     withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       const params = req.params as Record<string, string>
       const { id } = params
@@ -183,7 +183,7 @@ export function setupCourseEnrollmentRoutes(router: ApiRouter): void {
 
   // 完成課程
   router.put(
-    '/enrollments/:id/complete',
+    '/api/v1/enrollments/:id/complete',
     withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       const params = req.params as Record<string, string>
       const { id } = params
@@ -224,7 +224,7 @@ export function setupCourseEnrollmentRoutes(router: ApiRouter): void {
 
   // 取消註冊
   router.delete(
-    '/enrollments/:id',
+    '/api/v1/enrollments/:id',
     withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       const params = req.params as Record<string, string>
       const { id } = params
@@ -258,7 +258,7 @@ export function setupCourseEnrollmentRoutes(router: ApiRouter): void {
 
   // 獲取用戶的課程註冊統計
   router.get(
-    '/enrollments/stats/user/:userId',
+    '/api/v1/enrollments/stats/user/:userId',
     withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       const params = req.params as Record<string, string>
       const { userId } = params
@@ -287,7 +287,7 @@ export function setupCourseEnrollmentRoutes(router: ApiRouter): void {
 
   // 獲取課程的註冊統計
   router.get(
-    '/enrollments/stats/course/:courseId',
+    '/api/v1/enrollments/stats/course/:courseId',
     withAuth(async (req: ApiRequest): Promise<ApiResponse> => {
       const params = req.params as Record<string, string>
       const { courseId } = params

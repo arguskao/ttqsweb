@@ -49,7 +49,7 @@ async function checkInstructors() {
       SELECT 
         is_active,
         COUNT(*) as count
-      FROM instructors 
+      FROM instructor_applications 
       GROUP BY is_active
       ORDER BY is_active DESC
     `
@@ -65,7 +65,7 @@ async function checkInstructors() {
 
     // 查詢總數
     const totalInstructors = await sql`
-      SELECT COUNT(*) as total FROM instructors
+      SELECT COUNT(*) as total FROM instructor_applications
     `
 
     const totalApplications = await sql`
@@ -102,8 +102,10 @@ async function checkInstructors() {
     console.log('\n📝 講師詳細資訊:')
     try {
       const instructorDetails = await sql`
-        SELECT * FROM instructors
-        ORDER BY created_at DESC
+        SELECT ia.*, u.first_name, u.last_name, u.email 
+        FROM instructor_applications ia
+        JOIN users u ON ia.user_id = u.id
+        ORDER BY ia.created_at DESC
       `
 
       if (instructorDetails.length > 0) {

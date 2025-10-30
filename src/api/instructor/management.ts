@@ -123,6 +123,7 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
     }
   })
 
+
   // 獲取講師詳情 - 使用 user_id
   router.get('/api/v1/instructors/:userId', async (req: ApiRequest): Promise<ApiResponse> => {
     const { userId } = req.params as Record<string, string>
@@ -132,7 +133,7 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
       throw new ValidationError('Invalid instructor user ID')
     }
 
-    const instructor = await instructorRepo.findByUserId(instructorUserId)
+    const instructor = await instructorRepo.findApprovedByUserId(instructorUserId)
     if (!instructor) {
       throw new NotFoundError('Instructor not found')
     }
@@ -177,7 +178,7 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
       throw new ValidationError('Invalid instructor user ID')
     }
 
-    const instructor = await instructorRepo.findByUserId(instructorUserId)
+    const instructor = await instructorRepo.findApprovedByUserId(instructorUserId)
     if (!instructor) {
       throw new NotFoundError('Instructor not found')
     }
@@ -220,7 +221,7 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
       throw new ValidationError('Invalid instructor user ID')
     }
 
-    const instructor = await instructorRepo.findByUserId(instructorUserId)
+    const instructor = await instructorRepo.findApprovedByUserId(instructorUserId)
     if (!instructor) {
       throw new NotFoundError('Instructor not found')
     }

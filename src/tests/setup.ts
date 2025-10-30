@@ -119,9 +119,8 @@ const setupTestDatabase = async () => {
 
     // 插入測試講師
     await sql`
-      INSERT INTO instructors (first_name, last_name, email, phone, specialization, experience_years) VALUES
-      ('張', '老師', 'instructor@example.com', '0912345678', '藥學', 10),
-      ('李', '教授', 'professor@example.com', '0987654321', '藥劑學', 15)
+      -- 測試講師將通過 instructor_applications 表創建
+      -- 這裡不直接插入 instructors 表，因為該表已不存在
     `
 
     // 插入測試課程
@@ -161,9 +160,9 @@ const cleanupTestDatabase = async () => {
 
     await sql`
       DELETE FROM documents WHERE uploaded_by IN (SELECT id FROM users WHERE email LIKE '%@example.com');
-      DELETE FROM courses WHERE instructor_id IN (SELECT id FROM instructors WHERE email LIKE '%@example.com');
+      DELETE FROM courses WHERE instructor_id IN (SELECT u.id FROM instructor_applications ia JOIN users u ON ia.user_id = u.id WHERE u.email LIKE '%@example.com');
       DELETE FROM jobs WHERE company LIKE '%測試%' OR company LIKE '%大型連鎖%' OR company LIKE '%製藥%';
-      DELETE FROM instructors WHERE email LIKE '%@example.com';
+      DELETE FROM instructor_applications WHERE user_id IN (SELECT id FROM users WHERE email LIKE '%@example.com');
       DELETE FROM users WHERE email LIKE '%@example.com';
     `
 

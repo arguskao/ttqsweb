@@ -376,8 +376,8 @@ const loadProfile = async () => {
         errorMessage.value = response.data.error?.message || '載入講師資料失敗'
       }
     } else {
-      // 直接返回數據
-      instructor.value = response.data
+      // API 返回的格式是 { success: true, data: {...} }
+      instructor.value = response.data.data || response.data
 
       // 初始化編輯表單
       editForm.value = {

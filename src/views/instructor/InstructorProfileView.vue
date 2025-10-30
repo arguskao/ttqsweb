@@ -36,8 +36,13 @@
               <!-- Status banner -->
               <div class="notification" :class="statusClass">
                 <strong>申請狀態：</strong>
-                <span v-if="instructor.application_status === 'pending'">審核中</span>
-                <span v-else-if="instructor.application_status === 'approved'">已批准</span>
+                <span v-if="(instructor.application_status || instructor.status) === 'pending'"
+                  >審核中</span
+                >
+                <span
+                  v-else-if="(instructor.application_status || instructor.status) === 'approved'"
+                  >已批准</span
+                >
                 <span v-else>已拒絕</span>
 
                 <span v-if="!instructor.is_active" class="ml-3">

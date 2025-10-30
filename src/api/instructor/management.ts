@@ -263,4 +263,26 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
       data: instructors
     }
   })
+
+  // 獲取當前用戶的講師資料
+  router.get('/api/v1/instructors/profile', requireAuth, async (req: ApiRequest): Promise<ApiResponse> => {
+    const userId = req.user!.id
+
+    const instructor = await instructorRepo.findByUserId(userId)
+
+    if (!instructor) {
+      throw new NotFoundError('Instructor profile not found')
+    }
+
+    // 獲取講師統計
+    const stats = await instructorRepo.getStats(userId)
+
+    return {
+      success: true,
+      data: {
+        ...instructor,
+        stats
+      }
+    }
+  })
 }

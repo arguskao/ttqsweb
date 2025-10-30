@@ -120,17 +120,25 @@ export const profileHandler: RouteHandler = async req => {
       throw new ValidationError('用戶資訊不存在')
     }
 
+    // 從資料庫獲取完整的用戶資訊
+    const { getUserById } = await import('../services/auth')
+    const fullUser = await getUserById(req.user.id)
+
+    if (!fullUser) {
+      throw new ValidationError('用戶不存在')
+    }
+
     return {
       success: true,
       data: {
         user: {
-          id: req.user.id,
-          email: req.user.email,
-          userType: req.user.userType || req.user.user_type,
-          firstName: req.user.firstName || req.user.first_name,
-          lastName: req.user.lastName || req.user.last_name,
-          phone: req.user.phone,
-          isActive: req.user.isActive ?? req.user.is_active
+          id: fullUser.id,
+          email: fullUser.email,
+          userType: fullUser.userType,
+          firstName: fullUser.firstName,
+          lastName: fullUser.lastName,
+          phone: fullUser.phone,
+          isActive: fullUser.isActive
         }
       }
     }

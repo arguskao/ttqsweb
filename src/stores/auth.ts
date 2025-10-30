@@ -114,28 +114,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       // 簡單的 JWT 解析 (不驗證簽名)
       const part = token.value.split('.')[1] ?? ''
-
-      // 使用 Buffer 或 TextDecoder 來正確處理 UTF-8 編碼
-      let payload
-      try {
-        // 嘗試使用 atob (對於不包含特殊字符的 token)
-        payload = JSON.parse(atob(String(part)))
-      } catch (e) {
-        // 如果 atob 失敗，使用 base64url 解碼
-        // 將 base64url 轉換為 base64
-        const base64 = part.replace(/-/g, '+').replace(/_/g, '/')
-        // 添加填充
-        const padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=')
-
-        // 使用 Uint8Array 和 TextDecoder 來正確處理 UTF-8
-        const binaryString = atob(padded)
-        const bytes = new Uint8Array(binaryString.length)
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i)
-        }
-        const decoder = new TextDecoder('utf-8')
-        payload = JSON.parse(decoder.decode(bytes))
-      }
+      const payload = JSON.parse(atob(String(part)))
 
       // 如果沒有 exp 字段，視為已過期
       if (!payload.exp) {
@@ -145,8 +124,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       const now = Math.floor(Date.now() / 1000)
       return payload.exp < now
-    } catch (error) {
-      console.error('[Auth] Token 解析失敗:', error)
+    } catch {
       return true
     }
   }

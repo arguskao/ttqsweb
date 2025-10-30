@@ -16,7 +16,7 @@ export class InstructorRepository extends BaseRepository<Instructor> {
   // 根據用戶ID查找講師
   async findByUserId(userId: number): Promise<Instructor | null> {
     return this.queryOne(
-      `SELECT ia.*, u.first_name, u.last_name, u.email
+      `SELECT ia.*, ia.status as application_status, u.first_name, u.last_name, u.email
        FROM instructor_applications ia
        JOIN users u ON u.id = ia.user_id
        WHERE ia.user_id = $1 AND ia.status = 'approved'`,

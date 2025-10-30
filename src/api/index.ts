@@ -71,6 +71,57 @@ router.get('/api/v1/health', async (req: ApiRequest): Promise<ApiResponse> => {
   }
 })
 
+// Debug endpoint for JWT testing
+router.get('/api/v1/debug/jwt', async (req: ApiRequest): Promise<ApiResponse> => {
+  const authHeader = req.headers.authorization || req.headers.Authorization as string
+
+  if (!authHeader) {
+    return {
+      success: false,
+      error: {
+        code: 'NO_TOKEN',
+        message: 'No authorization header provided'
+      }
+    }
+  }
+
+  const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader
+
+  const secrets = [
+    process.env.JWT_SECRET,
+    'test-secret',
+    '3939889'
+  ].filter(Boolean)
+
+  const results = []
+
+  for (const secret of secrets) {
+    try {
+      const jwt = await import('jsonwebtoken')
+      const decoded = jwt.verify(token, secret as string)
+      results.push({
+        secret: secret === process.env.JWT_SECRET ? 'process.env.JWT_SECRET' : secret,
+        success: true,
+        decoded
+      })
+    } catch (error) {
+      results.push({
+        secret: secret === process.env.JWT_SECRET ? 'process.env.JWT_SECRET' : secret,
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
+    }
+  }
+
+  return {
+    success: true,
+    data: {
+      env_jwt_secret: process.env.JWT_SECRET ? 'SET' : 'NOT_SET',
+      results
+    }
+  }
+})
+
 // API優化測試端點
 router.get('/api/v1/optimization/test', async (req: ApiRequest): Promise<ApiResponse> => {
   return {
@@ -362,13 +413,13 @@ router.get('/api/v1/documents/:id/download', async (req: ApiRequest): Promise<Ap
       const { neon } = await import('@neondatabase/serverless')
       const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_uBHAc2hinfI4@ep-jolly-frost-a1muxrt0-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
       const sql = neon(DATABASE_URL)
-      
+
       const result = await sql`
         SELECT id, title, file_url, file_type, file_size, download_count
-        FROM documents 
+        FROM documents
         WHERE id = ${id} AND is_public = true
       `
-      
+
       if (result.length === 0) {
         return {
           success: false,
@@ -379,12 +430,12 @@ router.get('/api/v1/documents/:id/download', async (req: ApiRequest): Promise<Ap
           }
         }
       }
-      
+
       const doc = result[0] as any
-      
+
       // 增加下載次數
       await sql`
-        UPDATE documents 
+        UPDATE documents
         SET download_count = COALESCE(download_count, 0) + 1, updated_at = CURRENT_TIMESTAMP
         WHERE id = ${id}
       `
@@ -435,31 +486,31 @@ router.get('/api/v1/documents', async (req: ApiRequest): Promise<ApiResponse> =>
       const { neon } = await import('@neondatabase/serverless')
       const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_uBHAc2hinfI4@ep-jolly-frost-a1muxrt0-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
       const sql = neon(DATABASE_URL)
-      
+
       // 簡化查詢 - 先獲取所有文件，然後在JavaScript中過濾
       const allDocs = await sql`
-        SELECT id, title, description, file_url, file_type, file_size, 
+        SELECT id, title, description, file_url, file_type, file_size,
                category, download_count, created_at
-        FROM documents 
+        FROM documents
         WHERE is_public = true
         ORDER BY created_at DESC
       `
-      
+
       // JavaScript過濾
       let filteredDocs = allDocs as any[]
-      
+
       if (category) {
         filteredDocs = filteredDocs.filter((doc: any) => doc.category === category)
       }
-      
+
       if (search) {
         const searchLower = search.toLowerCase()
-        filteredDocs = filteredDocs.filter((doc: any) => 
+        filteredDocs = filteredDocs.filter((doc: any) =>
           doc.title?.toLowerCase().includes(searchLower) ||
           doc.description?.toLowerCase().includes(searchLower)
         )
       }
-      
+
       // 分頁處理
       const total = filteredDocs.length
       const offset = (parseInt(page) - 1) * parseInt(limit)

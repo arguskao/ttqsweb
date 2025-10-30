@@ -120,25 +120,35 @@ export const profileHandler: RouteHandler = async req => {
       throw new ValidationError('用戶資訊不存在')
     }
 
-    // 從資料庫獲取完整的用戶資訊
-    const { getUserById } = await import('../services/auth')
-    const fullUser = await getUserById(req.user.id)
+    // 從資料庫獲取完整的用戶資訊（使用 Neon serverless driver）
+    const { neon } = await import('@neondatabase/serverless')
+    const DATABASE_URL = process.env.DATABASE_URL || ''
+    const sql = neon(DATABASE_URL)
 
-    if (!fullUser) {
+    const result = await sql`
+      SELECT id, email, user_type, first_name, last_name, phone,
+             created_at, updated_at, is_active
+      FROM users
+      WHERE id = ${req.user.id} AND is_active = true
+    `
+
+    if (result.length === 0) {
       throw new ValidationError('用戶不存在')
     }
+
+    const user = result[0]
 
     return {
       success: true,
       data: {
         user: {
-          id: fullUser.id,
-          email: fullUser.email,
-          userType: fullUser.userType,
-          firstName: fullUser.firstName,
-          lastName: fullUser.lastName,
-          phone: fullUser.phone,
-          isActive: fullUser.isActive
+          id: user.id,
+          email: user.email,
+          userType: user.user_type,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          phone: user.phone,
+          isActive: user.is_active
         }
       }
     }

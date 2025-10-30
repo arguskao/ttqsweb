@@ -80,7 +80,7 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
   })
 
   // 獲取當前用戶的講師資料 - 必須在 :userId 路由之前
-  router.get('/api/v1/instructors/profile', requireAuth, async (req: ApiRequest): Promise<ApiResponse> => {
+  router.get('/api/v1/instructors/profile', [requireAuth], async (req: ApiRequest): Promise<ApiResponse> => {
     try {
       if (!req.user) {
         return {

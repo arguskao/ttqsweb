@@ -372,6 +372,9 @@ const loadProfile = async () => {
 
     const response = await api.get('/instructors/profile')
 
+    console.log('[loadProfile] Full response:', response)
+    console.log('[loadProfile] response.data:', response.data)
+
     // 檢查響應格式
     if (response.data?.success === false) {
       // API 返回錯誤
@@ -382,7 +385,9 @@ const loadProfile = async () => {
       }
     } else {
       // API 返回的格式是 { success: true, data: {...} }
-      instructor.value = response.data.data || response.data
+      const instructorData = response.data.data || response.data
+      console.log('[loadProfile] Instructor data:', instructorData)
+      instructor.value = instructorData
 
       // 初始化編輯表單
       editForm.value = {

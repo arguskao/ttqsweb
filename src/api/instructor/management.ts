@@ -70,9 +70,19 @@ export function setupInstructorManagementRoutes(router: ApiRouter): void {
 
   // 獲取當前用戶的講師資料 - 必須在 :userId 路由之前
   router.get('/api/v1/instructors/profile', requireAuth, async (req: ApiRequest): Promise<ApiResponse> => {
-    const userId = req.user!.id
+    console.log('[instructors/profile] Handler called')
+    console.log('[instructors/profile] req.user:', req.user)
+
+    if (!req.user) {
+      console.error('[instructors/profile] req.user is undefined!')
+      throw new Error('User not authenticated')
+    }
+
+    const userId = req.user.id
+    console.log('[instructors/profile] userId:', userId)
 
     const instructor = await instructorRepo.findByUserId(userId)
+    console.log('[instructors/profile] instructor found:', !!instructor)
 
     if (!instructor) {
       throw new NotFoundError('Instructor profile not found')

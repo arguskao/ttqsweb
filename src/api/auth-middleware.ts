@@ -20,15 +20,22 @@ const verifyToken = (token: string) => {
     '3939889'
   ].filter(Boolean)
 
+  console.log('[verifyToken] Trying', secrets.length, 'secrets')
+  console.log('[verifyToken] JWT_SECRET from env:', process.env.JWT_SECRET ? 'SET' : 'NOT_SET')
+
   for (const secret of secrets) {
     try {
-      return jwt.verify(token, secret as string) as any
+      const result = jwt.verify(token, secret as string) as any
+      console.log('[verifyToken] Success with secret:', secret === process.env.JWT_SECRET ? 'JWT_SECRET' : secret)
+      return result
     } catch (error) {
+      console.log('[verifyToken] Failed with secret:', secret === process.env.JWT_SECRET ? 'JWT_SECRET' : secret, 'Error:', error instanceof Error ? error.message : 'Unknown')
       // 繼續嘗試下一個 secret
       continue
     }
   }
 
+  console.error('[verifyToken] All secrets failed')
   throw new AuthenticationError('認證令牌無效或已過期')
 }
 

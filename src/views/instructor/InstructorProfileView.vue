@@ -469,6 +469,8 @@ const loadRatings = async () => {
   ratings.value = []
 }
 
+
+
 // Submit instructor application
 const submitApplication = async () => {
   if (!applicationForm.value.bio || !applicationForm.value.qualifications) {
@@ -546,4 +548,6 @@ onMounted(() => {
     transform: rotate(360deg);
   }
 }
+
+
 </style>

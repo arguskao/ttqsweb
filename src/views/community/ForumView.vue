@@ -113,15 +113,46 @@
             <div class="level-right">
               <div class="level-item">
                 <div class="has-text-right">
-                  <p class="heading">回覆</p>
-                  <p class="title is-5">{{ topic.replyCount }}</p>
+                  <p class="title is-5">
+                    <span class="icon-text">
+                      <span class="icon">
+                        <i class="fas fa-comment"></i>
+                      </span>
+                      <span>{{ topic.replyCount }}</span>
+                    </span>
+                  </p>
                 </div>
               </div>
               <div class="level-item">
                 <div class="has-text-right">
-                  <p class="heading">瀏覽</p>
-                  <p class="title is-5">{{ topic.viewCount }}</p>
+                  <p class="title is-5">
+                    <span class="icon-text">
+                      <span class="icon">
+                        <i class="fas fa-eye"></i>
+                      </span>
+                      <span>{{ topic.viewCount }}</span>
+                    </span>
+                  </p>
                 </div>
+              </div>
+              <!-- Admin actions -->
+              <div v-if="isAdmin" class="level-item">
+                <div class="buttons">
+                  <button
+                    class="button is-small is-danger"
+                    @click="deleteTopic(topic)"
+                    :disabled="deletingTopic === topic.id"
+                    title="刪除討論主題"
+                  >
+                    <span class="icon">
+                      <i class="fas fa-trash"></i>
+                    </span>
+                  </button>
+                </div>
+              </div>
+              <!-- Debug: Show admin status -->
+              <div v-if="authStore.user" class="level-item">
+                <small class="has-text-grey">{{ authStore.user.userType }}</small>
               </div>
             </div>
           </div>
@@ -231,9 +262,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
-import { apiService } from '@/services/api-enhanced'
+import { apiService } from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 
 interface Topic {
   id: number
@@ -257,9 +289,16 @@ const topics = ref<Topic[]>([])
 const myGroups = ref<Group[]>([])
 const loading = ref(false)
 const isSubmitting = ref(false)
+const deletingTopic = ref<number | null>(null)
 const currentPage = ref(1)
 const totalPages = ref(1)
 const showCreateModal = ref(false)
+
+// Check if current user is admin
+const authStore = useAuthStore()
+const isAdmin = computed(() => {
+  return authStore.user?.userType === 'admin'
+})
 
 const selectedGroupId = ref('')
 const selectedCategory = ref('')
@@ -298,9 +337,15 @@ const loadTopics = async () => {
     })
 
     if (response.success && response.data) {
-      topics.value = response.data
-      if (response.meta?.pagination) {
-        totalPages.value = response.meta.pagination.totalPages
+      // 映射數據格式，將 snake_case 轉換為 camelCase
+      topics.value = response.data.map((topic: any) => ({
+        ...topic,
+        viewCount: topic.view_count || 0,
+        replyCount: topic.reply_count || 0
+      }))
+      const meta = response.meta as any
+      if (meta?.totalPages) {
+        totalPages.value = meta.totalPages
       }
     }
   } catch (error) {
@@ -373,6 +418,37 @@ const formatDate = (date: string) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// Delete topic (admin only)
+const deleteTopic = async (topic: Topic) => {
+  const confirmMessage = `確定要刪除討論主題「${topic.title}」嗎？此操作無法復原。`
+  
+  if (!confirm(confirmMessage)) {
+    return
+  }
+
+  try {
+    deletingTopic.value = topic.id
+    
+    const response = await apiService.delete(`/forum/topics?id=${topic.id}`)
+    
+    if (response.success) {
+      // Remove from local state
+      const index = topics.value.findIndex(t => t.id === topic.id)
+      if (index > -1) {
+        topics.value.splice(index, 1)
+      }
+      alert('討論主題已刪除')
+    } else {
+      alert(response.error?.message || '刪除討論主題失敗')
+    }
+  } catch (error: any) {
+    console.error('[deleteTopic] 刪除討論主題失敗:', error)
+    alert(error.response?.data?.error?.message || '刪除討論主題失敗')
+  } finally {
+    deletingTopic.value = null
+  }
 }
 
 onMounted(() => {

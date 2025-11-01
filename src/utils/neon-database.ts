@@ -28,13 +28,15 @@ class NeonDatabaseManager {
     return this.sql
   }
 
-  // 執行查詢 - 使用Neon的query方法
-  async query(sql: string, params: any[] = []): Promise<any[]> {
+  // 執行查詢 - 使用Neon的sql.query()方法
+  async query(sqlText: string, params: any[] = []): Promise<any[]> {
     try {
       const connection = this.getConnection()
-      // 使用Neon的query方法而不是tagged template
-      const result = await connection.query(sql, params)
-      // Neon返回的結果可能是不同的格式，統一處理
+      
+      // 使用 sql.query() 方法，這是 Neon 支援的傳統查詢方式
+      const result = await (connection as any).query(sqlText, params)
+      
+      // Neon返回的結果是數組
       if (Array.isArray(result)) {
         return result
       } else if (result && typeof result === 'object' && 'rows' in result) {

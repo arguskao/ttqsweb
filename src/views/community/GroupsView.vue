@@ -38,8 +38,8 @@
             <div class="card-content">
               <p class="title is-5">{{ group.name }}</p>
               <p class="subtitle is-6">
-                <span class="tag" :class="getGroupTypeClass(group.groupType)">
-                  {{ getGroupTypeLabel(group.groupType) }}
+                <span class="tag" :class="getGroupTypeClass(group.group_type)">
+                  {{ getGroupTypeLabel(group.group_type) }}
                 </span>
               </p>
               <p class="content">{{ group.description }}</p>
@@ -56,6 +56,13 @@
               <a class="card-footer-item" @click="viewGroup(group.id)">查看</a>
               <a v-if="activeTab === 'all'" class="card-footer-item" @click="joinGroup(group.id)">
                 加入
+              </a>
+              <a
+                v-if="isAdmin"
+                class="card-footer-item has-text-danger"
+                @click="deleteGroup(group.id)"
+              >
+                刪除
               </a>
             </footer>
           </div>
@@ -134,7 +141,9 @@
           </div>
         </section>
         <footer class="modal-card-foot">
-          <button class="button is-primary" @click="createGroup">創建</button>
+          <button class="button is-primary" @click="createGroup" :disabled="isSubmitting">
+            {{ isSubmitting ? '創建中...' : '創建' }}
+          </button>
           <button class="button" @click="showCreateModal = false">取消</button>
         </footer>
       </div>
@@ -143,12 +152,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import api from '@/services/api'
+import { apiService } from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
+
+// 檢查是否為管理員
+const isAdmin = computed(() => authStore.user?.userType === 'admin')
 
 const activeTab = ref('all')
 const groups = ref<any[]>([])
@@ -156,6 +170,7 @@ const loading = ref(false)
 const currentPage = ref(1)
 const totalPages = ref(1)
 const showCreateModal = ref(false)
+const isSubmitting = ref(false)
 
 const newGroup = ref({
   name: '',
@@ -168,41 +183,74 @@ const loadGroups = async () => {
   try {
     // TODO: 實現 /groups/my-groups 端點後再區分
     const endpoint = '/groups' // activeTab.value === 'my' ? '/groups/my-groups' : '/groups'
-    const response = await api.get(endpoint, {
+    const response = await apiService.get(endpoint, {
       params: { page: currentPage.value, limit: 12 }
     })
-    groups.value = response.data.data
-    if (response.data.meta) {
-      totalPages.value = response.data.meta.totalPages
+    
+    console.log('載入群組響應:', response)
+    
+    if (response.success) {
+      groups.value = (response.data as any[]) || []
+      if (response.meta && 'totalPages' in response.meta) {
+        totalPages.value = (response.meta as any).totalPages || 1
+      }
+    } else {
+      groups.value = []
+      console.warn('API 返回失敗狀態:', response)
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('載入群組失敗:', error)
+    console.error('錯誤詳情:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
+    })
+    groups.value = []
   } finally {
     loading.value = false
   }
 }
 
 const createGroup = async () => {
+  if (!newGroup.value.name.trim()) {
+    alert('請輸入群組名稱')
+    return
+  }
+  if (!newGroup.value.description.trim()) {
+    alert('請輸入群組描述')
+    return
+  }
+
+  isSubmitting.value = true
   try {
-    await api.post('/groups', newGroup.value)
+    await apiService.post('/groups', {
+      name: newGroup.value.name,
+      description: newGroup.value.description,
+      groupType: newGroup.value.groupType
+    })
+
     showCreateModal.value = false
     newGroup.value = { name: '', groupType: 'course', description: '' }
+    alert('群組創建成功！')
     loadGroups()
-  } catch (error: any) {
+  } catch (error) {
     console.error('創建群組失敗:', error)
-    const errorMessage =
-      error.response?.status === 404
-        ? '群組功能正在開發中，敬請期待！'
-        : error.response?.data?.error?.message || '創建群組失敗，請稍後再試'
-    alert(errorMessage)
+    alert('創建群組失敗，請稍後再試')
+  } finally {
+    isSubmitting.value = false
   }
 }
 
 const joinGroup = async (groupId: number) => {
   try {
-    await api.post(`/groups/${groupId}/join`)
-    alert('成功加入群組！')
-    loadGroups()
+    const response = await apiService.post(`/groups/${groupId}/join`)
+    if (response.success) {
+      alert('成功加入群組！')
+      loadGroups()
+    } else {
+      alert(response.error?.message || '加入群組失敗')
+    }
   } catch (error: any) {
     alert(error.response?.data?.error?.message || '加入群組失敗')
   }
@@ -210,6 +258,25 @@ const joinGroup = async (groupId: number) => {
 
 const viewGroup = (groupId: number) => {
   router.push(`/community/groups/${groupId}`)
+}
+
+const deleteGroup = async (groupId: number) => {
+  if (!confirm('確定要刪除這個群組嗎？此操作無法復原。')) {
+    return
+  }
+
+  try {
+    const response = await apiService.delete(`/groups/${groupId}`)
+    if (response.success) {
+      alert('群組已刪除')
+      loadGroups()
+    } else {
+      alert(response.error?.message || '刪除群組失敗')
+    }
+  } catch (error: any) {
+    console.error('刪除群組失敗:', error)
+    alert(error.response?.data?.error?.message || '刪除群組失敗')
+  }
 }
 
 const changePage = (page: number) => {
@@ -245,6 +312,16 @@ watch(activeTab, () => {
 })
 
 onMounted(() => {
+  // 頁面載入時檢查認證狀態
+  const authStore = useAuthStore()
+  console.log('頁面載入時的認證狀態:', {
+    isAuthenticated: authStore.isAuthenticated,
+    hasToken: !!authStore.token,
+    hasUser: !!authStore.user,
+    token: authStore.token?.substring(0, 20) + '...',
+    user: authStore.user
+  })
+  
   loadGroups()
 })
 </script>

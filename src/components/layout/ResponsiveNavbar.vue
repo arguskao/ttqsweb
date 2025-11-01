@@ -88,6 +88,10 @@
               <span class="icon"> 👨‍🏫 </span>
               <span>講師申請審核</span>
             </RouterLink>
+            <RouterLink v-if="isAdmin" to="/admin/experiences" class="navbar-item">
+              <span class="icon"> ⭐ </span>
+              <span>經驗分享管理</span>
+            </RouterLink>
 
             <RouterLink v-if="isAdmin" to="/admin/course-applications" class="navbar-item">
               <span class="icon"> 📚 </span>

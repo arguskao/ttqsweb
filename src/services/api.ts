@@ -59,8 +59,10 @@ declare module 'axios' {
 // Request interceptor
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const authStore = useAuthStore()
-    const token = authStore.token
+    // 優先從 sessionStorage 獲取 token（與 auth-service-enhanced 一致）
+    const sessionToken = sessionStorage.getItem('access_token')
+    const localToken = localStorage.getItem('auth_token')
+    const token = sessionToken || localToken
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`

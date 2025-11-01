@@ -201,18 +201,18 @@ export class TTQSDocumentRepository {
 export class TTQSPlanRepository {
   // 獲取所有計劃
   async findAll(): Promise<TTQSPlan[]> {
-    return await query('SELECT * FROM ttqs_plans ORDER BY created_at DESC')
+    return await query('SELECT * FROM training_plans ORDER BY created_at DESC')
   }
 
   // 根據ID查找計劃
   async findById(id: number): Promise<TTQSPlan | null> {
-    const result = await query('SELECT * FROM ttqs_plans WHERE id = $1', [id])
+    const result = await query('SELECT * FROM training_plans WHERE id = $1', [id])
     return result[0] || null
   }
 
   // 根據狀態查找計劃
   async findByStatus(status: string): Promise<TTQSPlan[]> {
-    return await query('SELECT * FROM ttqs_plans WHERE status = $1 ORDER BY created_at DESC', [
+    return await query('SELECT * FROM training_plans WHERE status = $1 ORDER BY created_at DESC', [
       status
     ])
   }
@@ -230,7 +230,7 @@ export class TTQSPlanRepository {
          COUNT(CASE WHEN status = 'active' THEN 1 END) as active,
          COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
          COUNT(CASE WHEN status = 'draft' THEN 1 END) as draft
-       FROM ttqs_plans`
+       FROM training_plans`
     )
 
     return {
@@ -257,7 +257,7 @@ export class TTQSAnalyticsRepository {
          COUNT(*) as total_plans,
          COUNT(CASE WHEN status = 'active' THEN 1 END) as active_plans,
          COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_plans
-       FROM ttqs_plans`
+       FROM training_plans`
     )
 
     // 獲取文檔統計
@@ -343,10 +343,10 @@ export class TTQSAnalyticsRepository {
          AVG(te.learning_score) as learning,
          AVG(te.behavior_score) as behavior,
          AVG(te.results_score) as results
-       FROM ttqs_plans tp
+       FROM training_plans tp
        LEFT JOIN ttqs_documents td ON tp.id = td.plan_id
-       LEFT JOIN ttqs_compliance tc ON tp.id = tc.plan_id
-       LEFT JOIN ttqs_evaluations te ON tp.id = te.plan_id
+       LEFT JOIN improvement_actions ia ON tp.id = ia.plan_id
+       LEFT JOIN training_executions te ON tp.id = te.plan_id
        WHERE tp.created_at BETWEEN $2 AND $3
        GROUP BY TO_CHAR(created_at, $1)
        ORDER BY period`,
@@ -378,8 +378,8 @@ export class TTQSAnalyticsRepository {
         tc.next_audit,
         tc.issues,
         tc.score
-      FROM ttqs_compliance tc
-      JOIN ttqs_plans tp ON tc.plan_id = tp.id
+      FROM improvement_actions tc
+      JOIN training_plans tp ON tc.plan_id = tp.id
       WHERE 1=1
     `
     const queryParams: any[] = []

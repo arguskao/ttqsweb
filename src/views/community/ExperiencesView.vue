@@ -70,12 +70,27 @@
                     </span>
                     <span>{{ exp.like_count }}</span>
                   </a>
-                  <a class="level-item">
+                  <a class="level-item" @click="viewExperience(exp.id)">
                     <span class="icon is-small">
                       <span>💬</span>
                     </span>
                     <span>{{ exp.comment_count }}</span>
                   </a>
+                </div>
+                <!-- Admin actions -->
+                <div v-if="isAdmin" class="level-right">
+                  <div class="level-item">
+                    <button
+                      class="button is-small is-danger"
+                      @click="deleteExperience(exp)"
+                      :disabled="deletingExperience === exp.id"
+                      title="刪除經驗分享"
+                    >
+                      <span class="icon">
+                        <i class="fas fa-trash"></i>
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </nav>
             </div>
@@ -172,7 +187,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import api from '@/services/api'
@@ -183,6 +198,14 @@ const router = useRouter()
 const filter = ref('all')
 const experiences = ref<any[]>([])
 const loading = ref(false)
+const deletingExperience = ref<number | null>(null)
+
+const authStore = useAuthStore()
+
+// Check if current user is admin
+const isAdmin = computed(() => {
+  return authStore.user?.userType === 'admin'
+})
 const currentPage = ref(1)
 const totalPages = ref(1)
 const showCreateModal = ref(false)
@@ -276,6 +299,37 @@ const likeExperience = async (id: number) => {
     loadExperiences()
   } catch (error) {
     console.error('按讚失敗:', error)
+  }
+}
+
+// Delete experience (admin only)
+const deleteExperience = async (experience: any) => {
+  const confirmMessage = `確定要刪除經驗分享「${experience.title}」嗎？此操作無法復原。`
+  
+  if (!confirm(confirmMessage)) {
+    return
+  }
+
+  try {
+    deletingExperience.value = experience.id
+    
+    const response = await api.delete(`/experiences?id=${experience.id}`)
+    
+    if (response.data?.success) {
+      // Remove from local state
+      const index = experiences.value.findIndex(e => e.id === experience.id)
+      if (index > -1) {
+        experiences.value.splice(index, 1)
+      }
+      alert('經驗分享已刪除')
+    } else {
+      alert(response.data?.error?.message || '刪除經驗分享失敗')
+    }
+  } catch (error: any) {
+    console.error('[deleteExperience] 刪除經驗分享失敗:', error)
+    alert(error.response?.data?.error?.message || '刪除經驗分享失敗')
+  } finally {
+    deletingExperience.value = null
   }
 }
 

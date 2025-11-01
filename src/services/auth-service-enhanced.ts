@@ -33,11 +33,21 @@ export class AuthServiceEnhanced {
       const response = await apiService.post<AuthResponse>('/auth/register', data)
 
       if (response.success && response.data) {
-        this.setTokens(response.data.tokens)
-        // 存儲用戶資料到 sessionStorage
-        sessionStorage.setItem('user', JSON.stringify(response.data.user))
-        authStore.setAuth(response.data.user, response.data.tokens.accessToken)
-        return { user: response.data.user, token: response.data.tokens.accessToken }
+        // 適配後端實際返回的格式
+        const token = (response.data as any).token || response.data.tokens?.accessToken
+        const refreshToken = (response.data as any).refreshToken || response.data.tokens?.refreshToken || token
+        
+        if (token) {
+          // 直接存儲 token 到 sessionStorage
+          sessionStorage.setItem(this.accessTokenKey, token)
+          sessionStorage.setItem(this.tokenExpiryKey, (Date.now() + 3600 * 1000).toString())
+          localStorage.setItem(this.refreshTokenKey, refreshToken)
+          
+          // 存儲用戶資料到 sessionStorage
+          sessionStorage.setItem('user', JSON.stringify(response.data.user))
+          authStore.setAuth(response.data.user, token)
+          return { user: response.data.user, token }
+        }
       }
 
       throw new Error(response.error?.message || '註冊失敗')
@@ -61,11 +71,21 @@ export class AuthServiceEnhanced {
       const response = await apiService.post<AuthResponse>('/auth/login', credentials)
 
       if (response.success && response.data) {
-        this.setTokens(response.data.tokens)
-        // 存儲用戶資料到 sessionStorage
-        sessionStorage.setItem('user', JSON.stringify(response.data.user))
-        authStore.setAuth(response.data.user, response.data.tokens.accessToken)
-        return { user: response.data.user, token: response.data.tokens.accessToken }
+        // 適配後端實際返回的格式
+        const token = (response.data as any).token || response.data.tokens?.accessToken
+        const refreshToken = (response.data as any).refreshToken || response.data.tokens?.refreshToken || token
+        
+        if (token) {
+          // 直接存儲 token 到 sessionStorage
+          sessionStorage.setItem(this.accessTokenKey, token)
+          sessionStorage.setItem(this.tokenExpiryKey, (Date.now() + 3600 * 1000).toString()) // 默認 1 小時
+          localStorage.setItem(this.refreshTokenKey, refreshToken)
+          
+          // 存儲用戶資料到 sessionStorage
+          sessionStorage.setItem('user', JSON.stringify(response.data.user))
+          authStore.setAuth(response.data.user, token)
+          return { user: response.data.user, token }
+        }
       }
 
       throw new Error(response.error?.message || '登入失敗')

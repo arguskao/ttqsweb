@@ -44,14 +44,26 @@
             <div class="level-right">
               <div class="level-item">
                 <div class="has-text-right">
-                  <p class="heading">瀏覽</p>
-                  <p class="title is-5">{{ topic.viewCount }}</p>
+                  <p class="title is-5">
+                    <span class="icon-text">
+                      <span class="icon">
+                        <i class="fas fa-eye"></i>
+                      </span>
+                      <span>{{ topic.viewCount }}</span>
+                    </span>
+                  </p>
                 </div>
               </div>
               <div class="level-item">
                 <div class="has-text-right">
-                  <p class="heading">回覆</p>
-                  <p class="title is-5">{{ topic.replyCount }}</p>
+                  <p class="title is-5">
+                    <span class="icon-text">
+                      <span class="icon">
+                        <i class="fas fa-comment"></i>
+                      </span>
+                      <span>{{ topic.replyCount }}</span>
+                    </span>
+                  </p>
                 </div>
               </div>
             </div>
@@ -186,7 +198,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { apiService } from '@/services/api-enhanced'
+import { apiService } from '@/services/api'
 
 interface Topic {
   id: number
@@ -265,7 +277,7 @@ const submitReply = async () => {
 
   isSubmitting.value = true
   try {
-    const response = await apiService.post<Reply>(`/topics/${topicId}/replies`, {
+    const response = await apiService.post<Reply>(`/forum/topics/${topicId}/replies`, {
       content: newReply.value.content
     })
 

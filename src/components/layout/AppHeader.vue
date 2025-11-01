@@ -157,6 +157,16 @@
                   </span>
                   <span>課程申請審核</span>
                 </router-link>
+                <router-link
+                  to="/admin/experiences"
+                  class="navbar-item"
+                  @click="closeMenus"
+                >
+                  <span class="icon">
+                    <span>⭐</span>
+                  </span>
+                  <span>經驗分享管理</span>
+                </router-link>
               </div>
             </div>
 

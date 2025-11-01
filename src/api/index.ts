@@ -40,7 +40,7 @@ import { securityHeadersMiddleware, secureCorsMiddleware } from './security-head
 
 // Setup Support routes
 import { setupSupportRoutes } from './support'
-import { setupTTQSAnalyticsRoutes } from './ttqs'
+import { setupTTQSAnalyticsRoutes } from './ttqs/index'
 import type { ApiRequest, ApiResponse } from './types'
 
 // Setup global middlewares

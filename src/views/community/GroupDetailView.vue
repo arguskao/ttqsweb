@@ -26,8 +26,8 @@
                 <div>
                   <h1 class="title">{{ group.name }}</h1>
                   <p class="subtitle is-6">
-                    <span class="tag" :class="getGroupTypeClass(group.groupType)">
-                      {{ getGroupTypeLabel(group.groupType) }}
+                    <span class="tag" :class="getGroupTypeClass(group.group_type)">
+                      {{ getGroupTypeLabel(group.group_type) }}
                     </span>
                   </p>
                   <p class="content">{{ group.description }}</p>
@@ -175,13 +175,13 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { apiService } from '@/services/api-enhanced'
+import { apiService } from '@/services/api'
 
 interface Group {
   id: number
   name: string
   description: string
-  groupType: string
+  group_type: string
   memberCount: number
   createdAt: string
 }

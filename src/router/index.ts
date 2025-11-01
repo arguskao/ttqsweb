@@ -132,6 +132,7 @@ const router = createRouter({
       name: 'community-groups',
       component: createAsyncComponent(() => import('../views/community/GroupsView.vue')),
       meta: {
+        requiresAuth: true,
         title: '學員群組 - 藥助Next學院',
         description: '加入學員群組，與其他學員交流學習經驗和心得。',
         keepAlive: true
@@ -142,6 +143,7 @@ const router = createRouter({
       name: 'community-group-detail',
       component: createAsyncComponent(() => import('../views/community/GroupDetailView.vue')),
       meta: {
+        requiresAuth: true,
         title: '群組詳情 - 藥助Next學院',
         keepAlive: true
       }
@@ -173,6 +175,14 @@ const router = createRouter({
         title: '經驗分享 - 藥助Next學院',
         description: '閱讀其他學員的經驗分享，包括就業心得、學習技巧和面試經驗。',
         keepAlive: true
+      }
+    },
+    {
+      path: '/community/experiences/:id',
+      name: 'experience-detail',
+      component: createAsyncComponent(() => import('../views/community/ExperienceDetailView.vue')),
+      meta: {
+        title: '經驗分享詳情 - 藥助Next學院'
       }
     },
     {
@@ -339,6 +349,18 @@ const router = createRouter({
       }
     },
     {
+      path: '/admin/experiences',
+      name: 'admin-experiences',
+      component: createAsyncComponent(() => import('../views/admin/ExperienceManagementView.vue')),
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true,
+        title: '經驗分享管理 - 藥助Next學院',
+        description: '管理用戶經驗分享，設定精選內容',
+        keepAlive: true
+      }
+    },
+    {
       path: '/training/policy',
       name: 'training-policy',
       component: createAsyncComponent(() => import('../views/training/TrainingPolicyView.vue')),
@@ -407,6 +429,16 @@ const router = createRouter({
         keywords: '重點課程,課程架構,基礎職能,進階實務,實習課程',
         keepAlive: true
       }
+    },
+    {
+      path: '/debug-auth',
+      name: 'debug-auth',
+      component: createAsyncComponent(() => import('../views/DebugAuthView.vue'))
+    },
+    {
+      path: '/fix-auth',
+      name: 'fix-auth',
+      component: createAsyncComponent(() => import('../views/FixAuthView.vue'))
     }
   ]
 })

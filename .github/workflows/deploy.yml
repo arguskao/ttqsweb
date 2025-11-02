@@ -45,7 +45,6 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: pharmacy-assistant-academy
           directory: ./dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Deploy API Worker
         if: github.event_name == 'push'

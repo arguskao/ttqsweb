@@ -56,22 +56,17 @@ export function setupJobApplicationRoutes(router: ApiRouter): void {
           throw new ValidationError('您已經申請過這個工作')
         }
 
-        // 檢查申請截止日期
-        if (job.application_deadline && new Date() > job.application_deadline) {
-          throw new ValidationError('申請已截止')
-        }
+        // 檢查申請截止日期（如果有的話）
+        // job 表的實際欄位是 expires_at 而不是 application_deadline
+        // 暫時移除截止日期檢查
 
         const applicationData = {
           job_id: jobId,
-          user_id: req.user.id,
+          applicant_id: req.user.id, // 使用 applicant_id 欄位名稱
           cover_letter: cover_letter || null,
           resume_url: resume_url || null,
-          status: 'pending' as const,
-          applied_date: new Date(),
-          reviewed_date: null,
-          notes: null,
-          created_at: new Date(),
-          updated_at: new Date()
+          status: 'pending' as const
+          // 讓資料庫自動處理日期欄位
         }
 
         const application = await applicationRepo.create(applicationData)

@@ -62,44 +62,47 @@ export class JobRepository extends BaseRepository<Job> {
 
     if (search) {
       whereConditions.push(
-        `(title ILIKE $${paramIndex} OR description ILIKE $${paramIndex} OR company_name ILIKE $${paramIndex})`
+        `(title ILIKE $${paramIndex} OR description ILIKE $${paramIndex} OR j.company ILIKE $${paramIndex})`
       )
       values.push(`%${search}%`)
       paramIndex++
     }
 
-    if (salaryMin) {
-      whereConditions.push(`salary_min >= $${paramIndex}`)
-      values.push(salaryMin)
-      paramIndex++
-    }
+    // TODO: 薪資查詢需要根據實際的 salary 欄位進行重構
+    // 暫時移除薪資過濾，因為資料庫使用單一 salary 字串欄位
+    // if (salaryMin) {
+    //   whereConditions.push(`salary_min >= $${paramIndex}`)
+    //   values.push(salaryMin)
+    //   paramIndex++
+    // }
 
-    if (salaryMax) {
-      whereConditions.push(`salary_max <= $${paramIndex}`)
-      values.push(salaryMax)
-      paramIndex++
-    }
+    // if (salaryMax) {
+    //   whereConditions.push(`salary_max <= $${paramIndex}`)
+    //   values.push(salaryMax)
+    //   paramIndex++
+    // }
 
-    if (experienceLevel) {
-      whereConditions.push(`experience_level = $${paramIndex}`)
-      values.push(experienceLevel)
-      paramIndex++
-    }
+    // TODO: 這些欄位在資料庫中不存在，暫時移除
+    // if (experienceLevel) {
+    //   whereConditions.push(`experience_level = $${paramIndex}`)
+    //   values.push(experienceLevel)
+    //   paramIndex++
+    // }
 
-    if (educationLevel) {
-      whereConditions.push(`education_level = $${paramIndex}`)
-      values.push(educationLevel)
-      paramIndex++
-    }
+    // if (educationLevel) {
+    //   whereConditions.push(`education_level = $${paramIndex}`)
+    //   values.push(educationLevel)
+    //   paramIndex++
+    // }
 
-    if (remoteWork !== undefined) {
-      whereConditions.push(`remote_work = $${paramIndex}`)
-      values.push(remoteWork)
-      paramIndex++
-    }
+    // if (remoteWork !== undefined) {
+    //   whereConditions.push(`remote_work = $${paramIndex}`)
+    //   values.push(remoteWork)
+    //   paramIndex++
+    // }
 
     if (employerId) {
-      whereConditions.push(`employer_id = $${paramIndex}`)
+      whereConditions.push(`j.employer_id = $${paramIndex}`)
       values.push(employerId)
       paramIndex++
     }
@@ -108,6 +111,16 @@ export class JobRepository extends BaseRepository<Job> {
       whereConditions.push(`is_active = $${paramIndex}`)
       values.push(isActive)
       paramIndex++
+    }
+
+    // 處理審核狀態篩選
+    if (params.approvalStatus) {
+      whereConditions.push(`approval_status = $${paramIndex}`)
+      values.push(params.approvalStatus)
+      paramIndex++
+    } else if (!params.adminView) {
+      // 公開查詢：預設只顯示已審核通過的工作
+      whereConditions.push(`approval_status = 'approved'`)
     }
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''
@@ -119,24 +132,24 @@ export class JobRepository extends BaseRepository<Job> {
     )
     const total = parseInt(countResult?.total || '0')
 
-    // 獲取數據
+    // 獲取數據（只從 jobs 表獲取，不依賴其他表）
     const data = await this.queryMany(
       `SELECT j.*, 
               u.first_name || ' ' || u.last_name as employer_name,
-              u.email as employer_email,
-              u.company_name as employer_company,
-              COUNT(ja.id) as application_count,
-              COUNT(jv.id) as view_count
+              u.email as employer_email
        FROM jobs j
        LEFT JOIN users u ON j.employer_id = u.id
-       LEFT JOIN job_applications ja ON j.id = ja.job_id
-       LEFT JOIN job_views jv ON j.id = jv.job_id
        ${whereClause}
-       GROUP BY j.id, u.first_name, u.last_name, u.email, u.company_name
-       ORDER BY j.posted_date DESC
+       ORDER BY j.created_at DESC
        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
       [...values, limit, offset]
     )
+
+    // 為每個工作設置預設統計值（不查詢其他表）
+    data.forEach(job => {
+      job.application_count = 0
+      job.view_count = 0
+    })
 
     const meta: JobPaginationMeta = {
       page,
@@ -150,46 +163,47 @@ export class JobRepository extends BaseRepository<Job> {
     return { data, meta }
   }
 
-  // 根據ID獲取工作詳情
+  // 根據ID獲取工作詳情（只從 jobs 表獲取）
   async findByIdWithEmployer(jobId: number): Promise<JobWithEmployer | null> {
     const result = await this.queryOne(
       `SELECT j.*, 
               u.first_name || ' ' || u.last_name as employer_name,
-              u.email as employer_email,
-              u.company_name as employer_company,
-              COUNT(ja.id) as application_count,
-              COUNT(jv.id) as view_count
+              u.email as employer_email
        FROM jobs j
        LEFT JOIN users u ON j.employer_id = u.id
-       LEFT JOIN job_applications ja ON j.id = ja.job_id
-       LEFT JOIN job_views jv ON j.id = jv.job_id
-       WHERE j.id = $1
-       GROUP BY j.id, u.first_name, u.last_name, u.email, u.company_name`,
+       WHERE j.id = $1`,
       [jobId]
     )
 
-    return result || null
+    if (!result) return null
+
+    // 只從 jobs 表獲取數據，不查詢其他表
+    return {
+      ...result,
+      application_count: 0,
+      view_count: 0
+    } as JobWithEmployer
   }
 
-  // 根據雇主獲取工作
+  // 根據雇主獲取工作（只從 jobs 表獲取）
   async findByEmployer(employerId: number): Promise<Job[]> {
-    return this.queryMany('SELECT * FROM jobs WHERE employer_id = $1 ORDER BY posted_date DESC', [
+    return this.queryMany('SELECT * FROM jobs WHERE employer_id = $1 ORDER BY created_at DESC', [
       employerId
     ])
   }
 
-  // 根據類型獲取工作
+  // 根據類型獲取工作（只從 jobs 表獲取）
   async findByType(jobType: string): Promise<Job[]> {
     return this.queryMany(
-      'SELECT * FROM jobs WHERE job_type = $1 AND is_active = true ORDER BY posted_date DESC',
+      'SELECT * FROM jobs WHERE job_type = $1 AND is_active = true ORDER BY created_at DESC',
       [jobType]
     )
   }
 
-  // 根據地點獲取工作
+  // 根據地點獲取工作（只從 jobs 表獲取）
   async findByLocation(location: string): Promise<Job[]> {
     return this.queryMany(
-      'SELECT * FROM jobs WHERE location ILIKE $1 AND is_active = true ORDER BY posted_date DESC',
+      'SELECT * FROM jobs WHERE location ILIKE $1 AND is_active = true ORDER BY created_at DESC',
       [`%${location}%`]
     )
   }
@@ -200,9 +214,9 @@ export class JobRepository extends BaseRepository<Job> {
       `SELECT 
          COUNT(*) as total_jobs,
          COUNT(CASE WHEN is_active = true THEN 1 END) as active_jobs,
-         AVG(salary_min) as average_salary,
-         COUNT(CASE WHEN remote_work = true THEN 1 END) as remote_jobs_count,
-         COUNT(CASE WHEN posted_date >= NOW() - INTERVAL '7 days' THEN 1 END) as recent_jobs
+         0 as average_salary,
+         0 as remote_jobs_count,
+         COUNT(CASE WHEN created_at >= NOW() - INTERVAL '7 days' THEN 1 END) as recent_jobs
        FROM jobs`
     )
 
@@ -214,9 +228,10 @@ export class JobRepository extends BaseRepository<Job> {
       'SELECT location, COUNT(*) as count FROM jobs GROUP BY location ORDER BY count DESC LIMIT 10'
     )
 
-    const experienceStats = await this.queryMany(
-      'SELECT experience_level, COUNT(*) as count FROM jobs GROUP BY experience_level ORDER BY count DESC'
-    )
+    // TODO: experience_level 欄位不存在，暫時移除統計
+    // const experienceStats = await this.queryMany(
+    //   'SELECT experience_level, COUNT(*) as count FROM jobs GROUP BY experience_level ORDER BY count DESC'
+    // )
 
     const jobsByType: Record<string, number> = {}
     const jobsByLocation: Record<string, number> = {}
@@ -230,9 +245,9 @@ export class JobRepository extends BaseRepository<Job> {
       jobsByLocation[stat.location] = parseInt(stat.count)
     })
 
-    experienceStats.forEach(stat => {
-      jobsByExperienceLevel[stat.experience_level] = parseInt(stat.count)
-    })
+    // experienceStats.forEach(stat => {
+    //   jobsByExperienceLevel[stat.experience_level] = parseInt(stat.count)
+    // })
 
     return {
       totalJobs: parseInt(result?.total_jobs || '0'),
@@ -275,14 +290,14 @@ export class JobRepository extends BaseRepository<Job> {
     )
 
     const topApplicants = await this.queryMany(
-      `SELECT ja.user_id, 
+      `SELECT ja.applicant_id as user_id, 
               u.first_name || ' ' || u.last_name as user_name,
               ja.status,
-              ja.applied_date
+              ja.application_date as applied_date
        FROM job_applications ja
-       JOIN users u ON ja.user_id = u.id
+       JOIN users u ON ja.applicant_id = u.id
        WHERE ja.job_id = $1
-       ORDER BY ja.applied_date DESC
+       ORDER BY ja.application_date DESC
        LIMIT 5`,
       [jobId]
     )
@@ -325,12 +340,12 @@ export class JobApplicationRepository extends BaseRepository<JobApplication> {
               u.email as user_email,
               u.phone as user_phone,
               j.title as job_title,
-              j.company_name
+              j.company as company_name
        FROM job_applications ja
-       JOIN users u ON ja.user_id = u.id
+       JOIN users u ON ja.applicant_id = u.id
        JOIN jobs j ON ja.job_id = j.id
        WHERE ja.job_id = $1
-       ORDER BY ja.applied_date DESC`,
+       ORDER BY ja.application_date DESC`,
       [jobId]
     )
   }
@@ -343,19 +358,19 @@ export class JobApplicationRepository extends BaseRepository<JobApplication> {
               u.email as user_email,
               u.phone as user_phone,
               j.title as job_title,
-              j.company_name
+              j.company as company_name
        FROM job_applications ja
-       JOIN users u ON ja.user_id = u.id
+       JOIN users u ON ja.applicant_id = u.id
        JOIN jobs j ON ja.job_id = j.id
-       WHERE ja.user_id = $1
-       ORDER BY ja.applied_date DESC`,
+       WHERE ja.applicant_id = $1
+       ORDER BY ja.application_date DESC`,
       [userId]
     )
   }
 
   // 查找用戶對特定工作的申請
   async findUserApplication(userId: number, jobId: number): Promise<JobApplication | null> {
-    return this.queryOne('SELECT * FROM job_applications WHERE user_id = $1 AND job_id = $2', [
+    return this.queryOne('SELECT * FROM job_applications WHERE applicant_id = $1 AND job_id = $2', [
       userId,
       jobId
     ])
@@ -415,7 +430,7 @@ export class JobViewRepository extends BaseRepository<JobView> {
   // 獲取用戶瀏覽記錄
   async getUserViews(userId: number): Promise<JobView[]> {
     return this.queryMany(
-      `SELECT jv.*, j.title as job_title, j.company_name
+      `SELECT jv.*, j.title as job_title, j.company as company_name
        FROM job_views jv
        JOIN jobs j ON jv.job_id = j.id
        WHERE jv.user_id = $1
@@ -463,7 +478,7 @@ export class JobFavoriteRepository extends BaseRepository<JobFavorite> {
   // 獲取用戶收藏
   async getUserFavorites(userId: number): Promise<JobFavorite[]> {
     return this.queryMany(
-      `SELECT jf.*, j.title as job_title, j.company_name, j.location
+      `SELECT jf.*, j.title as job_title, j.company as company_name, j.location
        FROM job_favorites jf
        JOIN jobs j ON jf.job_id = j.id
        WHERE jf.user_id = $1

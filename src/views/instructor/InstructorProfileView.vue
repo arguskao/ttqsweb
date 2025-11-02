@@ -195,20 +195,58 @@
                   <p class="card-header-title">課程管理</p>
                 </header>
                 <div class="card-content">
-                  <p class="mb-3">申請開設新課程或管理您的授課資料</p>
-                  <div class="buttons">
+                  <div class="buttons mb-4">
                     <router-link to="/instructor/course-application" class="button is-primary">
                       <span class="icon">
                         <i class="fas fa-plus"></i>
                       </span>
                       <span>申請開課</span>
                     </router-link>
-                    <router-link to="/courses" class="button is-info">
+                    <router-link to="/instructor/my-courses" class="button is-info">
+                      <span class="icon">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                      </span>
+                      <span>我的授課</span>
+                    </router-link>
+                    <router-link to="/courses" class="button is-light">
                       <span class="icon">
                         <i class="fas fa-graduation-cap"></i>
                       </span>
                       <span>瀏覽所有課程</span>
                     </router-link>
+                  </div>
+
+                  <!-- My Courses List -->
+                  <div v-if="myCourses.length > 0">
+                    <h4 class="subtitle is-5 mb-3">我的課程</h4>
+                    <div class="columns is-multiline">
+                      <div v-for="course in myCourses" :key="course.id" class="column is-half">
+                        <div class="card">
+                          <div class="card-content">
+                            <h5 class="title is-6">{{ course.title }}</h5>
+                            <p class="subtitle is-7 has-text-grey">{{ getCourseTypeText(course.course_type) }}</p>
+                            <p class="is-size-7 mb-3">{{ truncateText(course.description, 80) }}</p>
+                            
+                            <div class="tags mb-3">
+                              <span class="tag is-info is-small">{{ getCourseTypeText(course.course_type) }}</span>
+                              <span v-if="course.duration_hours" class="tag is-small">{{ course.duration_hours }} 小時</span>
+                            </div>
+
+                            <div class="buttons are-small">
+                              <router-link :to="`/courses/${course.id}`" class="button is-primary is-small">
+                                <span class="icon">
+                                  <i class="fas fa-eye"></i>
+                                </span>
+                                <span>查看詳情</span>
+                              </router-link>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else-if="myCoursesLoaded && myCourses.length === 0" class="notification is-light">
+                    <p class="has-text-centered">您還沒有開設任何課程</p>
                   </div>
                 </div>
               </div>
@@ -336,6 +374,8 @@ import { api } from '@/services/api'
 const instructor = ref<any>(null)
 const stats = ref<any>(null)
 const ratings = ref<any[]>([])
+const myCourses = ref<any[]>([])
+const myCoursesLoaded = ref(false)
 const isLoading = ref(true)
 const errorMessage = ref('')
 const isEditing = ref(false)
@@ -439,8 +479,8 @@ const loadProfile = async () => {
       statusClass.value = 'is-info'
     }
 
-    // Load stats and ratings
-    await Promise.all([loadStats(), loadRatings()])
+    // Load stats, ratings, and courses
+    await Promise.all([loadMyCourses(), loadStats(), loadRatings()])
   } catch (error: any) {
     if (error.response?.status === 404) {
       // User is not an instructor yet
@@ -457,7 +497,7 @@ const loadProfile = async () => {
 const loadStats = async () => {
   // TODO: 實作統計 API 調用
   stats.value = {
-    total_courses: 0,
+    total_courses: myCourses.value.length,
     total_students: 0,
     completion_rate: 0
   }
@@ -467,6 +507,57 @@ const loadStats = async () => {
 const loadRatings = async () => {
   // TODO: 實作評價 API 調用
   ratings.value = []
+}
+
+// Load instructor courses
+const loadMyCourses = async () => {
+  if (!instructor.value) return
+
+  try {
+    console.log('[loadMyCourses] Loading courses for instructor:', instructor.value.id)
+    
+    // 使用講師 ID 查詢課程
+    const instructorId = instructor.value.id || instructor.value.instructor_id || instructor.value.application_id
+    
+    if (!instructorId) {
+      console.log('[loadMyCourses] No instructor ID found')
+      myCoursesLoaded.value = true
+      return
+    }
+
+    const response = await api.get(`/instructors/${instructorId}/courses`, {
+      params: { limit: 6 } // 只顯示前 6 個課程
+    })
+
+    console.log('[loadMyCourses] API response:', response)
+
+    if (response.data?.success && response.data?.data) {
+      myCourses.value = response.data.data
+      console.log('[loadMyCourses] Loaded courses:', myCourses.value.length)
+    } else {
+      myCourses.value = []
+    }
+  } catch (error: any) {
+    console.error('[loadMyCourses] Failed to load courses:', error)
+    myCourses.value = []
+  } finally {
+    myCoursesLoaded.value = true
+  }
+}
+
+// Helper functions
+const getCourseTypeText = (courseType: string): string => {
+  const typeMap: Record<string, string> = {
+    'basic': '基礎課程',
+    'advanced': '進階課程', 
+    'internship': '實習課程'
+  }
+  return typeMap[courseType] || courseType || '未分類'
+}
+
+const truncateText = (text: string, maxLength: number): string => {
+  if (!text || text.length <= maxLength) return text
+  return `${text.substring(0, maxLength)}...`
 }
 
 

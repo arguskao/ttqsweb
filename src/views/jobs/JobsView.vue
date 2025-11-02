@@ -126,8 +126,8 @@
 
         <!-- Empty State -->
         <div v-else-if="jobs.length === 0" class="box has-text-centered py-6">
-          <span class="icon is-large has-text-grey-light">
-            <i class="fas fa-briefcase fa-3x"></i>
+          <span class="icon is-large has-text-grey-light" style="font-size: 3rem">
+            <span>💼</span>
           </span>
           <p class="title is-5 mt-4">目前沒有符合條件的職缺</p>
           <p class="subtitle is-6">請嘗試調整搜尋條件</p>
@@ -149,7 +149,7 @@
             <div v-for="job in jobs" :key="job.id" class="column is-4">
               <JobCard
                 :job="job"
-                :show-apply="isJobSeeker"
+                :show-apply="true"
                 @view-details="viewJobDetails"
                 @apply="applyToJob"
                 @toggle-favorite="toggleFavorite"
@@ -331,10 +331,12 @@ const viewJobDetails = (jobId: number) => {
 }
 
 const applyToJob = (jobId: number) => {
+  // 允許所有用戶類型都可以申請工作（點擊時會檢查是否登入）
   if (!authStore.isAuthenticated) {
     router.push('/login')
     return
   }
+  // 直接跳轉到工作詳情頁面，那裡有申請表單
   router.push(`/jobs/${jobId}`)
 }
 

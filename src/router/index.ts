@@ -361,6 +361,18 @@ const router = createRouter({
       }
     },
     {
+      path: '/admin/job-approval',
+      name: 'admin-job-approval',
+      component: createAsyncComponent(() => import('../views/admin/JobApprovalView.vue')),
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true,
+        title: '工作審核管理 - 藥助Next學院',
+        description: '審核雇主發布的工作需求',
+        keepAlive: true
+      }
+    },
+    {
       path: '/training/policy',
       name: 'training-policy',
       component: createAsyncComponent(() => import('../views/training/TrainingPolicyView.vue')),
@@ -564,10 +576,10 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // Check if route requires employer role or higher
+  // Check if route requires employer or instructor role
   if (
     to.meta.requiresEmployer &&
-    !['admin', 'instructor', 'employer'].includes(user?.userType || '')
+    !['employer', 'instructor'].includes(user?.userType || '')
   ) {
     next({ name: 'home' })
     return

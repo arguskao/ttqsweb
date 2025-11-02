@@ -21,7 +21,7 @@
             <div class="level-item">
               <button class="button is-primary" @click="showCreateModal = true">
                 <span class="icon">
-                  <i class="fas fa-plus"></i>
+                  <span>➕</span>
                 </span>
                 <span>發布新職缺</span>
               </button>
@@ -43,8 +43,8 @@
 
         <!-- Empty State -->
         <div v-else-if="jobs.length === 0" class="box has-text-centered py-6">
-          <span class="icon is-large has-text-grey-light">
-            <i class="fas fa-briefcase fa-3x"></i>
+          <span class="icon is-large has-text-grey-light" style="font-size: 3rem">
+            <span>💼</span>
           </span>
           <p class="title is-5 mt-4">您還沒有發布任何職缺</p>
           <p class="subtitle is-6">點擊上方按鈕開始發布職缺</p>

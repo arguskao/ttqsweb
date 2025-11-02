@@ -26,8 +26,14 @@
         <router-link to="/instructors" class="navbar-item">講師一覽</router-link>
         <router-link to="/instructor/apply" class="navbar-item">講師申請</router-link>
         <router-link to="/documents" class="navbar-item">文件下載</router-link>
+        <router-link
+          v-if="currentUser?.userType === 'admin'"
+          to="/admin/training-plans"
+          class="navbar-item"
+        >
+          訓練計劃
+        </router-link>
         <router-link to="/community/forum" class="navbar-item">討論區</router-link>
-        <router-link to="/community/groups" class="navbar-item">群組</router-link>
         <router-link to="/community/experiences" class="navbar-item">經驗分享</router-link>
       </div>
 
@@ -114,7 +120,7 @@
             </div>
 
             <router-link
-              v-if="currentUser?.userType === 'employer'"
+              v-if="currentUser?.userType === 'employer' || currentUser?.userType === 'instructor'"
               to="/employer/jobs"
               class="navbar-item"
               @click="closeMenus"
@@ -167,8 +173,30 @@
                   </span>
                   <span>經驗分享管理</span>
                 </router-link>
+                <router-link
+                  to="/admin/job-approval"
+                  class="navbar-item"
+                  @click="closeMenus"
+                >
+                  <span class="icon">
+                    <span>💼</span>
+                  </span>
+                  <span>工作審核管理</span>
+                </router-link>
               </div>
             </div>
+
+            <router-link
+              v-if="currentUser?.userType === 'admin'"
+              to="/admin/training-plans"
+              class="navbar-item"
+              @click="closeMenus"
+            >
+              <span class="icon">
+                <span>📋</span>
+              </span>
+              <span>訓練計劃</span>
+            </router-link>
 
             <router-link
               v-if="currentUser?.userType === 'admin'"

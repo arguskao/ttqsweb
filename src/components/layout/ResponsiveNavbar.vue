@@ -68,7 +68,7 @@
               <span>學習進度</span>
             </RouterLink>
 
-            <RouterLink v-if="isEmployer" to="/employer/jobs" class="navbar-item">
+            <RouterLink v-if="isEmployer || isInstructor" to="/employer/jobs" class="navbar-item">
               <span class="icon"> 💼 </span>
               <span>我的職缺</span>
             </RouterLink>
@@ -96,6 +96,11 @@
             <RouterLink v-if="isAdmin" to="/admin/course-applications" class="navbar-item">
               <span class="icon"> 📚 </span>
               <span>課程申請審核</span>
+            </RouterLink>
+
+            <RouterLink v-if="isAdmin" to="/admin/training-plans" class="navbar-item">
+              <span class="icon"> 📋 </span>
+              <span>訓練計劃</span>
             </RouterLink>
 
             <RouterLink v-if="isAdmin" to="/admin/analytics" class="navbar-item">

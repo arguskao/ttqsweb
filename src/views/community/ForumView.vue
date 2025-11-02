@@ -11,9 +11,17 @@
           <div class="level-item">
             <button class="button is-primary" @click="showCreateModal = true">
               <span class="icon">
-                <i class="fas fa-plus"></i>
+                ➕
               </span>
               <span>發起新討論</span>
+            </button>
+          </div>
+          <div class="level-item">
+            <button class="button is-info" @click="showCreateGroupModal = true">
+              <span class="icon">
+                👥
+              </span>
+              <span>新增群組</span>
             </button>
           </div>
         </div>
@@ -21,8 +29,28 @@
 
       <p class="subtitle">與其他學員分享想法、提問和交流經驗</p>
 
-      <!-- Filters -->
-      <div class="box mb-4">
+      <!-- Tabs -->
+      <div class="tabs">
+        <ul>
+          <li :class="{ 'is-active': activeTab === 'discussions' }">
+            <a @click="activeTab = 'discussions'">
+              <span class="icon is-small">💬</span>
+              <span>討論主題</span>
+            </a>
+          </li>
+          <li :class="{ 'is-active': activeTab === 'groups' }">
+            <a @click="activeTab = 'groups'">
+              <span class="icon is-small">👥</span>
+              <span>群組管理</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Discussions Tab -->
+      <div v-show="activeTab === 'discussions'">
+        <!-- Filters -->
+        <div class="box mb-4">
         <div class="columns">
           <div class="column is-4">
             <div class="field">
@@ -99,8 +127,7 @@
                       {{ getCategoryLabel(topic.category) }}
                     </span>
                     <span v-if="topic.isPinned" class="tag is-warning ml-2">
-                      <i class="fas fa-thumbtack"></i>
-                      置頂
+                      📌 置頂
                     </span>
                   </p>
                   <p class="has-text-grey-light is-size-7">
@@ -116,7 +143,7 @@
                   <p class="title is-5">
                     <span class="icon-text">
                       <span class="icon">
-                        <i class="fas fa-comment"></i>
+                        💬
                       </span>
                       <span>{{ topic.replyCount }}</span>
                     </span>
@@ -128,7 +155,7 @@
                   <p class="title is-5">
                     <span class="icon-text">
                       <span class="icon">
-                        <i class="fas fa-eye"></i>
+                        👁️
                       </span>
                       <span>{{ topic.viewCount }}</span>
                     </span>
@@ -145,7 +172,7 @@
                     title="刪除討論主題"
                   >
                     <span class="icon">
-                      <i class="fas fa-trash"></i>
+                      🗑️
                     </span>
                   </button>
                 </div>
@@ -187,6 +214,63 @@
           </li>
         </ul>
       </nav>
+      </div>
+
+      <!-- Groups Tab -->
+      <div v-show="activeTab === 'groups'">
+        <div class="box">
+          <h2 class="title is-4">群組管理</h2>
+          <p class="subtitle">建立和管理討論群組</p>
+          
+          <h3 class="title is-5">我的群組</h3>
+
+          <div v-if="myGroups.length === 0" class="has-text-centered py-6">
+            <p class="has-text-grey">尚未加入任何群組</p>
+            <p class="has-text-grey-light">點擊右上角的「新增群組」按鈕來建立第一個群組</p>
+          </div>
+
+          <div v-else class="columns is-multiline">
+            <div v-for="group in myGroups" :key="group.id" class="column is-6">
+              <div class="card">
+                <div class="card-content">
+                  <div class="level">
+                    <div class="level-left">
+                      <div class="level-item">
+                        <div>
+                          <p class="title is-6">{{ group.name }}</p>
+                          <p class="subtitle is-7">{{ group.description || '無描述' }}</p>
+                          <p class="has-text-grey is-size-7">
+                            成員：{{ group.member_count || 0 }} 人
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="level-right">
+                      <div class="level-item">
+                        <div class="buttons">
+                          <router-link 
+                            :to="`/community/groups/${group.id}`" 
+                            class="button is-small is-info"
+                          >
+                            查看
+                          </router-link>
+                          <button 
+                            v-if="isAdmin" 
+                            class="button is-small is-danger"
+                            @click="deleteGroup(group)"
+                          >
+                            刪除
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Create Topic Modal -->
@@ -258,6 +342,48 @@
         </footer>
       </div>
     </div>
+
+    <!-- Create Group Modal -->
+    <div class="modal" :class="{ 'is-active': showCreateGroupModal }">
+      <div class="modal-background" @click="showCreateGroupModal = false"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title">建立新群組</p>
+          <button class="delete" @click="showCreateGroupModal = false"></button>
+        </header>
+        <section class="modal-card-body">
+          <div class="field">
+            <label class="label">群組名稱</label>
+            <div class="control">
+              <input
+                v-model="newGroup.name"
+                class="input"
+                type="text"
+                placeholder="輸入群組名稱"
+              />
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label">群組描述</label>
+            <div class="control">
+              <textarea
+                v-model="newGroup.description"
+                class="textarea"
+                placeholder="輸入群組描述"
+                rows="4"
+              ></textarea>
+            </div>
+          </div>
+        </section>
+        <footer class="modal-card-foot">
+          <button class="button is-primary" @click="createGroup" :disabled="isSubmitting">
+            {{ isSubmitting ? '建立中...' : '建立群組' }}
+          </button>
+          <button class="button" @click="showCreateGroupModal = false">取消</button>
+        </footer>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -283,6 +409,8 @@ interface Topic {
 interface Group {
   id: number
   name: string
+  description?: string
+  member_count?: number
 }
 
 const topics = ref<Topic[]>([])
@@ -293,6 +421,9 @@ const deletingTopic = ref<number | null>(null)
 const currentPage = ref(1)
 const totalPages = ref(1)
 const showCreateModal = ref(false)
+const showGroupsModal = ref(false)
+const showCreateGroupModal = ref(false)
+const activeTab = ref('discussions')
 
 // Check if current user is admin
 const authStore = useAuthStore()
@@ -309,6 +440,11 @@ const newTopic = ref({
   title: '',
   category: 'question',
   content: ''
+})
+
+const newGroup = ref({
+  name: '',
+  description: ''
 })
 
 const loadMyGroups = async () => {
@@ -383,6 +519,29 @@ const createTopic = async () => {
   }
 }
 
+const createGroup = async () => {
+  if (!newGroup.value.name) {
+    alert('請填寫群組名稱')
+    return
+  }
+
+  isSubmitting.value = true
+  try {
+    const response = await apiService.post('/groups', newGroup.value)
+    if (response.success) {
+      showCreateGroupModal.value = false
+      newGroup.value = { name: '', description: '' }
+      alert('群組建立成功！')
+      loadMyGroups()
+    }
+  } catch (error) {
+    console.error('建立群組失敗:', error)
+    alert('建立群組失敗，請稍後再試')
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
 const changePage = (page: number) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
@@ -448,6 +607,33 @@ const deleteTopic = async (topic: Topic) => {
     alert(error.response?.data?.error?.message || '刪除討論主題失敗')
   } finally {
     deletingTopic.value = null
+  }
+}
+
+// Delete group (admin only)
+const deleteGroup = async (group: Group) => {
+  const confirmMessage = `確定要刪除群組「${group.name}」嗎？此操作無法復原。`
+  
+  if (!confirm(confirmMessage)) {
+    return
+  }
+
+  try {
+    const response = await apiService.delete(`/groups/${group.id}`)
+    
+    if (response.success) {
+      // Remove from local state
+      const index = myGroups.value.findIndex(g => g.id === group.id)
+      if (index > -1) {
+        myGroups.value.splice(index, 1)
+      }
+      alert('群組已刪除')
+    } else {
+      alert(response.error?.message || '刪除群組失敗')
+    }
+  } catch (error: any) {
+    console.error('[deleteGroup] 刪除群組失敗:', error)
+    alert(error.response?.data?.error?.message || '刪除群組失敗')
   }
 }
 

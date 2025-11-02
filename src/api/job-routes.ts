@@ -53,7 +53,10 @@ class JobRepository extends BaseRepository<Job> {
     const { jobType, location, salaryMin, salaryMax, search, page = 1, limit = 10 } = filters
     const offset = (page - 1) * limit
 
-    const whereConditions: string[] = ['is_active = true']
+    const whereConditions: string[] = [
+      'is_active = true',
+      "COALESCE(approval_status, 'approved') = 'approved'" // 只顯示已審核通過的工作
+    ]
     const values: any[] = []
     let paramIndex = 1
 

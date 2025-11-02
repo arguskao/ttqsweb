@@ -13,3 +13,7 @@ bucket_name = "ttqs"
 ENVIRONMENT = "production"
 DATABASE_URL = "postgresql://neondb_owner:npg_uBHAc2hinfI4@ep-jolly-frost-a1muxrt0-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 JWT_SECRET = "3939889"
+
+# 🆕 新增：指定生產分支
+[env.production]
+name = "pharmacy-assistant-academy"

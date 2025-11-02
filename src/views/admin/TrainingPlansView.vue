@@ -263,7 +263,25 @@ const savePlan = async () => {
 
 const editPlan = (plan: any) => {
   editingPlanId.value = plan.id
-  formData.value = { ...plan }
+  // 轉換日期格式：ISO 8601 -> YYYY-MM-DD (input[type="date"] 需要的格式)
+  const formatDateForInput = (dateStr: string | null): string => {
+    if (!dateStr) return ''
+    try {
+      const date = new Date(dateStr)
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    } catch (error) {
+      return ''
+    }
+  }
+  
+  formData.value = {
+    ...plan,
+    start_date: formatDateForInput(plan.start_date),
+    end_date: formatDateForInput(plan.end_date)
+  }
   showEditModal.value = true
 }
 

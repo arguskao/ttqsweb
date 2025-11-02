@@ -153,8 +153,9 @@ export function setupJobManagementRoutes(router: ApiRouter): void {
         throw new ValidationError('用戶未認證')
       }
 
-      if (req.user.userType !== 'employer') {
-        throw new UnauthorizedError('只有雇主可以創建工作')
+      // 允許雇主和講師創建工作
+      if (req.user.userType !== 'employer' && req.user.userType !== 'instructor') {
+        throw new UnauthorizedError('只有雇主或講師可以創建工作')
       }
 
       const {
@@ -175,31 +176,35 @@ export function setupJobManagementRoutes(router: ApiRouter): void {
         application_deadline
       }: CreateJobRequest = req.body as CreateJobRequest
 
-      if (!title || !description || !company_name || !location || !job_type) {
-        throw new ValidationError('標題、描述、公司名稱、地點和工作類型都是必填項')
+      if (!title || !location || !job_type) {
+        throw new ValidationError('標題、地點和工作類型都是必填項')
       }
 
-      const jobData = {
+      // 轉換 requirements 陣列為 TEXT（如果資料庫欄位是 TEXT）
+      const requirementsText = Array.isArray(requirements)
+        ? requirements.join(', ')
+        : requirements || ''
+
+      // 組合薪資字串
+      let salaryStr: string | null = null
+      if (salary_min && salary_max) {
+        salaryStr = `${salary_min}-${salary_max}`
+      } else if (salary_min) {
+        salaryStr = `${salary_min}+`
+      }
+
+      const jobData: any = {
         title,
-        description,
-        company_name,
+        company: company_name || '未提供公司名稱', // 使用 company 欄位
         location,
         job_type,
-        salary_min: salary_min || null,
-        salary_max: salary_max || null,
-        salary_currency: salary_currency || 'TWD',
-        requirements: requirements ?? [],
-        benefits: benefits ?? [],
-        skills_required: skills_required ?? [],
-        experience_level: experience_level || 'entry',
-        education_level: education_level || 'any',
-        remote_work: remote_work || false,
-        posted_date: new Date(),
-        application_deadline: application_deadline || null,
+        salary: salaryStr, // 將薪資範圍組合成字串存入 salary
+        description,
+        requirements: requirementsText,
         is_active: true,
         employer_id: req.user.id,
-        created_at: new Date(),
-        updated_at: new Date()
+        approval_status: 'pending' // 新工作預設為待審核狀態（如果欄位存在）
+        // created_at 和 updated_at 會由資料庫自動設置
       }
 
       const job = await jobRepo.create(jobData)
@@ -363,6 +368,86 @@ export function setupJobManagementRoutes(router: ApiRouter): void {
                 : error instanceof UnauthorizedError
                   ? 403
                   : 500
+        }
+      }
+    }
+  })
+
+  // 獲取待審核的工作（管理員）
+  router.get('/api/v1/jobs/pending-approval', requireRole(['admin']), async (req: ApiRequest): Promise<ApiResponse> => {
+    try {
+      const { page = '1', limit = '10' } = req.query ?? {}
+      const searchParams: JobSearchParams = {
+        approvalStatus: 'pending',
+        adminView: true,
+        page: parseInt(page as string, 10),
+        limit: parseInt(limit as string, 10)
+      }
+
+      const result = await jobRepo.searchJobs(searchParams)
+
+      return {
+        success: true,
+        data: result.data,
+        meta: result.meta
+      }
+    } catch (error) {
+      console.error('Get pending jobs error:', error)
+      return {
+        success: false,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: error instanceof Error ? error.message : '獲取待審核工作失敗',
+          statusCode: 500
+        }
+      }
+    }
+  })
+
+  // 審核工作（管理員）
+  router.put('/api/v1/jobs/:id/approve', requireRole(['admin']), async (req: ApiRequest): Promise<ApiResponse> => {
+    try {
+      const jobId = validateIntParam(req.params?.id, 'id')
+      const { status, review_notes }: { status: 'approved' | 'rejected'; review_notes?: string } = req.body as any
+
+      if (!status || !['approved', 'rejected'].includes(status)) {
+        throw new ValidationError('狀態必須是 approved 或 rejected')
+      }
+
+      const job = await jobRepo.findById(jobId)
+      if (!job) {
+        throw new NotFoundError('工作不存在')
+      }
+
+      // 更新審核狀態
+      const updateData: any = {
+        approval_status: status,
+        reviewed_at: new Date(),
+        reviewed_by: req.user!.id,
+        review_notes: review_notes || null,
+        updated_at: new Date()
+      }
+
+      const updatedJob = await jobRepo.update(jobId, updateData)
+
+      return {
+        success: true,
+        data: { ...updatedJob, message: status === 'approved' ? '工作已審核通過' : '工作已拒絕' }
+      }
+    } catch (error) {
+      console.error('Approve job error:', error)
+      return {
+        success: false,
+        error: {
+          code:
+            error instanceof ValidationError
+              ? 'VALIDATION_ERROR'
+              : error instanceof NotFoundError
+                ? 'NOT_FOUND'
+                : 'INTERNAL_ERROR',
+          message: error instanceof Error ? error.message : '審核工作失敗',
+          statusCode:
+            error instanceof ValidationError ? 400 : error instanceof NotFoundError ? 404 : 500
         }
       }
     }

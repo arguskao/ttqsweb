@@ -23,6 +23,10 @@ export interface Job {
   posted_date: Date
   application_deadline: Date | null
   is_active: boolean
+  approval_status?: 'pending' | 'approved' | 'rejected'
+  reviewed_at?: Date | null
+  reviewed_by?: number | null
+  review_notes?: string | null
   employer_id: number
   created_at: Date
   updated_at: Date
@@ -79,6 +83,8 @@ export interface JobSearchParams {
   remoteWork?: boolean
   employerId?: number
   isActive?: boolean
+  approvalStatus?: 'pending' | 'approved' | 'rejected'
+  adminView?: boolean
   page?: number
   limit?: number
 }
@@ -108,15 +114,17 @@ export interface JobWithEmployer extends Job {
 export interface JobApplication {
   id: number
   job_id: number
-  user_id: number
+  user_id?: number // 保留向後兼容
+  applicant_id?: number // 實際欄位名稱
   cover_letter: string | null
   resume_url: string | null
   status: 'pending' | 'reviewed' | 'interviewed' | 'accepted' | 'rejected'
-  applied_date: Date
-  reviewed_date: Date | null
-  notes: string | null
-  created_at: Date
-  updated_at: Date
+  applied_date?: Date // 向後兼容
+  application_date?: Date // 實際欄位名稱
+  reviewed_date?: Date | null // 可能不存在
+  notes?: string | null // 可能不存在
+  created_at?: Date // 可能不存在
+  updated_at?: Date // 可能不存在
 }
 
 // 工作申請請求

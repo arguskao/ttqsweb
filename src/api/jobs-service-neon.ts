@@ -39,7 +39,8 @@ export class JobServiceNeon {
       // 構建 WHERE 條件
       const whereConditions = [
         'j.is_active = true',
-        '(j.expires_at IS NULL OR j.expires_at > CURRENT_TIMESTAMP)'
+        '(j.expires_at IS NULL OR j.expires_at > CURRENT_TIMESTAMP)',
+        "COALESCE(j.approval_status, 'approved') = 'approved'" // 只顯示已審核通過的工作
       ]
       const params: any[] = []
       let paramIndex = 1
@@ -175,7 +176,7 @@ export class JobServiceNeon {
           u.email as employer_email
         FROM jobs j
         LEFT JOIN users u ON j.employer_id = u.id
-        WHERE j.employer_id = $1 AND j.is_active = true
+        WHERE j.employer_id = $1
         ORDER BY j.created_at DESC
       `
       const jobs = await neonDb.query(query, [employerId])

@@ -5,7 +5,7 @@
       <div class="mb-4">
         <router-link to="/community/forum" class="button is-light">
           <span class="icon">
-            <i class="fas fa-arrow-left"></i>
+            ←
           </span>
           <span>返回討論區</span>
         </router-link>
@@ -30,12 +30,10 @@
                       {{ getCategoryLabel(topic.category) }}
                     </span>
                     <span v-if="topic.isPinned" class="tag is-warning ml-2">
-                      <i class="fas fa-thumbtack"></i>
-                      置頂
+                      📌 置頂
                     </span>
                     <span v-if="topic.isLocked" class="tag is-danger ml-2">
-                      <i class="fas fa-lock"></i>
-                      已鎖定
+                      🔒 已鎖定
                     </span>
                   </p>
                 </div>
@@ -47,7 +45,7 @@
                   <p class="title is-5">
                     <span class="icon-text">
                       <span class="icon">
-                        <i class="fas fa-eye"></i>
+                        👁️
                       </span>
                       <span>{{ topic.viewCount }}</span>
                     </span>
@@ -59,7 +57,7 @@
                   <p class="title is-5">
                     <span class="icon-text">
                       <span class="icon">
-                        <i class="fas fa-comment"></i>
+                        💬
                       </span>
                       <span>{{ topic.replyCount }}</span>
                     </span>
@@ -88,7 +86,7 @@
 
           <!-- Topic Content -->
           <div class="content mt-4">
-            <p>{{ topic.content }}</p>
+            <div class="topic-content" v-html="formatContent(topic.content)"></div>
           </div>
         </div>
 
@@ -125,7 +123,7 @@
                       @click="likeReply(reply.id)"
                     >
                       <span class="icon is-small">
-                        <i class="fas fa-thumbs-up"></i>
+                        👍
                       </span>
                       <span>{{ reply.likeCount }}</span>
                     </button>
@@ -134,13 +132,13 @@
               </div>
 
               <div class="content mt-3">
-                <p>{{ reply.content }}</p>
+                <div class="reply-content" v-html="formatContent(reply.content)"></div>
               </div>
 
               <div v-if="reply.isSolution" class="notification is-success is-light">
                 <p>
                   <span class="icon">
-                    <i class="fas fa-check-circle"></i>
+                    ✅
                   </span>
                   <span>最佳解答</span>
                 </p>
@@ -342,6 +340,11 @@ const formatDate = (date: string) => {
   })
 }
 
+const formatContent = (content: string) => {
+  if (!content) return ''
+  return content.replace(/\n/g, '<br>')
+}
+
 onMounted(() => {
   loadTopic()
 })
@@ -357,6 +360,13 @@ onMounted(() => {
 }
 
 .content {
+  line-height: 1.6;
+}
+
+.topic-content,
+.reply-content {
+  white-space: pre-line;
+  word-wrap: break-word;
   line-height: 1.6;
 }
 </style>

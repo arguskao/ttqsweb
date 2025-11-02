@@ -176,6 +176,98 @@ export async function onRequestGet(context: Context): Promise<Response> {
   }
 }
 
+// POST 方法 - 創建新課程
+export async function onRequestPost(context: Context): Promise<Response> {
+  const { request, env } = context
+
+  try {
+    console.log('[Courses] 創建新課程')
+
+    // 導入 Neon 數據庫
+    const { neon } = await import('@neondatabase/serverless')
+    const databaseUrl = env.DATABASE_URL
+    if (!databaseUrl) {
+      console.log('[Courses] DATABASE_URL 未配置')
+      return new Response(
+        JSON.stringify({ success: false, message: 'Database URL not configured' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+      )
+    }
+
+    const sql = neon(databaseUrl)
+    const body = await request.json() as any
+
+    console.log('[Courses] 接收到的課程資料:', body)
+
+    // 驗證必填欄位
+    if (!body.title || !body.description) {
+      return new Response(
+        JSON.stringify({ success: false, message: '課程標題和描述為必填欄位' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+      )
+    }
+
+    // 課程類型映射：前端英文 -> 數據庫中文
+    const courseTypeMapping: Record<string, string> = {
+      'basic': '基礎課程',
+      'advanced': '進階課程',
+      'internship': '實務課程'
+    }
+
+    const dbCourseType = courseTypeMapping[body.course_type] || '基礎課程'
+
+    // 創建課程
+    const result = await sql`
+      INSERT INTO courses (
+        title, 
+        description, 
+        course_type, 
+        duration_hours, 
+        price,
+        instructor_id,
+        is_active
+      ) VALUES (
+        ${body.title},
+        ${body.description},
+        ${dbCourseType},
+        ${body.duration_hours || 0},
+        ${body.price || 0},
+        ${body.instructor_id || null},
+        true
+      )
+      RETURNING *
+    `
+
+    console.log('[Courses] 課程創建成功:', result[0])
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: result[0],
+        message: '課程創建成功'
+      }),
+      {
+        status: 201,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      }
+    )
+
+  } catch (error: any) {
+    console.error('[Courses] 創建課程失敗:', error)
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message: '創建課程失敗',
+        details: error.message
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      }
+    )
+  }
+}
+
 // 處理 OPTIONS 請求（CORS 預檢）
 export async function onRequestOptions(): Promise<Response> {
   return new Response(null, {

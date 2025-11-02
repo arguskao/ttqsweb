@@ -89,7 +89,8 @@ const ROLE_PERMISSIONS: Record<UserType, Permission[]> = {
     'courses:view',
     'courses:enroll',
 
-    // 基本權限
+    // 工作權限（講師也可以發布工作）
+    'jobs:create',
     'jobs:view',
     'profile:view',
     'profile:edit',

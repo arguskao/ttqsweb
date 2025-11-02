@@ -1,0 +1,13 @@
+# 經驗分享 API - curl 命令模板
+# 使用方法：複製下面的命令，修改 title、content、category 和 tags 後直接執行
+
+curl -X POST "https://c6d21c39.pharmacy-assistant-academy.pages.dev/api/v1/experiences" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjI2LCJlbWFpbCI6ImFkbWluQHR0cXMuY29tIiwidXNlclR5cGUiOiJhZG1pbiIsImlhdCI6MTc2MTk4NjgzOCwiZXhwIjoxNzYyMDczMjM4LCJhdWQiOiJwaGFybWFjeS1hc3Npc3RhbnQtYWNhZGVteS11c2VycyIsImlzcyI6InBoYXJtYWN5LWFzc2lzdGFudC1hY2FkZW15In0.hm2bq96t5WNr5vA8HzS5tFuh41YzUGziZ3bpiDhzI7s" \
+  -d '{
+    "title": "修改這裡的標題",
+    "content": "修改這裡的內容",
+    "category": "job_experience",
+    "tags": ["標籤1", "標籤2"]
+  }'
+

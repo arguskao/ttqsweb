@@ -1,77 +1,56 @@
 <template>
-  <section class="courses-section">
+  <section class="annual-commitment-section">
     <div class="container">
-      <h2 class="section-title">開始您的藥局助理職涯之路</h2>
-      <div class="courses-grid">
-        <CourseCard
-          v-for="course in courses"
-          :key="course.id"
-          :course="course"
-          @view-details="handleViewDetails"
-          @register-now="handleRegisterNow"
-        />
+      <h2 class="section-title">年度承諾</h2>
+      <div class="commitments-grid">
+        <!-- 專業培育承諾 -->
+        <div class="commitment-card">
+          <div class="commitment-header">
+            <span class="commitment-icon">🎓</span>
+            <h3 class="commitment-title">專業培育承諾</h3>
+          </div>
+          <ul class="commitment-list">
+            <li>
+              提供符合產業需求的課程設計，內容涵蓋藥品管理、顧客服務、職場倫理及藥局作業流程。
+            </li>
+            <li>
+              所有授課講師均具備相關專業背景與實務經驗，確保教學品質與職能接軌。
+            </li>
+            <li>
+              定期檢視課程內容，配合法規更新與藥事政策調整，維持教學之時效性與正確性。
+            </li>
+          </ul>
+        </div>
+
+        <!-- 就業媒合承諾 -->
+        <div class="commitment-card">
+          <div class="commitment-header">
+            <span class="commitment-icon">💼</span>
+            <h3 class="commitment-title">就業媒合承諾</h3>
+          </div>
+          <ul class="commitment-list">
+            <li>
+              透過與藥局、連鎖藥妝通路及藥師公會的合作，提供實習及就業媒合機會。
+            </li>
+            <li>
+              建立「學員履歷資料庫」與「合作藥局職缺平台」，協助學員快速銜接職場。
+            </li>
+            <li>
+              追蹤學員轉職成果與工作滿意度，作為後續訓練品質改善依據。
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import CourseCard from './CourseCard.vue'
-
-import type { Course } from '@/types'
-
-const courses: Course[] = [
-  {
-    id: 1,
-    title: '藥學入門',
-    description: '基礎藥學知識課程',
-    course_type: 'basic',
-    duration_hours: 40,
-    price: 5000,
-    instructor_id: 1,
-    is_active: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 2,
-    title: '保健食品專業知識',
-    description: '進階保健食品課程',
-    course_type: 'advanced',
-    duration_hours: 60,
-    price: 8000,
-    instructor_id: 1,
-    is_active: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 3,
-    title: '藥局實習',
-    description: '實際藥局環境實習',
-    course_type: 'internship',
-    duration_hours: 120,
-    price: 12000,
-    instructor_id: 1,
-    is_active: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  }
-]
-
-const handleViewDetails = (course: Course) => {
-  console.log('查看詳情:', course.title)
-  // TODO: 導航到課程詳情頁面
-}
-
-const handleRegisterNow = (course: Course) => {
-  console.log('立即報名:', course.title)
-  // TODO: 導航到報名頁面
-}
+// 組件不再需要外部導入或數據
 </script>
 
 <style scoped>
-.courses-section {
+.annual-commitment-section {
   padding: 60px 0;
   background-color: #f9fafb;
 }
@@ -91,16 +70,79 @@ const handleRegisterNow = (course: Course) => {
   line-height: 1.2;
 }
 
-.courses-grid {
+.commitments-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 32px;
-  max-width: 1000px;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 40px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
+.commitment-card {
+  background: white;
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.commitment-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.commitment-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.commitment-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.commitment-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.commitment-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.commitment-list li {
+  position: relative;
+  padding-left: 28px;
+  margin-bottom: 16px;
+  line-height: 1.8;
+  color: #4b5563;
+  font-size: 1rem;
+}
+
+.commitment-list li:last-child {
+  margin-bottom: 0;
+}
+
+.commitment-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #3b82f6;
+  font-size: 1.5rem;
+  font-weight: bold;
+  line-height: 1.6;
+}
+
 @media (max-width: 768px) {
-  .courses-section {
+  .annual-commitment-section {
     padding: 40px 0;
   }
 
@@ -109,9 +151,42 @@ const handleRegisterNow = (course: Course) => {
     margin-bottom: 32px;
   }
 
-  .courses-grid {
+  .commitments-grid {
     grid-template-columns: 1fr;
     gap: 24px;
+  }
+
+  .commitment-card {
+    padding: 24px;
+  }
+
+  .commitment-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .commitment-icon {
+    font-size: 2rem;
+  }
+
+  .commitment-title {
+    font-size: 1.5rem;
+  }
+
+  .commitment-list li {
+    font-size: 0.95rem;
+    padding-left: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .commitments-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .commitment-card {
+    padding: 20px;
   }
 }
 </style>

@@ -46,9 +46,5 @@ jobs:
           projectName: pharmacy-assistant-academy
           directory: ./dist
           
-      - name: Deploy API Worker
-        if: github.event_name == 'push'
-        run: npx wrangler deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # 注意：Cloudflare Pages 會自動部署 functions 目錄下的 Functions
+      # 不需要額外的 wrangler deploy 步驟

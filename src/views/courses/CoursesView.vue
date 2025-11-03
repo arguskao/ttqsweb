@@ -47,6 +47,19 @@
           </div>
         </div>
 
+        <!-- Debug Info -->
+        <div class="notification is-warning mb-4">
+          <h4 class="subtitle is-6">調試信息：</h4>
+          <p><strong>Loading:</strong> {{ loading }}</p>
+          <p><strong>Error:</strong> {{ error }}</p>
+          <p><strong>Courses Length:</strong> {{ courses.length }}</p>
+          <p><strong>Total Courses:</strong> {{ totalCourses }}</p>
+          <details>
+            <summary>課程數據 (點擊展開)</summary>
+            <pre>{{ JSON.stringify(courses, null, 2) }}</pre>
+          </details>
+        </div>
+
         <!-- Loading State -->
         <div v-if="loading" class="has-text-centered py-6">
           <button class="button is-loading is-large is-white" disabled>載入中...</button>

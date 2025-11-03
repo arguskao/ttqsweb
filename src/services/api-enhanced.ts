@@ -168,15 +168,7 @@ api.interceptors.response.use(
         // 刷新失敗，清除認證狀態
         processQueue(refreshError, null)
 
-        const authStore = useAuthStore()
-        authStore.clearAuth()
-
-        // 清除 tokens
-        sessionStorage.removeItem('access_token')
-        sessionStorage.removeItem('token_expiry')
-        localStorage.removeItem('refresh_token')
-
-        // 跳轉到登入頁面（但不要在公開頁面上跳轉）
+        // 只在非公開頁面上清除認證狀態
         const currentPath = window.location.pathname
         const isPublicPage = currentPath === '/' || 
                            currentPath.startsWith('/courses') || 
@@ -184,8 +176,17 @@ api.interceptors.response.use(
                            currentPath === '/register'
         
         if (!isPublicPage) {
+          const authStore = useAuthStore()
+          authStore.clearAuth()
+
+          // 清除 tokens
+          sessionStorage.removeItem('access_token')
+          sessionStorage.removeItem('token_expiry')
+          localStorage.removeItem('refresh_token')
+
           window.location.href = '/login'
         }
+        // 在公開頁面上，只是靜默失敗，不清除認證狀態也不跳轉
 
         return Promise.reject(refreshError)
       } finally {

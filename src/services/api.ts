@@ -103,19 +103,22 @@ api.interceptors.response.use(
 
     // 處理認證錯誤
     if (error.response?.status === 401) {
-      const authStore = useAuthStore()
-      authStore.clearAuth()
-
-      // 跳轉到登入頁面（但不要在公開頁面上跳轉）
+      // 只在非公開頁面上清除認證狀態
       const currentPath = window.location.pathname
       const isPublicPage = currentPath === '/' || 
                          currentPath.startsWith('/courses') || 
                          currentPath === '/login' ||
                          currentPath === '/register'
       
-      if (!isPublicPage && currentPath !== '/login') {
-        window.location.href = '/login'
+      if (!isPublicPage) {
+        const authStore = useAuthStore()
+        authStore.clearAuth()
+        
+        if (currentPath !== '/login') {
+          window.location.href = '/login'
+        }
       }
+      // 在公開頁面上，只是靜默失敗，不清除認證狀態也不跳轉
     }
 
     // 統一錯誤處理

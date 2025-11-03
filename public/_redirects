@@ -1,0 +1,13 @@
+# Static assets should be served directly (must be BEFORE catch-all)
+/assets/*     /assets/:splat   200
+/favicon.ico  /favicon.ico     200
+/robots.txt   /robots.txt      200
+/sitemap.xml  /sitemap.xml     200
+
+# API routes should not be redirected (must be BEFORE catch-all)
+/api/*        /api/:splat      200
+
+# SPA fallback - redirect all non-file requests to index.html
+/*            /index.html      200
+
+

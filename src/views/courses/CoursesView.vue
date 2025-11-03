@@ -73,7 +73,12 @@
             :key="course.id"
             class="column is-12-mobile is-6-tablet is-4-desktop"
           >
-            <CourseCard :course="course" @enroll="handleEnroll(course.id)" />
+            <CourseCard
+              :course="course"
+              @viewDetails="router.push(`/courses/${course.id}`)"
+              @registerNow="router.push(`/courses/${course.id}`)"
+              @enroll="handleEnroll(course.id)"
+            />
           </div>
         </div>
 

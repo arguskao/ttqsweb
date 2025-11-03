@@ -275,7 +275,8 @@ export async function onRequestOptions(): Promise<Response> {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      // 必須允許前端實際發送的自訂標頭，否則預檢會被拒絕
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-ID, X-CSRF-Token',
       'Access-Control-Max-Age': '86400'
     }
   })

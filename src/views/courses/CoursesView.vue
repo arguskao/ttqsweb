@@ -75,8 +75,8 @@
           >
             <CourseCard
               :course="course"
-              @viewDetails="router.push(`/courses/${course.id}`)"
-              @registerNow="router.push(`/courses/${course.id}`)"
+              @view-details="router.push(`/courses/${course.id}`)"
+              @register-now="router.push(`/courses/${course.id}`)"
               @enroll="handleEnroll(course.id)"
             />
           </div>

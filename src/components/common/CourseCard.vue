@@ -11,14 +11,14 @@
       <span>{{ course.durationHours || course.duration_hours || 0 }} 小時</span>
     </div>
     <div class="course-actions">
-      <button class="button is-light is-success" @click="viewDetails">
+      <router-link :to="`/courses/${course.id}`" class="button is-light is-success">
         <span class="button-icon">👁️</span>
         查看詳情
-      </button>
-      <button class="button is-primary" @click="registerNow">
+      </router-link>
+      <router-link :to="`/courses/${course.id}`" class="button is-primary">
         <span class="button-icon">✅</span>
         立即報名
-      </button>
+      </router-link>
     </div>
   </div>
 </template>
@@ -33,11 +33,6 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-
-const emit = defineEmits<{
-  viewDetails: [course: Course]
-  registerNow: [course: Course]
-}>()
 
 const courseTypeText = computed(() => {
   const typeMap = {
@@ -64,13 +59,6 @@ const formatPrice = (price: number | string) => {
   return numPrice.toLocaleString()
 }
 
-const viewDetails = () => {
-  emit('viewDetails', props.course)
-}
-
-const registerNow = () => {
-  emit('registerNow', props.course)
-}
 </script>
 
 <style scoped>

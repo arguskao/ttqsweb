@@ -16,6 +16,8 @@ class CourseService {
   // Get all courses with filters
   async getCourses(filters?: CourseFilters): Promise<PaginatedResponse<Course>> {
     try {
+      console.log('CourseService: 開始獲取課程列表', filters)
+      
       // 從 API 獲取真實的課程數據
       const params: Record<string, string> = {}
 
@@ -33,24 +35,29 @@ class CourseService {
         params.limit = filters.limit.toString()
       }
 
+      console.log('CourseService: API 請求參數', params)
+
       const response = await apiService.get<any>('/courses', { params })
+      console.log('CourseService: API 響應', response)
 
       if (response && response.success && response.data) {
+        // API 響應中的 meta 直接包含分頁信息，不是嵌套的
+        const meta = response.meta as any
         return {
           data: response.data,
-          meta: (response.meta as any) || {
-            page: filters?.page ?? 1,
-            limit: filters?.limit ?? 10,
-            total: 0,
-            totalPages: 0
+          meta: {
+            page: meta?.page ?? filters?.page ?? 1,
+            limit: meta?.limit ?? filters?.limit ?? 10,
+            total: meta?.total ?? response.data.length,
+            totalPages: meta?.totalPages ?? Math.ceil(response.data.length / (filters?.limit ?? 10))
           }
         }
       }
 
+      console.warn('CourseService: API 響應格式不正確', response)
       throw new Error('獲取課程列表失敗')
-    } catch (err) {
-       
-      console.error('Error loading courses:', err)
+    } catch (err: any) {
+      console.error('CourseService: 獲取課程列表失敗', err)
 
       // 如果 API 調用失敗，返回空列表而不是硬編碼的數據
       return {

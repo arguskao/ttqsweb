@@ -32,9 +32,20 @@ export const setErrorHandler = (handler: ErrorHandler): void => {
   errorHandler = handler
 }
 
+// 解析 API Base URL：正式環境一律使用同源路徑以避免 CORS
+const resolveBaseURL = () => {
+  const isProd = import.meta.env.MODE === 'production'
+  if (isProd) return '/api/v1'
+  
+  // 開發環境使用環境變數或默認值
+  const apiUrl = import.meta.env.VITE_API_BASE_URL
+  console.log('API Base URL:', apiUrl, 'Mode:', import.meta.env.MODE)
+  return apiUrl || '/api/v1'
+}
+
 // 創建 axios 實例
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
+  baseURL: resolveBaseURL(),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'

@@ -451,6 +451,15 @@ const router = createRouter({
       path: '/fix-auth',
       name: 'fix-auth',
       component: createAsyncComponent(() => import('../views/FixAuthView.vue'))
+    },
+    {
+      path: '/debug/api-test',
+      name: 'api-test',
+      component: createAsyncComponent(() => import('../views/debug/ApiTestView.vue')),
+      meta: {
+        title: 'API 連接測試',
+        description: 'API 連接測試頁面'
+      }
     }
   ]
 })

@@ -204,16 +204,26 @@ const loadCourses = async () => {
     const response = await courseService.getCourses(filters.value)
     console.log('API響應:', response) // 調試日誌
 
-    courses.value = response.data
-    totalCourses.value = response.meta.total
-    totalPages.value = response.meta.totalPages
-    currentPage.value = response.meta.page
+    if (response && response.data) {
+      courses.value = response.data
+      totalCourses.value = response.meta?.total || 0
+      totalPages.value = response.meta?.totalPages || 0
+      currentPage.value = response.meta?.page || 1
+    } else {
+      courses.value = []
+      totalCourses.value = 0
+      totalPages.value = 0
+      currentPage.value = 1
+    }
 
     console.log('課程數據:', courses.value) // 調試日誌
     console.log('總課程數:', totalCourses.value) // 調試日誌
   } catch (err: any) {
-    error.value = err.response?.data?.error?.message || '載入課程失敗，請稍後再試'
     console.error('Error loading courses:', err)
+    error.value = err.response?.data?.message || err.message || '載入課程失敗，請稍後再試'
+    courses.value = []
+    totalCourses.value = 0
+    totalPages.value = 0
   } finally {
     loading.value = false
   }

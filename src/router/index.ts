@@ -77,7 +77,7 @@ const router = createRouter({
     {
       path: '/courses/:id',
       name: 'course-detail',
-      component: createAsyncComponent(() => import('../views/courses/CourseDetailView.vue')),
+      component: createAsyncComponent(() => import('../views/courses/SimpleCourseDetailView.vue')),
       meta: {
         title: '課程詳情 - 藥助Next學院',
         description: '查看課程詳細資訊，包含課程大綱、講師介紹和學習目標。',
@@ -546,10 +546,12 @@ router.beforeEach(async (to, from, next) => {
 
   // Check if route requires authentication
   if (to.meta.requiresAuth && !isAuthenticated) {
-    console.log('Redirecting to login because not authenticated')
+    console.log('🔴 Redirecting to login because not authenticated')
     next({ name: 'login', query: { redirect: to.fullPath } })
     return
   }
+  
+  console.log('✅ Auth check passed, continuing to route')
 
   // Check if route requires guest (not authenticated)
   if (to.meta.requiresGuest && isAuthenticated) {
@@ -600,7 +602,10 @@ router.beforeEach(async (to, from, next) => {
     return
   }
 
+  console.log('🎯 All checks passed, calling next() - should proceed to route')
+  console.log('🎯 Target route:', to.path, 'Component:', to.matched[0]?.components?.default)
   next()
+  console.log('🎯 next() called successfully')
 })
 
 // SEO meta tags management

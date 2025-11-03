@@ -106,8 +106,14 @@ api.interceptors.response.use(
       const authStore = useAuthStore()
       authStore.clearAuth()
 
-      // 避免重複跳轉
-      if (window.location.pathname !== '/login') {
+      // 跳轉到登入頁面（但不要在公開頁面上跳轉）
+      const currentPath = window.location.pathname
+      const isPublicPage = currentPath === '/' || 
+                         currentPath.startsWith('/courses') || 
+                         currentPath === '/login' ||
+                         currentPath === '/register'
+      
+      if (!isPublicPage && currentPath !== '/login') {
         window.location.href = '/login'
       }
     }

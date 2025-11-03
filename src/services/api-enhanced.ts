@@ -39,7 +39,6 @@ const resolveBaseURL = () => {
   
   // 開發環境使用環境變數或默認值
   const apiUrl = import.meta.env.VITE_API_BASE_URL
-  console.log('API Base URL:', apiUrl, 'Mode:', import.meta.env.MODE)
   return apiUrl || '/api/v1'
 }
 
@@ -177,8 +176,14 @@ api.interceptors.response.use(
         sessionStorage.removeItem('token_expiry')
         localStorage.removeItem('refresh_token')
 
-        // 跳轉到登入頁面
-        if (window.location.pathname !== '/login') {
+        // 跳轉到登入頁面（但不要在公開頁面上跳轉）
+        const currentPath = window.location.pathname
+        const isPublicPage = currentPath === '/' || 
+                           currentPath.startsWith('/courses') || 
+                           currentPath === '/login' ||
+                           currentPath === '/register'
+        
+        if (!isPublicPage) {
           window.location.href = '/login'
         }
 

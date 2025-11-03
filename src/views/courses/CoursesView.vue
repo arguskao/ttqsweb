@@ -216,11 +216,15 @@ const loadCourses = async () => {
     console.log('載入課程，篩選條件:', filters.value) // 調試日誌
     const response = await courseService.getCourses(filters.value)
     console.log('API響應:', response) // 調試日誌
+    console.log('response.data 類型:', typeof response.data, 'Array.isArray:', Array.isArray(response.data))
+    console.log('response.data 內容:', response.data)
 
     if (response && response.data) {
-      courses.value = response.data
-      totalCourses.value = response.meta?.total || 0
-      totalPages.value = response.meta?.totalPages || 0
+      // 確保 response.data 是數組
+      const coursesData = Array.isArray(response.data) ? response.data : []
+      courses.value = coursesData
+      totalCourses.value = response.meta?.total || coursesData.length
+      totalPages.value = response.meta?.totalPages || Math.ceil(coursesData.length / (filters.value.limit || 9))
       currentPage.value = response.meta?.page || 1
     } else {
       courses.value = []
@@ -229,7 +233,8 @@ const loadCourses = async () => {
       currentPage.value = 1
     }
 
-    console.log('課程數據:', courses.value) // 調試日誌
+    console.log('處理後的課程數據:', courses.value) // 調試日誌
+    console.log('課程數量:', courses.value.length) // 調試日誌
     console.log('總課程數:', totalCourses.value) // 調試日誌
   } catch (err: any) {
     console.error('Error loading courses:', err)

@@ -35,8 +35,11 @@ export async function onRequestGet(context: Context): Promise<Response> {
     let userId: number
     try {
       const payload = JSON.parse(atob(token.split('.')[1]))
-      userId = payload.userId
+      userId = payload.userId || payload.user_id || payload.id || payload.sub
       console.log('[User Enrollments] 用戶 ID:', userId)
+      if (!userId) {
+        throw new Error('Token payload missing user id')
+      }
     } catch (error) {
       return new Response(
         JSON.stringify({ success: false, message: '無效的 token' }),
@@ -142,7 +145,7 @@ export async function onRequestOptions(): Promise<Response> {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-ID',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-ID, X-CSRF-Token',
       'Access-Control-Max-Age': '86400'
     }
   })

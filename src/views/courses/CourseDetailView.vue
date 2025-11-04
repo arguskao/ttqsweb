@@ -399,7 +399,7 @@ const handleEnroll = async () => {
 
 const goToProgress = () => {
   if (course.value) {
-    router.push('/profile?tab=learning')
+    router.push('/learning-progress')
   }
 }
 

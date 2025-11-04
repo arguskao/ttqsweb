@@ -476,7 +476,12 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  const isAuthenticated = authService.isAuthenticated()
+  // 檢查是否有有效的 token
+  const token = sessionStorage.getItem('access_token')
+  const tokenExpiry = sessionStorage.getItem('token_expiry')
+  const hasValidToken = token && tokenExpiry && Date.now() < parseInt(tokenExpiry, 10)
+  
+  const isAuthenticated = authService.isAuthenticated() && hasValidToken
   const user = authService.getCurrentUser()
 
   // 調試日誌 - Enhanced debugging

@@ -76,9 +76,23 @@ api.interceptors.request.use(
   async config => {
     // 獲取有效的 access token
     const token = sessionStorage.getItem('access_token')
+    const tokenExpiry = sessionStorage.getItem('token_expiry')
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    // 只在 token 有效且未過期時才添加到請求中
+    if (token && tokenExpiry) {
+      const expiryTime = parseInt(tokenExpiry, 10)
+      const now = Date.now()
+      
+      if (now < expiryTime) {
+        // Token 還沒過期，添加到請求中
+        config.headers.Authorization = `Bearer ${token}`
+      } else {
+        // Token 已過期，清除它
+        console.log('Token expired, removing from storage')
+        sessionStorage.removeItem('access_token')
+        sessionStorage.removeItem('token_expiry')
+        sessionStorage.removeItem('user')
+      }
     }
 
     // 添加請求 ID 用於追蹤

@@ -140,7 +140,10 @@
                       @click="goToProgress"
                     >
                       <span class="icon">
-                        <i class="fas fa-chart-line"></i>
+                        <!-- Inline SVG to avoid external icon dependency -->
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                          <path d="M3 3h2v16h16v2H3V3zm17.293 4.293l-5.586 5.586-3.293-3.293L7 13v2l4.414-4.414 3.293 3.293 6.293-6.293-1.707-1.293z"/>
+                        </svg>
                       </span>
                       <span>查看學習進度</span>
                     </button>

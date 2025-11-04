@@ -153,6 +153,24 @@ class JobService {
 
     return response.data
   }
+
+  // Favorite a job
+  async favoriteJob(jobId: number): Promise<void> {
+    await apiService.post(`/jobs/${jobId}/favorite`)
+  }
+
+  // Unfavorite a job
+  async unfavoriteJob(jobId: number): Promise<void> {
+    await apiService.delete(`/jobs/${jobId}/favorite`)
+  }
+
+  // Get user's favorite jobs (ids)
+  async getUserFavoriteIds(): Promise<number[]> {
+    const res = await apiService.get<Array<{ job_id: number }>>('/users/favorites')
+    const list = (res as any)?.data || []
+    // 支援不同鍵名
+    return list.map((f: any) => f.job_id || f.jobId).filter((id: any) => typeof id === 'number')
+  }
 }
 
 const jobService = new JobService()

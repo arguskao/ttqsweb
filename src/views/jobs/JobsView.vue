@@ -150,6 +150,8 @@
               <JobCard
                 :job="job"
                 :show-apply="true"
+                :show-favorite="isJobSeeker"
+                :favorited="isFavorited(job.id)"
                 @view-details="viewJobDetails"
                 @apply="applyToJob"
                 @toggle-favorite="toggleFavorite"
@@ -340,13 +342,36 @@ const applyToJob = (jobId: number) => {
   router.push(`/jobs/${jobId}`)
 }
 
-const toggleFavorite = (jobId: number) => {
-  // TODO: Implement favorite functionality
-  console.log('Toggle favorite for job:', jobId)
+const favoriteIds = ref<Set<number>>(new Set())
+
+const loadFavorites = async () => {
+  try {
+    const ids = await jobService.getUserFavoriteIds()
+    favoriteIds.value = new Set(ids)
+  } catch (e) {
+    // 忽略錯誤（未登入等）
+  }
+}
+
+const isFavorited = (jobId: number) => favoriteIds.value.has(jobId)
+
+const toggleFavorite = async (jobId: number) => {
+  try {
+    if (favoriteIds.value.has(jobId)) {
+      await jobService.unfavoriteJob(jobId)
+      favoriteIds.value.delete(jobId)
+    } else {
+      await jobService.favoriteJob(jobId)
+      favoriteIds.value.add(jobId)
+    }
+  } catch (e) {
+    console.error('切換收藏失敗', e)
+  }
 }
 
 onMounted(() => {
   fetchJobs()
+  loadFavorites()
 })
 </script>
 

@@ -87,11 +87,13 @@ interface Props {
   job: Job
   showFavorite?: boolean
   showApply?: boolean
+  favorited?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showFavorite: true,
-  showApply: true
+  showApply: true,
+  favorited: false
 })
 
 const emit = defineEmits<{
@@ -100,7 +102,14 @@ const emit = defineEmits<{
   toggleFavorite: [jobId: number]
 }>()
 
-const isFavorited = ref(false)
+const isFavorited = ref(!!props.favorited)
+
+watch(
+  () => props.favorited,
+  val => {
+    isFavorited.value = !!val
+  }
+)
 
 const jobTypeLabel = computed(() => {
   const labels: Record<string, string> = {

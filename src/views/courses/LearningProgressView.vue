@@ -98,17 +98,20 @@
                   </div>
 
                   <!-- Actions -->
-                  <div class="buttons">
-                    <router-link
-                      :to="`/courses/${enrollment.courseId}`"
-                      class="button is-primary is-small"
-                    >
-                      <span class="icon">
-                        <i class="fas fa-book"></i>
-                      </span>
-                      <span>查看課程</span>
-                    </router-link>
-                  </div>
+                   <div class="buttons">
+                     <router-link
+                       :to="`/courses/${enrollment.courseId}`"
+                       class="button is-primary is-small"
+                     >
+                       <span class="icon">
+                         <!-- Inline SVG icon to avoid external icon font dependency -->
+                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                           <path d="M4 5a2 2 0 0 1 2-2h13v16h-1.5a3.5 3.5 0 0 0-3.5 3.5V6H6a2 2 0 0 0-2 2v11.5c0 .276.224.5.5.5H14v2H4.5A1.5 1.5 0 0 1 3 20.5V5z"/>
+                         </svg>
+                       </span>
+                       <span>查看課程</span>
+                     </router-link>
+                   </div>
                 </div>
               </div>
             </div>

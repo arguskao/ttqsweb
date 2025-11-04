@@ -44,6 +44,12 @@ export const useAuthStore = defineStore('auth', () => {
     // 清除 localStorage
     localStorage.removeItem('auth_token')
     localStorage.removeItem('auth_user')
+    localStorage.removeItem('refresh_token')
+    
+    // 清除 sessionStorage
+    sessionStorage.removeItem('access_token')
+    sessionStorage.removeItem('token_expiry')
+    sessionStorage.removeItem('user')
   }
 
   function setLoading(loading: boolean) {

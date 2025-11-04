@@ -399,6 +399,10 @@ const handleEnroll = async () => {
 
 const goToProgress = () => {
   if (course.value) {
+    // 記住最近查看的課程，提供學習進度頁面載入依據
+    try {
+      localStorage.setItem('last_course_id', String(course.value.id))
+    } catch {}
     router.push('/learning-progress')
   }
 }

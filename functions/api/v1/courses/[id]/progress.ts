@@ -93,9 +93,29 @@ export async function onRequestGet(context: Context): Promise<Response> {
       `
 
       if (enrollments.length === 0) {
+        // 若未報名，回傳課程基本資料與 0% 進度，狀態為 not_enrolled（避免前端 404 體驗不佳）
+        const courses = await sql`
+          SELECT id, title, description FROM courses WHERE id = ${courseId}
+        `
+        const course = courses[0] || { id: courseId, title: '課程', description: '' }
+
         return new Response(
-          JSON.stringify({ success: false, message: '您尚未報名此課程' }),
-          { status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+          JSON.stringify({
+            success: true,
+            data: {
+              id: null,
+              user_id: userId,
+              course_id: course.id,
+              course_title: course.title,
+              course_description: course.description,
+              enrollment_date: null,
+              completion_date: null,
+              progress_percentage: 0,
+              final_score: null,
+              status: 'not_enrolled'
+            }
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
         )
       }
 
@@ -151,7 +171,7 @@ export async function onRequestOptions(): Promise<Response> {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-ID, X-CSRF-Token',
       'Access-Control-Max-Age': '86400'
     }
   })

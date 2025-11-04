@@ -225,7 +225,14 @@ const enrollmentStatus = ref<'loading' | 'enrolled' | 'not_enrolled'>('loading')
 const isEnrolled = ref(false)
 
 // Computed
-const isAuthenticated = computed(() => authStore.isAuthenticated)
+const isAuthenticated = computed(() => {
+  // 檢查是否有有效的 token
+  const token = sessionStorage.getItem('access_token')
+  const tokenExpiry = sessionStorage.getItem('token_expiry')
+  const hasValidToken = token && tokenExpiry && Date.now() < parseInt(tokenExpiry, 10)
+  
+  return authStore.isAuthenticated && hasValidToken
+})
 
 const courseTypeClass = computed(() => {
   if (!course.value) return 'is-light'
@@ -340,7 +347,12 @@ const loadCourse = async () => {
     course.value = await courseService.getCourseById(courseId)
 
     // Check enrollment status if authenticated
-    if (isAuthenticated.value) {
+    // 只有在有有效 token 時才檢查報名狀態
+    const token = sessionStorage.getItem('access_token')
+    const tokenExpiry = sessionStorage.getItem('token_expiry')
+    const hasValidToken = token && tokenExpiry && Date.now() < parseInt(tokenExpiry, 10)
+    
+    if (isAuthenticated.value && hasValidToken) {
       await checkEnrollmentStatus(courseId)
     } else {
       enrollmentStatus.value = 'not_enrolled'

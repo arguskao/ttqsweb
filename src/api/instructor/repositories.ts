@@ -85,19 +85,39 @@ export class InstructorRepository extends BaseRepository<Instructor> {
     )
   }
 
-  // 更新講師評分 - 使用 user_id 而不是 instructor_id
-  async updateRating(userId: number): Promise<void> {
+  // 更新講師評分（通過講師申請ID）
+  async updateRating(instructorId: number): Promise<void> {
     await this.executeRaw(
       `UPDATE instructor_applications
        SET average_rating = (
          SELECT COALESCE(AVG(rating), 0)
          FROM instructor_ratings
-         WHERE instructor_user_id = $1
+         WHERE instructor_id = $1
        ),
        total_ratings = (
          SELECT COUNT(*)
          FROM instructor_ratings
-         WHERE instructor_user_id = $1
+         WHERE instructor_id = $1
+       ),
+       updated_at = NOW()
+       WHERE id = $1`,
+      [instructorId]
+    )
+  }
+
+  // 更新講師評分（通過用戶ID）
+  async updateRatingByUserId(userId: number): Promise<void> {
+    await this.executeRaw(
+      `UPDATE instructor_applications
+       SET average_rating = (
+         SELECT COALESCE(AVG(ir.rating), 0)
+         FROM instructor_ratings ir
+         WHERE ir.instructor_id = instructor_applications.id
+       ),
+       total_ratings = (
+         SELECT COUNT(*)
+         FROM instructor_ratings ir
+         WHERE ir.instructor_id = instructor_applications.id
        ),
        updated_at = NOW()
        WHERE user_id = $1 AND status = 'approved'`,
@@ -147,10 +167,29 @@ export class InstructorRatingRepository extends BaseRepository<InstructorRating>
     super('instructor_ratings')
   }
 
-  // 根據講師用戶ID查找評分
-  async findByInstructor(instructorUserId: number): Promise<InstructorRating[]> {
+  // 根據講師申請ID查找評分
+  async findByInstructor(instructorId: number): Promise<InstructorRating[]> {
     return this.queryMany(
-      'SELECT * FROM instructor_ratings WHERE instructor_user_id = $1 ORDER BY created_at DESC',
+      `SELECT ir.*, u.first_name as student_first_name, u.last_name as student_last_name, c.title as course_title
+       FROM instructor_ratings ir
+       LEFT JOIN users u ON u.id = ir.student_id
+       LEFT JOIN courses c ON c.id = ir.course_id
+       WHERE ir.instructor_id = $1
+       ORDER BY ir.created_at DESC`,
+      [instructorId]
+    )
+  }
+
+  // 根據講師用戶ID查找評分（通過 instructor_applications 表）
+  async findByInstructorUserId(instructorUserId: number): Promise<InstructorRating[]> {
+    return this.queryMany(
+      `SELECT ir.*, u.first_name as student_first_name, u.last_name as student_last_name, c.title as course_title
+       FROM instructor_ratings ir
+       LEFT JOIN users u ON u.id = ir.student_id
+       LEFT JOIN courses c ON c.id = ir.course_id
+       JOIN instructor_applications ia ON ia.id = ir.instructor_id
+       WHERE ia.user_id = $1
+       ORDER BY ir.created_at DESC`,
       [instructorUserId]
     )
   }
@@ -171,26 +210,49 @@ export class InstructorRatingRepository extends BaseRepository<InstructorRating>
     )
   }
 
-  // 檢查學生是否已對講師評分
-  async hasStudentRated(studentId: number, instructorUserId: number): Promise<boolean> {
+  // 檢查學生是否已對講師評分（通過講師申請ID）
+  async hasStudentRated(studentId: number, instructorId: number): Promise<boolean> {
     const result = await this.queryOne(
-      'SELECT 1 FROM instructor_ratings WHERE student_id = $1 AND instructor_user_id = $2',
+      'SELECT 1 FROM instructor_ratings WHERE student_id = $1 AND instructor_id = $2',
+      [studentId, instructorId]
+    )
+    return !!result
+  }
+
+  // 檢查學生是否已對講師評分（通過講師用戶ID）
+  async hasStudentRatedByUserId(studentId: number, instructorUserId: number): Promise<boolean> {
+    const result = await this.queryOne(
+      `SELECT 1 FROM instructor_ratings ir
+       JOIN instructor_applications ia ON ia.id = ir.instructor_id
+       WHERE ir.student_id = $1 AND ia.user_id = $2`,
       [studentId, instructorUserId]
     )
     return !!result
   }
 
-  // 獲取講師的平均評分
-  async getAverageRating(instructorUserId: number): Promise<number> {
+  // 獲取講師的平均評分（通過講師申請ID）
+  async getAverageRating(instructorId: number): Promise<number> {
     const result = await this.queryOne(
-      'SELECT AVG(rating) as avg_rating FROM instructor_ratings WHERE instructor_user_id = $1',
+      'SELECT AVG(rating) as avg_rating FROM instructor_ratings WHERE instructor_id = $1',
+      [instructorId]
+    )
+    return parseFloat(result?.avg_rating || '0')
+  }
+
+  // 獲取講師的平均評分（通過講師用戶ID）
+  async getAverageRatingByUserId(instructorUserId: number): Promise<number> {
+    const result = await this.queryOne(
+      `SELECT AVG(ir.rating) as avg_rating
+       FROM instructor_ratings ir
+       JOIN instructor_applications ia ON ia.id = ir.instructor_id
+       WHERE ia.user_id = $1`,
       [instructorUserId]
     )
     return parseFloat(result?.avg_rating || '0')
   }
 
-  // 獲取評分統計
-  async getRatingStats(instructorUserId: number): Promise<{
+  // 獲取評分統計（通過講師申請ID）
+  async getRatingStats(instructorId: number): Promise<{
     total: number
     average: number
     distribution: Record<number, number>
@@ -205,7 +267,41 @@ export class InstructorRatingRepository extends BaseRepository<InstructorRating>
          COUNT(CASE WHEN rating = 4 THEN 1 END) as rating_4,
          COUNT(CASE WHEN rating = 5 THEN 1 END) as rating_5
        FROM instructor_ratings
-       WHERE instructor_user_id = $1`,
+       WHERE instructor_id = $1`,
+      [instructorId]
+    )
+
+    return {
+      total: parseInt(result?.total || '0'),
+      average: parseFloat(result?.average || '0'),
+      distribution: {
+        1: parseInt(result?.rating_1 || '0'),
+        2: parseInt(result?.rating_2 || '0'),
+        3: parseInt(result?.rating_3 || '0'),
+        4: parseInt(result?.rating_4 || '0'),
+        5: parseInt(result?.rating_5 || '0')
+      }
+    }
+  }
+
+  // 獲取評分統計（通過講師用戶ID）
+  async getRatingStatsByUserId(instructorUserId: number): Promise<{
+    total: number
+    average: number
+    distribution: Record<number, number>
+  }> {
+    const result = await this.queryOne(
+      `SELECT
+         COUNT(*) as total,
+         AVG(ir.rating) as average,
+         COUNT(CASE WHEN ir.rating = 1 THEN 1 END) as rating_1,
+         COUNT(CASE WHEN ir.rating = 2 THEN 1 END) as rating_2,
+         COUNT(CASE WHEN ir.rating = 3 THEN 1 END) as rating_3,
+         COUNT(CASE WHEN ir.rating = 4 THEN 1 END) as rating_4,
+         COUNT(CASE WHEN ir.rating = 5 THEN 1 END) as rating_5
+       FROM instructor_ratings ir
+       JOIN instructor_applications ia ON ia.id = ir.instructor_id
+       WHERE ia.user_id = $1`,
       [instructorUserId]
     )
 

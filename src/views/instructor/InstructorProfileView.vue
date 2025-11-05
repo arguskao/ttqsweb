@@ -226,7 +226,7 @@
                             <h5 class="title is-6">{{ course.title }}</h5>
                             <p class="subtitle is-7 has-text-grey">{{ getCourseTypeText(course.course_type) }}</p>
                             <p class="is-size-7 mb-3">{{ truncateText(course.description, 80) }}</p>
-                            
+
                             <div class="tags mb-3">
                               <span class="tag is-info is-small">{{ getCourseTypeText(course.course_type) }}</span>
                               <span v-if="course.duration_hours" class="tag is-small">{{ course.duration_hours }} 小時</span>
@@ -505,8 +505,33 @@ const loadStats = async () => {
 
 // Load instructor ratings
 const loadRatings = async () => {
-  // TODO: 實作評價 API 調用
-  ratings.value = []
+  if (!instructor.value) return
+
+  try {
+    console.log('[loadRatings] Loading ratings for instructor:', instructor.value.id)
+
+    // 使用講師 ID 查詢評價
+    const instructorId = instructor.value.id || instructor.value.instructor_id || instructor.value.application_id
+
+    if (!instructorId) {
+      console.log('[loadRatings] No instructor ID found')
+      return
+    }
+
+    const response = await api.get(`/instructors/${instructorId}/ratings`)
+
+    console.log('[loadRatings] API response:', response)
+
+    if (response.data?.success && response.data?.data) {
+      ratings.value = response.data.data
+      console.log('[loadRatings] Loaded ratings:', ratings.value.length)
+    } else {
+      ratings.value = []
+    }
+  } catch (error: any) {
+    console.error('[loadRatings] Failed to load ratings:', error)
+    ratings.value = []
+  }
 }
 
 // Load instructor courses
@@ -515,10 +540,10 @@ const loadMyCourses = async () => {
 
   try {
     console.log('[loadMyCourses] Loading courses for instructor:', instructor.value.id)
-    
+
     // 使用講師 ID 查詢課程
     const instructorId = instructor.value.id || instructor.value.instructor_id || instructor.value.application_id
-    
+
     if (!instructorId) {
       console.log('[loadMyCourses] No instructor ID found')
       myCoursesLoaded.value = true
@@ -549,7 +574,7 @@ const loadMyCourses = async () => {
 const getCourseTypeText = (courseType: string): string => {
   const typeMap: Record<string, string> = {
     'basic': '基礎課程',
-    'advanced': '進階課程', 
+    'advanced': '進階課程',
     'internship': '實習課程'
   }
   return typeMap[courseType] || courseType || '未分類'

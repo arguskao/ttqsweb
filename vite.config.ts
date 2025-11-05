@@ -6,6 +6,8 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // 明確指定部署根路徑，避免在子路由下產生相對資源路徑
+  base: '/',
   plugins: [vue(), vueDevTools()],
   resolve: {
     alias: {

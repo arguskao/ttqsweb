@@ -276,11 +276,11 @@ export const updateProfileHandler: RouteHandler = async req => {
     values.push(req.user.id)
 
     const query = `
-      UPDATE users 
+      UPDATE users
       SET ${updates.join(', ')}
       WHERE id = $${paramIndex}
-      RETURNING id, email, user_type as "userType", first_name as "firstName", 
-                last_name as "lastName", phone, created_at as "createdAt", 
+      RETURNING id, email, user_type as "userType", first_name as "firstName",
+                last_name as "lastName", phone, created_at as "createdAt",
                 updated_at as "updatedAt", is_active as "isActive"
     `
 
@@ -424,19 +424,19 @@ export const setupAuthRoutes = (router: any) => {
   )
 
   // 受保護的路由 - 應用嚴格安全中間件
-  router.get('/api/v1/auth/profile', profileHandler, requireAuth, strictRateLimit, securityHeaders)
+  router.get('/api/v1/auth/profile', requireAuth, strictRateLimit, securityHeaders, profileHandler)
   router.put(
     '/api/v1/auth/profile',
-    updateProfileHandler,
     requireAuth,
     strictRateLimit,
-    securityHeaders
+    securityHeaders,
+    updateProfileHandler
   )
   router.put(
     '/api/v1/users/profile',
-    updateProfileHandler,
     requireAuth,
     strictRateLimit,
-    securityHeaders
+    securityHeaders,
+    updateProfileHandler
   )
 }

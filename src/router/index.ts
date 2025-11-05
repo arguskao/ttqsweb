@@ -460,6 +460,15 @@ const router = createRouter({
         title: 'API 連接測試',
         description: 'API 連接測試頁面'
       }
+    },
+    {
+      path: '/debug/auth',
+      name: 'debug-auth-new',
+      component: createAsyncComponent(() => import('../views/debug/AuthDebugView.vue')),
+      meta: {
+        title: '認證狀態調試',
+        description: '調試認證狀態'
+      }
     }
   ]
 })
@@ -480,7 +489,7 @@ router.beforeEach(async (to, from, next) => {
   const token = sessionStorage.getItem('access_token')
   const tokenExpiry = sessionStorage.getItem('token_expiry')
   const hasValidToken = token && tokenExpiry && Date.now() < parseInt(tokenExpiry, 10)
-  
+
   const isAuthenticated = authService.isAuthenticated() && hasValidToken
   const user = authService.getCurrentUser()
 

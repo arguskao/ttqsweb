@@ -5,6 +5,12 @@
 /assets/css/*
   Content-Type: text/css
 
+# Prevent caching of HTML to avoid stale index referencing old chunks
+/index.html
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
 # Security headers
 /*
   X-Frame-Options: DENY

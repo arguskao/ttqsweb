@@ -6,8 +6,7 @@ const DYNAMIC_CACHE = 'dynamic-v1'
 // Files to cache immediately
 const STATIC_FILES = [
   '/',
-  '/index.html',
-  '/assets/main.css',
+  // 不快取 index.html，避免部署後載入舊版入口導致 chunk 名稱不匹配
   '/favicon.ico',
   '/icon-192.svg',
   '/icon-512.svg'
@@ -65,39 +64,44 @@ self.addEventListener('fetch', event => {
     return
   }
 
+  // 對 HTML 與模組腳本採用 network-first，避免回舊版或回到 HTML
+  if (request.destination === 'document' || request.destination === 'script' || request.destination === 'style') {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          // 成功則回應並更新快取（只快取非 HTML 檔案）
+          const clone = response.clone()
+          if (request.destination !== 'document' && response.status === 200 && response.type === 'basic') {
+            caches.open(DYNAMIC_CACHE).then(cache => cache.put(request, clone))
+          }
+          return response
+        })
+        .catch(async () => {
+          // 失敗時，文件回離線頁；其餘從快取取用
+          if (request.destination === 'document') {
+            const cachedIndex = await caches.match('/') || await caches.match('/index.html')
+            return cachedIndex || new Response('Offline', { status: 503 })
+          }
+          const cached = await caches.match(request)
+          return cached || new Response('', { status: 504 })
+        })
+    )
+    return
+  }
+
+  // 其他資源採用 cache-first
   event.respondWith(
     caches.match(request).then(cachedResponse => {
-      if (cachedResponse) {
-        return cachedResponse
-      }
-
+      if (cachedResponse) return cachedResponse
       return fetch(request)
-        .then(networkResponse => {
-          // Don't cache if not a valid response
-          if (
-            !networkResponse ||
-            networkResponse.status !== 200 ||
-            networkResponse.type !== 'basic'
-          ) {
-            return networkResponse
+        .then(response => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            const clone = response.clone()
+            caches.open(DYNAMIC_CACHE).then(cache => cache.put(request, clone))
           }
-
-          // Clone the response
-          const responseToCache = networkResponse.clone()
-
-          // Cache dynamic content
-          caches.open(DYNAMIC_CACHE).then(cache => {
-            cache.put(request, responseToCache)
-          })
-
-          return networkResponse
+          return response
         })
-        .catch(() => {
-          // Return offline page for navigation requests
-          if (request.destination === 'document') {
-            return caches.match('/index.html')
-          }
-        })
+        .catch(() => new Response('', { status: 504 }))
     })
   )
 })

@@ -30,6 +30,7 @@ export function setupInstructorRatingRoutes(router: ApiRouter): void {
       throw new NotFoundError('Instructor not found')
     }
 
+    // 使用 instructor_applications.id 查詢評價
     const ratings = await ratingRepo.findByInstructor(instructorId)
 
     return {

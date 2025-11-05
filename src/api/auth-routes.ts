@@ -286,7 +286,7 @@ export const setupAuthRoutes = (router: any) => {
   router.post('/api/v1/auth/logout', logoutHandler)
 
   // Protected routes
-  router.get('/api/v1/auth/profile', [requireAuth], profileHandler)
-  router.put('/api/v1/auth/profile', [requireAuth], updateProfileHandler)
-  router.put('/api/v1/users/profile', [requireAuth], updateProfileHandler)
+  router.get('/api/v1/auth/profile', requireAuth, profileHandler)
+  router.put('/api/v1/auth/profile', requireAuth, updateProfileHandler)
+  router.put('/api/v1/users/profile', requireAuth, updateProfileHandler)
 }

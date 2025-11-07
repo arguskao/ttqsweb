@@ -437,21 +437,43 @@ export function setupDocumentManagementRoutes(router: ApiRouter): void {
   // 獲取文檔分類詳細資訊（包含中文名稱）
   router.get('/api/v1/files/categories/details', async (req: ApiRequest): Promise<ApiResponse> => {
     try {
-      const categories = await documentRepo.queryMany(
-        `SELECT category_key, category_name, description, display_order
-         FROM file_categories 
-         WHERE is_active = true 
-         ORDER BY display_order, category_name`
-      )
+      // 嘗試從數據庫獲取分類
+      try {
+        const categories = await documentRepo.queryMany(
+          `SELECT category_key, category_name, description, display_order
+           FROM file_categories
+           WHERE is_active = true
+           ORDER BY display_order, category_name`
+        )
+
+        if (categories.length > 0) {
+          return {
+            success: true,
+            data: categories.map(row => ({
+              key: row.category_key,
+              name: row.category_name,
+              description: row.description,
+              order: row.display_order
+            }))
+          }
+        }
+      } catch (dbError) {
+        console.log('file_categories table not found, using default categories')
+      }
+
+      // 如果數據庫查詢失敗或沒有數據，返回默認分類
+      const defaultCategories = [
+        { key: 'general', name: '一般文件', description: '一般性文件資料', order: 1 },
+        { key: 'course', name: '課程資料', description: '課程相關文件', order: 2 },
+        { key: 'documents', name: '文檔', description: '各類文檔資料', order: 3 },
+        { key: 'images', name: '圖片', description: '圖片資料', order: 4 },
+        { key: 'reference', name: '參考資料', description: '參考文獻資料', order: 5 },
+        { key: 'ttqs', name: 'TTQS文件', description: 'TTQS相關文件', order: 6 }
+      ]
 
       return {
         success: true,
-        data: categories.map(row => ({
-          key: row.category_key,
-          name: row.category_name,
-          description: row.description,
-          order: row.display_order
-        }))
+        data: defaultCategories
       }
     } catch (error) {
       console.error('Get category details error:', error)

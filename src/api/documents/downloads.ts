@@ -8,6 +8,114 @@ import type { ApiRouter } from '../router'
 import type { ApiRequest, ApiResponse } from '../types'
 
 export function setupDocumentDownloadRoutes(router: ApiRouter): void {
+  // 驗證文檔是否可下載
+  router.get('/api/v1/documents/:id/validate', async (req: ApiRequest): Promise<ApiResponse> => {
+    try {
+      const id = parseInt(req.params?.id || '0', 10)
+      if (!id) {
+        return {
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: '無效的文件 ID',
+            statusCode: 400
+          }
+        }
+      }
+
+      try {
+        const DATABASE_URL =
+          process.env.DATABASE_URL ||
+          'postgresql://neondb_owner:npg_uBHAc2hinfI4@ep-jolly-frost-a1muxrt0-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+        const sql = neon(DATABASE_URL)
+
+        const result = await sql`
+          SELECT id, file_url
+          FROM documents
+          WHERE id = ${id} AND is_public = true
+        `
+
+        if (result.length === 0) {
+          return {
+            success: true,
+            data: {
+              isValid: false,
+              reason: 'NOT_FOUND'
+            }
+          }
+        }
+
+        const doc = result[0] as any
+
+        // 檢查檔案 URL 是否有效
+        if (!doc.file_url || doc.file_url.trim() === '' || doc.file_url === '#') {
+          return {
+            success: true,
+            data: {
+              isValid: false,
+              reason: 'INVALID_URL'
+            }
+          }
+        }
+
+        // 嘗試驗證 URL 是否可訪問（HEAD 請求）
+        try {
+          const urlResponse = await fetch(doc.file_url, {
+            method: 'HEAD',
+            signal: AbortSignal.timeout(5000) // 5秒超時
+          })
+
+          if (!urlResponse.ok) {
+            return {
+              success: true,
+              data: {
+                isValid: false,
+                reason: 'FILE_NOT_ACCESSIBLE',
+                statusCode: urlResponse.status
+              }
+            }
+          }
+
+          return {
+            success: true,
+            data: {
+              isValid: true
+            }
+          }
+        } catch (fetchError) {
+          // URL 無法訪問
+          return {
+            success: true,
+            data: {
+              isValid: false,
+              reason: 'FETCH_ERROR'
+            }
+          }
+        }
+      } catch (dbError) {
+        console.error('Database error:', dbError)
+        return {
+          success: false,
+          error: {
+            code: 'INTERNAL_ERROR',
+            message: '數據庫查詢失敗',
+            statusCode: 500
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Validation error:', error)
+      return {
+        success: false,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: '驗證文件失敗',
+          statusCode: 500
+        }
+      }
+    }
+  })
+
   // 文檔下載
   router.get('/api/v1/documents/:id/download', async (req: ApiRequest): Promise<ApiResponse> => {
     try {

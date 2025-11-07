@@ -213,6 +213,46 @@
         </footer>
       </div>
     </div>
+
+    <!-- Confidential Document Alert Modal -->
+    <div class="modal" :class="{ 'is-active': showConfidentialModal }">
+      <div class="modal-background" @click="closeConfidentialModal"></div>
+      <div class="modal-card" style="max-width: 500px">
+        <header class="modal-card-head has-background-warning">
+          <p class="modal-card-title">
+            <span class="icon-text">
+              <span class="icon has-text-dark">
+                <span style="font-size: 1.5rem">⚠️</span>
+              </span>
+              <span class="has-text-dark">機密文件</span>
+            </span>
+          </p>
+          <button class="delete" aria-label="close" @click="closeConfidentialModal"></button>
+        </header>
+        <section class="modal-card-body has-text-centered">
+          <div class="content">
+            <p class="is-size-5 mb-4">
+              <span class="icon is-large has-text-warning">
+                <span style="font-size: 3rem">🔒</span>
+              </span>
+            </p>
+            <p class="is-size-5 has-text-weight-semibold mb-3">此為機密文件</p>
+            <p class="has-text-grey">
+              此文件目前無法下載，如需存取權限，<br />
+              請聯繫網站管理員。
+            </p>
+          </div>
+        </section>
+        <footer class="modal-card-foot" style="justify-content: center">
+          <button class="button is-warning" @click="closeConfidentialModal">
+            <span class="icon">
+              <span>✓</span>
+            </span>
+            <span>我知道了</span>
+          </button>
+        </footer>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -270,6 +310,9 @@ const categoryLabels = ref<Record<string, string>>({
 // Preview Modal
 const showPreviewModal = ref(false)
 const previewDocument = ref<Document | null>(null)
+
+// Confidential Alert Modal
+const showConfidentialModal = ref(false)
 
 // Search debounce timer
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
@@ -430,17 +473,45 @@ const handleDownload = async (documentId: number) => {
     if (response.data.success) {
       const { file_url, file_name } = response.data.data
 
-      // Open download in new tab
-      window.open(file_url, '_blank')
+      // 檢查檔案 URL 是否有效
+      try {
+        // 嘗試開啟下載連結
+        const downloadWindow = window.open(file_url, '_blank')
+        
+        // 如果無法開啟視窗,可能是被封鎖或 URL 無效
+        if (!downloadWindow) {
+          showConfidentialAlert()
+          return
+        }
 
-      // Refresh documents to update download count
-      await fetchDocuments()
-      // TODO: 實現API端點後再啟用
-      // await fetchDownloadStats()
+        // Refresh documents to update download count
+        await fetchDocuments()
+        // TODO: 實現API端點後再啟用
+        // await fetchDownloadStats()
+      } catch (urlError) {
+        // URL 無效或無法訪問
+        showConfidentialAlert()
+      }
     }
   } catch (err: unknown) {
-    error.value = (err as any)?.response?.data?.error?.message || '下載文件失敗'
+    const errorMessage = (err as any)?.response?.data?.error?.message || ''
+    
+    // 如果是 404 或檔案不存在的錯誤,顯示機密文件提示
+    if (errorMessage.includes('不存在') || errorMessage.includes('404') || 
+        (err as any)?.response?.status === 404) {
+      showConfidentialAlert()
+    } else {
+      error.value = errorMessage || '下載文件失敗'
+    }
   }
+}
+
+const showConfidentialAlert = () => {
+  showConfidentialModal.value = true
+}
+
+const closeConfidentialModal = () => {
+  showConfidentialModal.value = false
 }
 
 const handlePreview = (document: Document) => {
@@ -453,9 +524,13 @@ const closePreviewModal = () => {
   previewDocument.value = null
 }
 
-const handleDownloadFromPreview = () => {
+const handleDownloadFromPreview = async () => {
   if (previewDocument.value) {
-    handleDownload(previewDocument.value.id)
+    await handleDownload(previewDocument.value.id)
+    // 如果下載成功,關閉預覽視窗
+    if (!error.value) {
+      closePreviewModal()
+    }
   }
 }
 

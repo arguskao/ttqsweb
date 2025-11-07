@@ -49,6 +49,18 @@ export function setupDocumentDownloadRoutes(router: ApiRouter): void {
 
         const doc = result[0] as any
 
+        // 檢查檔案 URL 是否有效（不是空值或無效連結）
+        if (!doc.file_url || doc.file_url.trim() === '' || doc.file_url === '#') {
+          return {
+            success: false,
+            error: {
+              code: 'FILE_UNAVAILABLE',
+              message: '文件不存在或不可下載',
+              statusCode: 404
+            }
+          }
+        }
+
         // 增加下載次數
         await sql`
           UPDATE documents

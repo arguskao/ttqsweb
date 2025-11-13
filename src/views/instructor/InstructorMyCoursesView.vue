@@ -70,6 +70,12 @@
                       <router-link :to="`/courses/${course.id}`" class="card-footer-item">
                         查看詳情
                       </router-link>
+                      <router-link :to="`/instructor/courses/${course.id}/students`" class="card-footer-item">
+                        <span class="icon">
+                          <i class="fas fa-users"></i>
+                        </span>
+                        <span>學員管理</span>
+                      </router-link>
                     </footer>
                   </div>
                 </div>

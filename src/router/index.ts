@@ -94,6 +94,17 @@ const router = createRouter({
       }
     },
     {
+      path: '/courses/:courseId/messages',
+      name: 'course-messages',
+      component: createAsyncComponent(() => import('../views/courses/CourseMessagesView.vue')),
+      meta: {
+        requiresAuth: true,
+        title: '課程訊息 - 藥助Next學院',
+        description: '查看講師發送的課程訊息',
+        keepAlive: true
+      }
+    },
+    {
       path: '/jobs',
       name: 'jobs',
       component: createAsyncComponent(() => import('../views/jobs/JobsView.vue')),
@@ -238,6 +249,20 @@ const router = createRouter({
         requiresInstructor: true,
         title: '我的授課 - 藥助Next學院',
         description: '管理您教授的課程',
+        keepAlive: true
+      }
+    },
+    {
+      path: '/instructor/courses/:courseId/students',
+      name: 'instructor-course-students',
+      component: createAsyncComponent(
+        () => import('../views/instructor/CourseStudentsView.vue')
+      ),
+      meta: {
+        requiresAuth: true,
+        requiresInstructor: true,
+        title: '課程學員管理 - 藥助Next學院',
+        description: '查看和管理課程學員',
         keepAlive: true
       }
     },

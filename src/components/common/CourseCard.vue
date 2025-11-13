@@ -15,9 +15,22 @@
         <span class="button-icon">👁️</span>
         查看詳情
       </router-link>
-      <router-link :to="`/courses/${course.id}`" class="button is-primary">
+      <!-- 根据用户角色显示不同按钮 -->
+      <router-link 
+        v-if="!authStore.isInstructor" 
+        :to="`/courses/${course.id}`" 
+        class="button is-primary"
+      >
         <span class="button-icon">✅</span>
         立即報名
+      </router-link>
+      <router-link 
+        v-else 
+        :to="`/instructor/my-courses`" 
+        class="button is-info"
+      >
+        <span class="button-icon">👨‍🏫</span>
+        管理課程
       </router-link>
     </div>
   </div>
@@ -26,7 +39,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { useAuthStore } from '@/stores/auth'
 import type { Course } from '@/types'
+
+// 使用 auth store
+const authStore = useAuthStore()
 
 interface Props {
   course: Course
@@ -173,6 +190,16 @@ const formatPrice = (price: number | string) => {
 .course-actions .button.is-primary:hover {
   background-color: #0f766e;
   border-color: #0f766e;
+}
+
+.course-actions .button.is-info {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.course-actions .button.is-info:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
 }
 
 .button-icon {

@@ -125,41 +125,74 @@
 
                 <!-- Enrollment Status -->
                 <div v-if="isAuthenticated">
-                  <div v-if="enrollmentStatus === 'loading'" class="has-text-centered">
-                    <button class="button is-loading is-white" disabled>檢查中...</button>
-                  </div>
-                  <div v-else-if="isEnrolled" class="notification is-success is-light">
-                    <p class="has-text-centered">
-                      <span class="icon">
-                        <i class="fas fa-check-circle"></i>
-                      </span>
-                      <span>您已註冊此課程</span>
-                    </p>
+                  <!-- 講師專用界面 -->
+                  <div v-if="authStore.isInstructor">
+                    <div class="notification is-info is-light">
+                      <p class="has-text-centered">
+                        <span class="icon">
+                          <i class="fas fa-chalkboard-teacher"></i>
+                        </span>
+                        <span>您是講師身份</span>
+                      </p>
+                    </div>
                     <button
-                      class="button is-primary is-fullwidth mt-3"
-                      @click="goToProgress"
+                      class="button is-info is-large is-fullwidth"
+                      @click="goToInstructorDashboard"
                     >
                       <span class="icon">
-                        <!-- Inline SVG to avoid external icon dependency -->
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                          <path d="M3 3h2v16h16v2H3V3zm17.293 4.293l-5.586 5.586-3.293-3.293L7 13v2l4.414-4.414 3.293 3.293 6.293-6.293-1.707-1.293z"/>
-                        </svg>
+                        <i class="fas fa-users"></i>
                       </span>
-                      <span>查看學習進度</span>
+                      <span>查看學員管理</span>
                     </button>
                   </div>
+                  
+                  <!-- 學員/求職者界面 -->
                   <div v-else>
-                    <button
-                      class="button is-primary is-large is-fullwidth"
-                      :class="{ 'is-loading': enrolling }"
-                      :disabled="enrolling"
-                      @click="handleEnroll"
-                    >
-                      <span class="icon">
-                        <i class="fas fa-graduation-cap"></i>
-                      </span>
-                      <span>立即報名</span>
-                    </button>
+                    <div v-if="enrollmentStatus === 'loading'" class="has-text-centered">
+                      <button class="button is-loading is-white" disabled>檢查中...</button>
+                    </div>
+                    <div v-else-if="isEnrolled" class="notification is-success is-light">
+                      <p class="has-text-centered">
+                        <span class="icon">
+                          <i class="fas fa-check-circle"></i>
+                        </span>
+                        <span>您已註冊此課程</span>
+                      </p>
+                      <button
+                        class="button is-primary is-fullwidth mt-3"
+                        @click="goToProgress"
+                      >
+                        <span class="icon">
+                          <!-- Inline SVG to avoid external icon dependency -->
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M3 3h2v16h16v2H3V3zm17.293 4.293l-5.586 5.586-3.293-3.293L7 13v2l4.414-4.414 3.293 3.293 6.293-6.293-1.707-1.293z"/>
+                          </svg>
+                        </span>
+                        <span>查看學習進度</span>
+                      </button>
+                      <button
+                        class="button is-info is-fullwidth mt-2"
+                        @click="goToMessages"
+                      >
+                        <span class="icon">
+                          <i class="fas fa-envelope"></i>
+                        </span>
+                        <span>查看課程訊息</span>
+                      </button>
+                    </div>
+                    <div v-else>
+                      <button
+                        class="button is-primary is-large is-fullwidth"
+                        :class="{ 'is-loading': enrolling }"
+                        :disabled="enrolling"
+                        @click="handleEnroll"
+                      >
+                        <span class="icon">
+                          <i class="fas fa-graduation-cap"></i>
+                        </span>
+                        <span>立即報名</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div v-else>
@@ -412,6 +445,17 @@ const goToProgress = () => {
 
 const goToLogin = () => {
   router.push(`/login?redirect=/courses/${route.params.id}`)
+}
+
+const goToInstructorDashboard = () => {
+  // 导航到讲师的课程管理页面
+  router.push('/instructor/my-courses')
+}
+
+const goToMessages = () => {
+  if (course.value) {
+    router.push(`/courses/${course.value.id}/messages`)
+  }
 }
 
 // Lifecycle

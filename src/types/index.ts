@@ -49,11 +49,19 @@ export interface CourseEnrollment {
   completionDate?: string
   progressPercentage: number
   finalScore?: number
-  status: 'enrolled' | 'in_progress' | 'completed' | 'dropped'
+  status: 'not_enrolled' | 'enrolled' | 'in_progress' | 'completed' | 'dropped'
   courseTitle?: string
   courseDescription?: string
   courseType?: string
   durationHours?: number
+}
+
+// 用於 API 回應的擴展類型（可能包含 not_enrolled 狀態）
+export interface CourseEnrollmentStatus extends Partial<CourseEnrollment> {
+  status: 'not_enrolled' | 'enrolled' | 'in_progress' | 'completed' | 'dropped'
+  courseId: number
+  userId: number
+  progressPercentage: number
 }
 
 // 工作類型

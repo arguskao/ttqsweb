@@ -106,7 +106,7 @@ const loadMessages = async () => {
     // 先檢查是否已報名課程
     try {
       const enrollmentResponse = await api.get(`/courses/${courseId}/progress`)
-      const enrollment = enrollmentResponse.data?.data
+      const enrollment = enrollmentResponse.data?.data as any
       
       if (!enrollment || enrollment.status === 'not_enrolled') {
         errorMessage.value = '您尚未報名此課程，無法查看訊息'

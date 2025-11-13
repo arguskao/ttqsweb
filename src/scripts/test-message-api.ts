@@ -43,6 +43,11 @@ async function testMessageAPI() {
     }
 
     const msg = testMessage[0]
+    if (!msg) {
+      console.log('❌ 無法獲取訊息資料')
+      process.exit(1)
+    }
+
     console.log(`   課程: ${msg.course_title} (ID: ${msg.course_id})`)
     console.log(`   發送者: ${msg.sender_email}`)
     console.log(`   收件人: ${msg.recipient_email} (User ID: ${msg.recipient_user_id})`)
@@ -90,13 +95,14 @@ async function testMessageAPI() {
       WHERE course_id = ${courseId} AND user_id = ${userId}
     `
 
-    if (enrollment.length === 0) {
+    const enrollmentData = enrollment as any[]
+    if (enrollmentData.length === 0) {
       console.log('   ❌ 用戶未報名此課程')
       console.log('   這可能是問題所在！前端會阻止訊息載入。\n')
     } else {
       console.log('   ✅ 用戶已報名此課程')
-      console.log(`   狀態: ${enrollment[0].status}`)
-      console.log(`   進度: ${enrollment[0].progress_percentage}%\n`)
+      console.log(`   狀態: ${enrollmentData[0].status}`)
+      console.log(`   進度: ${enrollmentData[0].progress_percentage}%\n`)
     }
 
     // 5. 測試所有學員
@@ -113,7 +119,7 @@ async function testMessageAPI() {
 
     console.log(`   課程共有 ${allStudents.length} 位學員\n`)
 
-    for (const student of allStudents) {
+    for (const student of allStudents as any[]) {
       const studentMessages = await sql`
         SELECT COUNT(*) as count
         FROM course_messages
@@ -129,7 +135,7 @@ async function testMessageAPI() {
 
     // 6. 診斷建議
     console.log('\n💡 診斷建議:')
-    if (enrollment.length === 0) {
+    if (enrollmentData.length === 0) {
       console.log('   ⚠️  問題：用戶未報名課程')
       console.log('   解決方案：')
       console.log('   1. 確認用戶已報名課程')

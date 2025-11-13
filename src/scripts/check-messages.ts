@@ -70,7 +70,7 @@ async function checkMessages() {
     if (recentMessages.length === 0) {
       console.log('   ⚠️  沒有訊息記錄\n')
     } else {
-      recentMessages.forEach((msg: any, index: number) => {
+      (recentMessages as any[]).forEach((msg, index) => {
         console.log(`\n   訊息 #${index + 1}:`)
         console.log(`   ID: ${msg.id}`)
         console.log(`   課程: ${msg.course_title} (ID: ${msg.course_id})`)
@@ -105,7 +105,7 @@ async function checkMessages() {
     if (messagesByCourse.length === 0) {
       console.log('   ⚠️  沒有課程有訊息\n')
     } else {
-      messagesByCourse.forEach((course: any) => {
+      (messagesByCourse as any[]).forEach((course) => {
         console.log(`   - ${course.title}: ${course.message_count} 則訊息`)
       })
       console.log()
@@ -131,7 +131,7 @@ async function checkMessages() {
 
     // 7. 檢查課程報名情況
     console.log('7️⃣ 課程報名情況:')
-    const enrollments = await sql`
+    const enrollmentsData = await sql`
       SELECT 
         c.id,
         c.title,
@@ -143,14 +143,14 @@ async function checkMessages() {
       LIMIT 5
     `
 
-    enrollments.forEach((course: any) => {
+    ;(enrollmentsData as any[]).forEach((course) => {
       console.log(`   - ${course.title}: ${course.enrollment_count} 位學員`)
     })
     console.log()
 
     // 8. 檢查特定課程的訊息和學員
     if (recentMessages.length > 0) {
-      const firstCourseId = recentMessages[0].course_id
+      const firstCourseId = (recentMessages[0] as any).course_id
       console.log(`8️⃣ 檢查課程 ID ${firstCourseId} 的詳細資訊:`)
       
       const courseEnrollments = await sql`
@@ -166,7 +166,7 @@ async function checkMessages() {
       console.log(`   學員數: ${courseEnrollments.length}`)
       if (courseEnrollments.length > 0) {
         console.log('   學員列表:')
-        courseEnrollments.forEach((student: any) => {
+        ;(courseEnrollments as any[]).forEach((student) => {
           console.log(`   - ${student.name} (${student.email})`)
         })
       }

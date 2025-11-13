@@ -212,21 +212,21 @@
                 <!-- Course Features -->
                 <div class="content">
                   <h4 class="title is-5">課程特色</h4>
-                  <ul class="fa-ul">
-                    <li>
-                      <span class="fa-li"><i class="fas fa-check has-text-success"></i></span>
+                  <ul style="list-style: none; padding-left: 0;">
+                    <li style="padding: 0.5rem 0;">
+                      <span style="color: #48c774; margin-right: 0.5rem;">✓</span>
                       職能導向教學
                     </li>
-                    <li>
-                      <span class="fa-li"><i class="fas fa-check has-text-success"></i></span>
+                    <li style="padding: 0.5rem 0;">
+                      <span style="color: #48c774; margin-right: 0.5rem;">✓</span>
                       實務操作結合
                     </li>
-                    <li>
-                      <span class="fa-li"><i class="fas fa-check has-text-success"></i></span>
+                    <li style="padding: 0.5rem 0;">
+                      <span style="color: #48c774; margin-right: 0.5rem;">✓</span>
                       就業媒合服務
                     </li>
-                    <li>
-                      <span class="fa-li"><i class="fas fa-check has-text-success"></i></span>
+                    <li style="padding: 0.5rem 0;">
+                      <span style="color: #48c774; margin-right: 0.5rem;">✓</span>
                       完課證書認證
                     </li>
                   </ul>

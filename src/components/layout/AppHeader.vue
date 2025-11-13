@@ -49,11 +49,17 @@
         </div>
 
         <!-- Authenticated user menu -->
-        <div v-else class="navbar-item has-dropdown" :class="{ 'is-active': isUserMenuOpen }">
-          <a class="navbar-link" @click="toggleUserMenu">
-            <span class="icon"> 👤 </span>
-            <span>{{ currentUser?.firstName }} {{ currentUser?.lastName }}</span>
-          </a>
+        <div v-else>
+          <!-- 訊息中心 -->
+          <div class="navbar-item">
+            <MessageCenter />
+          </div>
+
+          <div class="navbar-item has-dropdown" :class="{ 'is-active': isUserMenuOpen }">
+            <a class="navbar-link" @click="toggleUserMenu">
+              <span class="icon"> 👤 </span>
+              <span>{{ currentUser?.firstName }} {{ currentUser?.lastName }}</span>
+            </a>
 
           <div class="navbar-dropdown is-right">
             <router-link to="/profile" class="navbar-item" @click="closeMenus">
@@ -241,6 +247,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
+import MessageCenter from './MessageCenter.vue'
 import { authService } from '@/services/auth-service'
 import { useAuthStore } from '@/stores/auth'
 

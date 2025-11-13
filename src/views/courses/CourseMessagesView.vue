@@ -108,25 +108,33 @@ const loadMessages = async () => {
       const enrollmentResponse = await api.get(`/courses/${courseId}/progress`)
       const enrollment = enrollmentResponse.data?.data as any
       
-      if (!enrollment || enrollment.status === 'not_enrolled') {
+      console.log('[CourseMessages] 報名狀態:', enrollment)
+      
+      // 只有明確的 not_enrolled 才阻止
+      if (enrollment && enrollment.status === 'not_enrolled') {
         errorMessage.value = '您尚未報名此課程，無法查看訊息'
         isLoading.value = false
         return
       }
+      
+      // 如果 status 是 enrolled, in_progress, completed 等，都允許查看
     } catch (enrollError) {
       console.error('檢查報名狀態失敗:', enrollError)
-      errorMessage.value = '您尚未報名此課程，無法查看訊息'
-      isLoading.value = false
-      return
+      // 如果檢查失敗，仍然嘗試載入訊息（讓後端決定權限）
+      console.log('[CourseMessages] 報名狀態檢查失敗，繼續載入訊息')
     }
 
-    // 已報名，載入訊息
+    // 載入訊息
+    console.log('[CourseMessages] 開始載入訊息，課程 ID:', courseId)
     const response = await api.get(`/courses/${courseId}/messages`)
+    console.log('[CourseMessages] API 回應:', response)
 
     if (response.data?.success) {
       messages.value = response.data.data || []
+      console.log('[CourseMessages] 載入訊息成功，數量:', messages.value.length)
     } else {
       errorMessage.value = response.data?.message || '載入訊息失敗'
+      console.error('[CourseMessages] 載入訊息失敗:', response.data)
     }
   } catch (error: any) {
     console.error('載入訊息失敗:', error)

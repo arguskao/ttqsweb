@@ -404,8 +404,14 @@ const loadCourse = async () => {
 const checkEnrollmentStatus = async (courseId: number) => {
   try {
     const progress = await courseService.getCourseProgress(courseId)
-    isEnrolled.value = true
-    enrollmentStatus.value = 'enrolled'
+    // 檢查 status 欄位，只有真正報名的才算已註冊
+    if (progress && progress.status && progress.status !== 'not_enrolled') {
+      isEnrolled.value = true
+      enrollmentStatus.value = 'enrolled'
+    } else {
+      isEnrolled.value = false
+      enrollmentStatus.value = 'not_enrolled'
+    }
   } catch (err) {
     isEnrolled.value = false
     enrollmentStatus.value = 'not_enrolled'

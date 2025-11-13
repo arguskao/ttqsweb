@@ -103,6 +103,24 @@ const loadMessages = async () => {
     isLoading.value = true
     errorMessage.value = ''
 
+    // 先檢查是否已報名課程
+    try {
+      const enrollmentResponse = await api.get(`/courses/${courseId}/progress`)
+      const enrollment = enrollmentResponse.data?.data
+      
+      if (!enrollment || enrollment.status === 'not_enrolled') {
+        errorMessage.value = '您尚未報名此課程，無法查看訊息'
+        isLoading.value = false
+        return
+      }
+    } catch (enrollError) {
+      console.error('檢查報名狀態失敗:', enrollError)
+      errorMessage.value = '您尚未報名此課程，無法查看訊息'
+      isLoading.value = false
+      return
+    }
+
+    // 已報名，載入訊息
     const response = await api.get(`/courses/${courseId}/messages`)
 
     if (response.data?.success) {

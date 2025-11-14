@@ -1,83 +1,56 @@
 /**
- * 登入端點 - Cloudflare Workers兼容版本
- * 使用 @neondatabase/serverless 而不是 pg Pool
+ * 登入端點 - 使用統一錯誤處理
  */
+import {
+  ApiError,
+  ErrorCode,
+  createSuccessResponse,
+  withErrorHandler,
+  validateDatabaseUrl,
+  handleDatabaseError
+} from '../../../utils/error-handler'
 
-export const onRequest = async (context: any) => {
+interface Env {
+  DATABASE_URL: string
+  JWT_SECRET: string
+}
+
+interface Context {
+  request: Request
+  env: Env
+}
+
+async function handleLogin(context: Context): Promise<Response> {
+  const { request, env } = context
+
+  // 驗證請求方法
+  if (request.method !== 'POST') {
+    throw new ApiError(ErrorCode.METHOD_NOT_ALLOWED, '只允許 POST 請求')
+  }
+
+  // 解析請求體
+  const body = await request.json() as { email?: string; password?: string }
+  const { email, password } = body
+
+  // 驗證必填欄位
+  if (!email || !password) {
+    throw new ApiError(ErrorCode.MISSING_REQUIRED_FIELD, '請提供電子郵件和密碼')
+  }
+
+  // 驗證 email 格式
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email)) {
+    throw new ApiError(ErrorCode.INVALID_INPUT, '電子郵件格式不正確')
+  }
+
+  // 驗證資料庫連接
+  const databaseUrl = validateDatabaseUrl(env.DATABASE_URL)
+
+  // 連接數據庫
+  const { neon } = await import('@neondatabase/serverless')
+  const sql = neon(databaseUrl)
+
   try {
-    const { request, env } = context
-
-    // 處理CORS預檢請求
-    if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        status: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Max-Age': '86400'
-        }
-      })
-    }
-
-    if (request.method !== 'POST') {
-      return new Response(JSON.stringify({
-        success: false,
-        error: {
-          code: 'METHOD_NOT_ALLOWED',
-          message: '只允許POST請求'
-        }
-      }), {
-        status: 405,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
-      })
-    }
-
-    const body = await request.json()
-    const { email, password } = body
-
-    // 驗證輸入
-    if (!email || !password) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: '電子郵件和密碼都必須提供'
-        }
-      }), {
-        status: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
-      })
-    }
-
-    // 驗證email格式
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: '電子郵件格式不正確'
-        }
-      }), {
-        status: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
-      })
-    }
-
-    // 連接數據庫
-    const { neon } = await import('@neondatabase/serverless')
-    const sql = neon(env.DATABASE_URL)
-
     // 查詢用戶
     const result = await sql`
       SELECT id, email, password_hash, user_type, first_name, last_name, phone,
@@ -88,19 +61,7 @@ export const onRequest = async (context: any) => {
     `
 
     if (result.length === 0) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: '電子郵件或密碼不正確'
-        }
-      }), {
-        status: 401,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
-      })
+      throw new ApiError(ErrorCode.UNAUTHORIZED, '電子郵件或密碼不正確')
     }
 
     const user = result[0]
@@ -108,7 +69,6 @@ export const onRequest = async (context: any) => {
     // 驗證密碼 - 支援 bcrypt 和舊的 SHA-256 格式
     let isPasswordValid = false
 
-    // 檢查密碼格式
     if (user.password_hash.startsWith('$2')) {
       // bcrypt 格式
       const bcrypt = await import('bcryptjs')
@@ -119,35 +79,23 @@ export const onRequest = async (context: any) => {
       const sha256Hash = crypto.createHash('sha256').update(password).digest('hex')
       isPasswordValid = sha256Hash === user.password_hash
     } else {
-      // 未知格式
-      console.error('未知的密碼格式:', {
+      console.error('[Login] 未知的密碼格式:', {
         hashLength: user.password_hash.length,
         hashPrefix: user.password_hash.substring(0, 10)
       })
+      throw new ApiError(ErrorCode.INTERNAL_ERROR, '密碼驗證失敗')
     }
 
     if (!isPasswordValid) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: '電子郵件或密碼不正確'
-        }
-      }), {
-        status: 401,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
-      })
+      throw new ApiError(ErrorCode.UNAUTHORIZED, '電子郵件或密碼不正確')
     }
 
-    // 生成JWT token
+    // 生成 JWT token
     const jwt = await import('jsonwebtoken')
     const secret = env.JWT_SECRET
 
     if (!secret) {
-      throw new Error('JWT_SECRET未設置')
+      throw new ApiError(ErrorCode.INTERNAL_ERROR, 'JWT_SECRET 未設置')
     }
 
     const token = jwt.sign(
@@ -164,50 +112,42 @@ export const onRequest = async (context: any) => {
       }
     )
 
-    // 返回成功響應（匹配前端期望的格式）
-    return new Response(JSON.stringify({
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          userType: user.user_type,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          phone: user.phone,
-          isActive: user.is_active,
-          createdAt: user.created_at,
-          updatedAt: user.updated_at
-        },
-        tokens: {
-          accessToken: token,
-          refreshToken: token
-        }
+    // 返回成功響應
+    return createSuccessResponse({
+      user: {
+        id: user.id,
+        email: user.email,
+        userType: user.user_type,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        phone: user.phone,
+        isActive: user.is_active,
+        createdAt: user.created_at,
+        updatedAt: user.updated_at
+      },
+      tokens: {
+        accessToken: token,
+        refreshToken: token
       }
-    }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
-    })
+    }, '登入成功')
 
-  } catch (error: any) {
-    console.error('登入錯誤:', error)
-
-    return new Response(JSON.stringify({
-      success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: '登入失敗',
-        details: error.message
-      }
-    }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
-    })
+  } catch (dbError) {
+    handleDatabaseError(dbError, 'User Login')
   }
+}
+
+// 導出處理函數（自動包含錯誤處理和 CORS）
+export const onRequestPost = withErrorHandler(handleLogin, 'Auth Login')
+
+// OPTIONS 請求處理
+export async function onRequestOptions(): Promise<Response> {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400'
+    }
+  })
 }

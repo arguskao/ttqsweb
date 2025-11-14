@@ -231,6 +231,19 @@ export function parseJwtToken(token: string): any {
       )
     }
 
+    // 檢查必要欄位
+    if (!payload.userId && !payload.user_id && !payload.id) {
+      throw new ApiError(
+        ErrorCode.INVALID_TOKEN,
+        'Token 缺少用戶 ID'
+      )
+    }
+
+    // 標準化 userId 欄位
+    if (!payload.userId) {
+      payload.userId = payload.user_id || payload.id
+    }
+
     return payload
   } catch (error) {
     if (error instanceof ApiError) {

@@ -61,7 +61,7 @@
               <span>{{ currentUser?.firstName }} {{ currentUser?.lastName }}</span>
             </a>
 
-          <div class="navbar-dropdown is-right">
+            <div class="navbar-dropdown is-right">
             <router-link to="/profile" class="navbar-item" @click="closeMenus">
               <span class="icon"> 👤 </span>
               <span>個人資料</span>
@@ -236,6 +236,7 @@
               </span>
               <span>登出</span>
             </a>
+          </div>
           </div>
         </div>
       </div>

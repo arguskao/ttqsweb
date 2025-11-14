@@ -79,8 +79,8 @@
               <p style="white-space: pre-wrap;">{{ selectedMessage.message }}</p>
             </div>
 
-            <!-- 回覆區域 -->
-            <div class="reply-section mt-5">
+            <!-- 回覆區域 - 只有學員可以回覆 -->
+            <div v-if="isStudent" class="reply-section mt-5">
               <h4 class="title is-6">回覆訊息</h4>
               <div class="field">
                 <div class="control">
@@ -93,10 +93,16 @@
                 </div>
               </div>
             </div>
+
+            <!-- 講師提示 -->
+            <div v-else class="notification is-info is-light mt-5">
+              <p>如需回覆學員，請前往 <router-link :to="`/instructor/courses/${selectedMessage.courseId}/students`">學員管理頁面</router-link> 發送訊息。</p>
+            </div>
           </div>
         </section>
         <footer class="modal-card-foot">
           <button
+            v-if="isStudent"
             class="button is-primary"
             :class="{ 'is-loading': sending }"
             :disabled="!replyText.trim() || sending"
@@ -130,6 +136,12 @@ const sending = ref(false)
 // Computed
 const unreadCount = computed(() => {
   return messages.value.filter(m => !m.isRead).length
+})
+
+const isStudent = computed(() => {
+  const userType = authStore.user?.userType
+  // 學員身份：job_seeker 或沒有特殊身份
+  return userType === 'job_seeker' || (!userType || (userType !== 'instructor' && userType !== 'admin'))
 })
 
 // Methods

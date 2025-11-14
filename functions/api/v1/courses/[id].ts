@@ -43,6 +43,7 @@ async function handleGetCourse(context: Context): Promise<Response> {
     const courses = await sql`
       SELECT 
         c.*,
+        u.id as instructor_user_id,
         u.first_name as instructor_first_name,
         u.last_name as instructor_last_name,
         ia.bio as instructor_bio,
@@ -79,6 +80,8 @@ async function handleGetCourse(context: Context): Promise<Response> {
       price: course.price,
       instructorId: course.instructor_id,
       instructor_id: course.instructor_id,
+      instructorUserId: course.instructor_user_id,
+      instructor_user_id: course.instructor_user_id,
       instructorFirstName: course.instructor_first_name,
       instructorLastName: course.instructor_last_name,
       instructorBio: course.instructor_bio,

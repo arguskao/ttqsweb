@@ -96,7 +96,29 @@
 
             <!-- 講師提示 -->
             <div v-else class="notification is-info is-light mt-5">
-              <p>如需回覆學員，請前往 <router-link :to="`/instructor/courses/${selectedMessage.courseId}/students`">學員管理頁面</router-link> 發送訊息。</p>
+              <p>如需回覆學員，請前往學員管理頁面發送訊息。</p>
+              <div class="buttons mt-3">
+                <router-link 
+                  :to="`/instructor/courses/${selectedMessage.courseId}/students`" 
+                  class="button is-primary is-small"
+                  @click="closeMessage"
+                >
+                  <span class="icon">
+                    <i class="fas fa-users"></i>
+                  </span>
+                  <span>前往學員管理</span>
+                </router-link>
+                <router-link 
+                  to="/instructor/my-courses" 
+                  class="button is-light is-small"
+                  @click="closeMessage"
+                >
+                  <span class="icon">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                  </span>
+                  <span>我的授課</span>
+                </router-link>
+              </div>
             </div>
           </div>
         </section>
@@ -228,21 +250,39 @@ const sendReply = async () => {
   sending.value = true
 
   try {
+    // 先獲取課程資訊以取得講師 ID
+    const courseResponse = await api.get(`/courses/${selectedMessage.value.courseId}`)
+    
+    if (!courseResponse.data?.success) {
+      throw new Error('無法獲取課程資訊')
+    }
+
+    const course = courseResponse.data.data
+    const instructorUserId = course.instructorUserId
+
+    if (!instructorUserId) {
+      throw new Error('無法找到課程講師')
+    }
+
+    console.log('[MessageCenter] 發送回覆給講師:', instructorUserId)
+
     // 發送回覆（作為新訊息發送給講師）
-    await api.post(`/courses/${selectedMessage.value.courseId}/messages`, {
+    const response = await api.post(`/courses/${selectedMessage.value.courseId}/messages`, {
       subject: `Re: ${selectedMessage.value.subject}`,
       message: replyText.value,
-      recipientId: selectedMessage.value.senderId,
+      recipientId: instructorUserId,
       isBroadcast: false
     })
 
+    console.log('[MessageCenter] 回覆發送成功:', response.data)
     alert('回覆已發送')
     replyText.value = ''
     closeMessage()
     loadMessages() // 重新載入訊息
   } catch (err: any) {
-    console.error('發送回覆失敗:', err)
-    alert(err.response?.data?.message || '發送回覆失敗')
+    console.error('[MessageCenter] 發送回覆失敗:', err)
+    const errorMsg = err.response?.data?.message || err.message || '發送回覆失敗'
+    alert(`發送失敗: ${errorMsg}`)
   } finally {
     sending.value = false
   }

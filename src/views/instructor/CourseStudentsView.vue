@@ -219,8 +219,8 @@ const averageProgress = computed(() => {
 const loadStudents = async () => {
   const courseId = route.params.courseId
 
-  if (!courseId) {
-    errorMessage.value = '無效的課程 ID'
+  if (!courseId || courseId === 'undefined') {
+    errorMessage.value = '無效的課程 ID。請從「我的授課」頁面選擇課程。'
     isLoading.value = false
     return
   }
@@ -229,17 +229,26 @@ const loadStudents = async () => {
     isLoading.value = true
     errorMessage.value = ''
 
+    console.log('[CourseStudents] 載入課程學員:', courseId)
     const response = await api.get(`/courses/${courseId}/students`)
 
     if (response.data?.success) {
       courseData.value = response.data.data.course
       students.value = response.data.data.students || []
+      console.log('[CourseStudents] 載入成功:', students.value.length, '位學員')
     } else {
       errorMessage.value = response.data?.message || '載入學員資料失敗'
     }
   } catch (error: any) {
-    console.error('載入學員失敗:', error)
-    errorMessage.value = error.response?.data?.message || '載入學員資料失敗'
+    console.error('[CourseStudents] 載入學員失敗:', error)
+    const status = error.response?.status
+    if (status === 403) {
+      errorMessage.value = '您沒有權限查看此課程的學員名單'
+    } else if (status === 404) {
+      errorMessage.value = '課程不存在'
+    } else {
+      errorMessage.value = error.response?.data?.message || '載入學員資料失敗'
+    }
   } finally {
     isLoading.value = false
   }

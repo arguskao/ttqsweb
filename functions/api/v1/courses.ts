@@ -1,221 +1,188 @@
 /**
- * 課程 API 端點
- * 簡化版本，只處理課程列表查詢
+ * 課程 API 端點 - 使用統一錯誤處理
  */
+import {
+  ApiError,
+  ErrorCode,
+  createSuccessResponse,
+  withErrorHandler,
+  validateToken,
+  parseJwtToken,
+  checkPermission,
+  validateDatabaseUrl,
+  handleDatabaseError
+} from '../../utils/error-handler'
 
 interface Env {
-    DATABASE_URL?: string
+  DATABASE_URL: string
 }
 
 interface Context {
-    request: Request
-    env: Env
+  request: Request
+  env: Env
 }
 
-export async function onRequestGet(context: Context): Promise<Response> {
+// 課程類型映射
+const COURSE_TYPE_MAPPING: Record<string, string> = {
+  'basic': '基礎課程',
+  'advanced': '進階課程',
+  'internship': '實務課程'
+}
+
+const COURSE_TYPE_REVERSE: Record<string, string> = {
+  '基礎課程': 'basic',
+  '進階課程': 'advanced',
+  '實務課程': 'internship'
+}
+
+// GET - 獲取課程列表
+async function handleGetCourses(context: Context): Promise<Response> {
   const { request, env } = context
 
+  console.log('[Courses] 查詢課程列表')
+
+  // 驗證資料庫連接
+  const databaseUrl = validateDatabaseUrl(env.DATABASE_URL)
+  const { neon } = await import('@neondatabase/serverless')
+  const sql = neon(databaseUrl)
+
+  // 解析查詢參數
+  const url = new URL(request.url)
+  const page = parseInt(url.searchParams.get('page') || '1', 10)
+  const limit = parseInt(url.searchParams.get('limit') || '12', 10)
+  const offset = (page - 1) * limit
+  const courseType = url.searchParams.get('course_type')
+  const search = url.searchParams.get('search')
+
+  // 驗證分頁參數
+  if (page < 1 || limit < 1 || limit > 100) {
+    throw new ApiError(ErrorCode.INVALID_INPUT, '無效的分頁參數')
+  }
+
+  console.log('[Courses] 查詢參數:', { page, limit, courseType, search })
+
   try {
-    console.log('[Courses] 查詢課程列表')
+    let courses
+    let total = 0
 
-    // 導入 Neon 數據庫
-    const { neon } = await import('@neondatabase/serverless')
-    const databaseUrl = env.DATABASE_URL
-    if (!databaseUrl) {
-      console.log('[Courses] DATABASE_URL 未配置')
-      return new Response(
-        JSON.stringify({ success: false, message: 'Database URL not configured' }),
-        { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-      )
+    if (courseType && COURSE_TYPE_MAPPING[courseType]) {
+      // 按課程類型篩選
+      const dbCourseType = COURSE_TYPE_MAPPING[courseType]
+      console.log('[Courses] 篩選課程類型:', dbCourseType)
+
+      const countResult = await sql`
+        SELECT COUNT(*) as count 
+        FROM courses 
+        WHERE is_active = true AND course_type = ${dbCourseType}
+      `
+      total = parseInt(countResult[0]?.count || '0', 10)
+
+      courses = await sql`
+        SELECT * FROM courses 
+        WHERE is_active = true AND course_type = ${dbCourseType}
+        ORDER BY created_at DESC 
+        LIMIT ${limit} OFFSET ${offset}
+      `
+    } else if (search) {
+      // 按關鍵字搜尋
+      console.log('[Courses] 搜尋關鍵字:', search)
+
+      const countResult = await sql`
+        SELECT COUNT(*) as count 
+        FROM courses 
+        WHERE is_active = true 
+        AND (title ILIKE ${`%${search}%`} OR description ILIKE ${`%${search}%`})
+      `
+      total = parseInt(countResult[0]?.count || '0', 10)
+
+      courses = await sql`
+        SELECT * FROM courses 
+        WHERE is_active = true 
+        AND (title ILIKE ${`%${search}%`} OR description ILIKE ${`%${search}%`})
+        ORDER BY created_at DESC 
+        LIMIT ${limit} OFFSET ${offset}
+      `
+    } else {
+      // 獲取所有課程
+      console.log('[Courses] 獲取所有課程')
+
+      const countResult = await sql`
+        SELECT COUNT(*) as count 
+        FROM courses 
+        WHERE is_active = true
+      `
+      total = parseInt(countResult[0]?.count || '0', 10)
+
+      courses = await sql`
+        SELECT * FROM courses 
+        WHERE is_active = true
+        ORDER BY created_at DESC 
+        LIMIT ${limit} OFFSET ${offset}
+      `
     }
 
-    const sql = neon(databaseUrl)
-    const url = new URL(request.url)
+    console.log('[Courses] 查詢到的課程數:', courses.length, '總數:', total)
 
-    // 獲取查詢參數
-    const page = parseInt(url.searchParams.get('page') || '1', 10)
-    const limit = parseInt(url.searchParams.get('limit') || '12', 10)
-    const offset = (page - 1) * limit
-    const courseType = url.searchParams.get('course_type')
-    const search = url.searchParams.get('search')
+    // 轉換課程類型為前端格式
+    const processedCourses = courses.map((course: any) => ({
+      ...course,
+      course_type: COURSE_TYPE_REVERSE[course.course_type] || course.course_type
+    }))
 
-    console.log('[Courses] 查詢參數:', { page, limit, courseType, search })
-
-    // 課程類型映射：前端英文 -> 數據庫中文
-    const courseTypeMapping: Record<string, string> = {
-      'basic': '基礎課程',
-      'advanced': '進階課程',
-      'internship': '實務課程'
-    }
-
-    try {
-      let courses
-      let total = 0
-
-      if (courseType && courseTypeMapping[courseType]) {
-        // 有課程類型篩選
-        const dbCourseType = courseTypeMapping[courseType]
-        console.log('[Courses] 篩選課程類型:', dbCourseType)
-
-        // 獲取總數
-        const countResult = await sql`
-                    SELECT COUNT(*) as count 
-                    FROM courses 
-                    WHERE is_active = true AND course_type = ${dbCourseType}
-                `
-        total = parseInt(countResult[0]?.count || '0', 10)
-
-        // 獲取課程列表
-        courses = await sql`
-                    SELECT * FROM courses 
-                    WHERE is_active = true AND course_type = ${dbCourseType}
-                    ORDER BY created_at DESC 
-                    LIMIT ${limit} OFFSET ${offset}
-                `
-      } else if (search) {
-        // 有搜尋條件
-        console.log('[Courses] 搜尋關鍵字:', search)
-
-        // 獲取總數
-        const countResult = await sql`
-                    SELECT COUNT(*) as count 
-                    FROM courses 
-                    WHERE is_active = true 
-                    AND (title ILIKE ${`%${search}%`} OR description ILIKE ${`%${search}%`})
-                `
-        total = parseInt(countResult[0]?.count || '0', 10)
-
-        // 獲取課程列表
-        courses = await sql`
-                    SELECT * FROM courses 
-                    WHERE is_active = true 
-                    AND (title ILIKE ${`%${search}%`} OR description ILIKE ${`%${search}%`})
-                    ORDER BY created_at DESC 
-                    LIMIT ${limit} OFFSET ${offset}
-                `
-      } else {
-        // 無篩選條件，獲取所有課程
-        console.log('[Courses] 獲取所有課程')
-
-        // 獲取總數
-        const countResult = await sql`
-                    SELECT COUNT(*) as count 
-                    FROM courses 
-                    WHERE is_active = true
-                `
-        total = parseInt(countResult[0]?.count || '0', 10)
-
-        // 獲取課程列表
-        courses = await sql`
-                    SELECT * FROM courses 
-                    WHERE is_active = true
-                    ORDER BY created_at DESC 
-                    LIMIT ${limit} OFFSET ${offset}
-                `
+    return createSuccessResponse({
+      data: processedCourses,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
       }
+    })
 
-      console.log('[Courses] 查詢到的課程數:', courses.length, '總數:', total)
-
-      // 將數據庫中文課程類型轉換為前端英文類型
-      const courseTypeReverseMapping: Record<string, string> = {
-        '基礎課程': 'basic',
-        '進階課程': 'advanced',
-        '實務課程': 'internship'
-      }
-
-      const processedCourses = courses.map((course: any) => ({
-        ...course,
-        course_type: courseTypeReverseMapping[course.course_type] || course.course_type
-      }))
-
-      console.log('[Courses] 處理後的課程:', processedCourses.map(c => ({ id: c.id, title: c.title, type: c.course_type })))
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: processedCourses,
-          meta: {
-            page,
-            limit,
-            total,
-            totalPages: Math.ceil(total / limit)
-          }
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-        }
-      )
-    } catch (dbError: any) {
-      console.error('[Courses] 數據庫查詢失敗:', dbError)
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: '數據庫查詢失敗',
-          details: dbError.message
-        }),
-        {
-          status: 500,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-        }
-      )
-    }
-  } catch (error: any) {
-    console.error('[Courses] 查詢課程列表失敗:', error)
-    return new Response(
-      JSON.stringify({
-        success: false,
-        message: '獲取課程列表失敗',
-        details: error.message
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      }
-    )
+  } catch (dbError) {
+    handleDatabaseError(dbError, 'Courses Query')
   }
 }
 
-// POST 方法 - 創建新課程
-export async function onRequestPost(context: Context): Promise<Response> {
+// POST - 創建新課程
+async function handleCreateCourse(context: Context): Promise<Response> {
   const { request, env } = context
 
+  console.log('[Courses] 創建新課程')
+
+  // 驗證 token 和權限
+  const token = validateToken(request.headers.get('Authorization'))
+  const payload = parseJwtToken(token)
+  checkPermission(payload.userType, ['admin', 'instructor'])
+
+  // 驗證資料庫連接
+  const databaseUrl = validateDatabaseUrl(env.DATABASE_URL)
+  const { neon } = await import('@neondatabase/serverless')
+  const sql = neon(databaseUrl)
+
+  // 解析請求體
+  const body = await request.json() as {
+    title?: string
+    description?: string
+    course_type?: string
+    duration_hours?: number
+    price?: number
+    instructor_id?: number
+  }
+
+  console.log('[Courses] 接收到的課程資料:', body)
+
+  // 驗證必填欄位
+  if (!body.title || !body.description) {
+    throw new ApiError(ErrorCode.MISSING_REQUIRED_FIELD, '課程標題和描述為必填欄位')
+  }
+
+  // 驗證課程類型
+  const dbCourseType = body.course_type 
+    ? COURSE_TYPE_MAPPING[body.course_type] || '基礎課程'
+    : '基礎課程'
+
   try {
-    console.log('[Courses] 創建新課程')
-
-    // 導入 Neon 數據庫
-    const { neon } = await import('@neondatabase/serverless')
-    const databaseUrl = env.DATABASE_URL
-    if (!databaseUrl) {
-      console.log('[Courses] DATABASE_URL 未配置')
-      return new Response(
-        JSON.stringify({ success: false, message: 'Database URL not configured' }),
-        { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-      )
-    }
-
-    const sql = neon(databaseUrl)
-    const body = await request.json() as any
-
-    console.log('[Courses] 接收到的課程資料:', body)
-
-    // 驗證必填欄位
-    if (!body.title || !body.description) {
-      return new Response(
-        JSON.stringify({ success: false, message: '課程標題和描述為必填欄位' }),
-        { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-      )
-    }
-
-    // 課程類型映射：前端英文 -> 數據庫中文
-    const courseTypeMapping: Record<string, string> = {
-      'basic': '基礎課程',
-      'advanced': '進階課程',
-      'internship': '實務課程'
-    }
-
-    const dbCourseType = courseTypeMapping[body.course_type] || '基礎課程'
-
     // 創建課程
     const result = await sql`
       INSERT INTO courses (
@@ -240,42 +207,24 @@ export async function onRequestPost(context: Context): Promise<Response> {
 
     console.log('[Courses] 課程創建成功:', result[0])
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        data: result[0],
-        message: '課程創建成功'
-      }),
-      {
-        status: 201,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      }
-    )
+    return createSuccessResponse(result[0], '課程創建成功', 201)
 
-  } catch (error: any) {
-    console.error('[Courses] 創建課程失敗:', error)
-    return new Response(
-      JSON.stringify({
-        success: false,
-        message: '創建課程失敗',
-        details: error.message
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      }
-    )
+  } catch (dbError) {
+    handleDatabaseError(dbError, 'Course Creation')
   }
 }
 
-// 處理 OPTIONS 請求（CORS 預檢）
+// 導出處理函數
+export const onRequestGet = withErrorHandler(handleGetCourses, 'Courses List')
+export const onRequestPost = withErrorHandler(handleCreateCourse, 'Course Create')
+
+// OPTIONS 請求處理
 export async function onRequestOptions(): Promise<Response> {
   return new Response(null, {
     status: 204,
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      // 必須允許前端實際發送的自訂標頭，否則預檢會被拒絕
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-ID, X-CSRF-Token',
       'Access-Control-Max-Age': '86400'
     }

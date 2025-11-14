@@ -227,16 +227,37 @@ export async function onRequestPost(context: Context): Promise<Response> {
 
       const course = courseResult[0]
 
-      // 權限檢查：只有課程講師或管理員可以發送訊息
-      if (userType !== 'admin' && course.instructor_user_id !== userId) {
+      // 權限檢查
+      const isInstructor = course.instructor_user_id === userId
+      const isAdmin = userType === 'admin'
+      
+      // 檢查是否為課程學員
+      let isStudent = false
+      if (!isInstructor && !isAdmin) {
+        const enrollmentCheck = await sql`
+          SELECT id
+          FROM course_enrollments
+          WHERE course_id = ${courseId} AND user_id = ${userId}
+        `
+        isStudent = enrollmentCheck.length > 0
+      }
+
+      // 如果不是講師、管理員或學員，則無權限
+      if (!isInstructor && !isAdmin && !isStudent) {
         return new Response(
           JSON.stringify({ success: false, message: '您沒有權限發送此課程的訊息' }),
           { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
         )
       }
 
-      // 如果是群發訊息
+      // 如果是群發訊息（只有講師和管理員可以群發）
       if (isBroadcast) {
+        if (!isInstructor && !isAdmin) {
+          return new Response(
+            JSON.stringify({ success: false, message: '只有講師和管理員可以群發訊息' }),
+            { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+          )
+        }
         // 獲取所有學員
         const students = await sql`
           SELECT user_id
@@ -276,7 +297,7 @@ export async function onRequestPost(context: Context): Promise<Response> {
           }
         )
       } else {
-        // 單獨發送給特定學員
+        // 單獨發送給特定學員或講師
         if (!recipientId) {
           return new Response(
             JSON.stringify({ success: false, message: '請指定收件人' }),
@@ -284,18 +305,29 @@ export async function onRequestPost(context: Context): Promise<Response> {
           )
         }
 
-        // 驗證收件人是否為該課程的學員
-        const enrollmentCheck = await sql`
-          SELECT id
-          FROM course_enrollments
-          WHERE course_id = ${courseId} AND user_id = ${recipientId}
-        `
+        // 驗證收件人的身份
+        if (isStudent) {
+          // 學員只能發送訊息給講師
+          if (recipientId !== course.instructor_user_id) {
+            return new Response(
+              JSON.stringify({ success: false, message: '學員只能發送訊息給課程講師' }),
+              { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            )
+          }
+        } else {
+          // 講師和管理員發送給學員，需驗證收件人是否為該課程的學員
+          const enrollmentCheck = await sql`
+            SELECT id
+            FROM course_enrollments
+            WHERE course_id = ${courseId} AND user_id = ${recipientId}
+          `
 
-        if (enrollmentCheck.length === 0) {
-          return new Response(
-            JSON.stringify({ success: false, message: '收件人不是此課程的學員' }),
-            { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-          )
+          if (enrollmentCheck.length === 0) {
+            return new Response(
+              JSON.stringify({ success: false, message: '收件人不是此課程的學員' }),
+              { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+            )
+          }
         }
 
         // 創建訊息

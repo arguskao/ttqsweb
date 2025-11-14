@@ -50,13 +50,10 @@
 
         <!-- Authenticated user menu -->
         <div v-else>
-          <!-- 訊息中心 -->
-          <div class="navbar-item">
-            <MessageCenter />
-          </div>
-
           <div class="navbar-item has-dropdown" :class="{ 'is-active': isUserMenuOpen }">
             <a class="navbar-link" @click="toggleUserMenu">
+              <!-- 訊息中心 -->
+              <MessageCenter />
               <span class="icon"> 👤 </span>
               <span>{{ currentUser?.firstName }} {{ currentUser?.lastName }}</span>
             </a>

@@ -30,9 +30,10 @@ export class JobServiceNeon {
       search?: string
       salaryMin?: number
       salaryMax?: number
+      userId?: number // 新增：用於檢查用戶申請狀態
     } = {}
   ): Promise<{ data: any[]; meta: any }> {
-    const { page = 1, limit = 9, jobType, location, search, salaryMin, salaryMax } = options
+    const { page = 1, limit = 9, jobType, location, search, salaryMin, salaryMax, userId } = options
     const offset = (page - 1) * limit
 
     try {
@@ -99,6 +100,20 @@ export class JobServiceNeon {
       `
       const jobs = await neonDb.queryMany(dataQuery, [...params, limit, offset])
 
+      // ✅ 修復：如果提供了 userId，檢查用戶的申請狀態
+      let appliedJobIds = new Set<number>()
+      if (userId && jobs.length > 0) {
+        const jobIds = jobs.map(job => job.id)
+        const applicationsQuery = `
+          SELECT job_id 
+          FROM job_applications 
+          WHERE applicant_id = $1 
+          AND job_id = ANY($2)
+        `
+        const applications = await neonDb.queryMany(applicationsQuery, [userId, jobIds])
+        appliedJobIds = new Set(applications.map(app => app.job_id))
+      }
+
       // 格式化數據
       const formattedJobs = jobs.map(job => ({
         id: job.id,
@@ -111,7 +126,7 @@ export class JobServiceNeon {
         employerName: job.employer_name || 'Unknown Employer',
         createdAt: job.created_at,
         expiresAt: job.expires_at,
-        hasApplied: false // TODO: 實際檢查用戶是否已申請
+        hasApplied: appliedJobIds.has(job.id) // ✅ 實際檢查用戶是否已申請
       }))
 
       return {
@@ -130,7 +145,7 @@ export class JobServiceNeon {
   }
 
   // 根據 ID 獲取工作
-  async getJobById(id: number): Promise<any | null> {
+  async getJobById(id: number, userId?: number): Promise<any | null> {
     try {
       const query = `
         SELECT 
@@ -145,6 +160,17 @@ export class JobServiceNeon {
 
       if (!job) return null
 
+      // ✅ 檢查用戶是否已申請此工作
+      let hasApplied = false
+      if (userId) {
+        const applicationQuery = `
+          SELECT id FROM job_applications 
+          WHERE job_id = $1 AND applicant_id = $2
+        `
+        const application = await neonDb.queryOne(applicationQuery, [id, userId])
+        hasApplied = !!application
+      }
+
       return {
         id: job.id,
         title: job.title,
@@ -158,7 +184,8 @@ export class JobServiceNeon {
         employerEmail: job.employer_email,
         createdAt: job.created_at,
         expiresAt: job.expires_at,
-        isActive: job.is_active
+        isActive: job.is_active,
+        hasApplied // ✅ 包含申請狀態
       }
     } catch (error) {
       console.error('Get job by ID error:', error)

@@ -129,15 +129,22 @@ if (typeof window !== 'undefined') {
   }
 
   let scrollTimeout: ReturnType<typeof setTimeout>
-  window.addEventListener('scroll', () => {
+  const scrollHandler = () => {
     clearTimeout(scrollTimeout)
     scrollTimeout = setTimeout(trackScrollDepth, 100)
-  })
+  }
+  window.addEventListener('scroll', scrollHandler)
 
   // Track time on page
   const startTime = Date.now()
-  window.addEventListener('beforeunload', () => {
+  const beforeUnloadHandler = () => {
     const timeOnPage = Math.round((Date.now() - startTime) / 1000)
     analytics.trackTimeOnPage(timeOnPage)
-  })
+    
+    // Cleanup event listeners to prevent memory leaks
+    window.removeEventListener('scroll', scrollHandler)
+    window.removeEventListener('beforeunload', beforeUnloadHandler)
+    clearTimeout(scrollTimeout)
+  }
+  window.addEventListener('beforeunload', beforeUnloadHandler)
 }

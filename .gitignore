@@ -36,3 +36,6 @@ coverage
 .env.development
 .env.production
 .env.staging
+
+# Wrangler configuration (contains secrets)
+wrangler.toml

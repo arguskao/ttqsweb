@@ -6,13 +6,15 @@ compatibility_flags = ["nodejs_compat"]
 # R2 Bucket binding
 [[r2_buckets]]
 binding = "R2_BUCKET"
-bucket_name = "ttqs"
+bucket_name = "your-bucket-name"
 
 # Environment variables
+# ⚠️ 不要在這裡放敏感信息！
+# 使用 Cloudflare Pages Dashboard 或 wrangler secret 命令設置
 [vars]
 ENVIRONMENT = "production"
-DATABASE_URL = "postgresql://neondb_owner:npg_uBHAc2hinfI4@ep-jolly-frost-a1muxrt0-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
-JWT_SECRET = "3939889"
+# DATABASE_URL - 在 Cloudflare Pages 環境變量中設置
+# JWT_SECRET - 使用 wrangler secret put JWT_SECRET 設置
 
 # 🆕 新增：指定生產分支
 [env.production]

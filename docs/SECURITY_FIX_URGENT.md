@@ -2,30 +2,40 @@
 
 ## 問題發現
 
-在代碼審查中發現以下安全問題：
+在代碼審查中發現以下**嚴重**安全問題：
 
 1. ❌ `.env` 文件被提交到 Git 倉庫
-2. ❌ JWT_SECRET (`3939889`) 暴露在 Git 歷史中
-3. ❌ 其他敏感配置可能也被洩露
+2. ❌ `wrangler.toml` 被提交到 Git 倉庫
+3. ❌ JWT_SECRET 暴露在 Git 歷史中
+4. 🚨 **DATABASE_URL（包含數據庫密碼）暴露在 Git 歷史中**
+5. ❌ 其他敏感配置可能也被洩露
+
+### 🔥 最嚴重的問題
+
+**數據庫密碼已洩露！** 任何能訪問你的 Git 倉庫的人都能：
+- 讀取你的所有數據
+- 修改或刪除數據
+- 創建新用戶
+- 完全控制你的數據庫
 
 ## 🔥 立即行動
 
 ### 步驟 1: 更新 .gitignore
 
-已完成 ✅ - `.gitignore` 已更新，現在會忽略所有 `.env` 文件
+已完成 ✅ - `.gitignore` 已更新，現在會忽略：
+- 所有 `.env` 文件
+- `wrangler.toml` 文件
 
 ### 步驟 2: 從 Git 中移除敏感文件
 
-```bash
-# 從 Git 追蹤中移除（但保留本地文件）
-git rm --cached .env
-git rm --cached .env.development
-git rm --cached .env.production
-git rm --cached .env.staging
+已完成 ✅ - 已從 Git 中移除：
+- `.env` 文件
+- `wrangler.toml` 文件
 
+```bash
 # 提交更改
-git add .gitignore .env.example
-git commit -m "security: 從 Git 中移除環境變量文件"
+git add .gitignore .env.example wrangler.toml.example wrangler.toml
+git commit -m "security: 從 Git 中移除敏感配置文件"
 ```
 
 ### 步驟 3: 生成新的 JWT Secret
@@ -110,13 +120,27 @@ git push origin --force --all
 3. 需要生成自己的 JWT Secret
 4. 需要重新拉取代碼（如果清理了 Git 歷史）
 
-### 步驟 8: 撤銷其他可能洩露的憑證
+### 步驟 8: 🚨 立即更改數據庫密碼（最重要！）
 
-檢查 `.env` 文件中的其他敏感信息：
+**你的數據庫密碼已經洩露！必須立即更改！**
 
-- [ ] 數據庫密碼 - 如果洩露，立即更改
-- [ ] API 密鑰 - 如果洩露，立即撤銷並重新生成
-- [ ] R2 訪問密鑰 - 如果洩露，立即撤銷
+#### Neon 數據庫密碼重置步驟：
+
+1. 登入 [Neon Console](https://console.neon.tech/)
+2. 選擇你的項目
+3. 進入 **Settings** → **Reset password**
+4. 生成新密碼
+5. 更新所有使用該密碼的地方：
+   - 本地 `.env` 文件
+   - `wrangler.toml` 文件（不要提交！）
+   - Cloudflare Pages 環境變量
+
+#### 檢查其他可能洩露的憑證：
+
+- [x] 🚨 **數據庫密碼** - **已洩露，必須立即更改**
+- [x] JWT Secret - 已洩露，需要更改
+- [ ] API 密鑰 - 檢查是否洩露
+- [ ] R2 訪問密鑰 - 檢查是否洩露
 - [ ] 第三方服務密鑰 - 檢查並撤銷
 
 ## ✅ 驗證修復

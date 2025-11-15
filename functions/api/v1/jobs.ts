@@ -4,7 +4,7 @@
  * POST /api/v1/jobs - 創建工作（需要雇主權限）
  */
 
-import { withErrorHandler, validateToken, parseJwtToken, checkPermission, validateDatabaseUrl, handleDatabaseError, createSuccessResponse, ApiError, ErrorCode } from '../../../functions/utils/error-handler'
+import { withErrorHandler, validateToken, parseJwtToken, checkPermission, validateDatabaseUrl, handleDatabaseError, createSuccessResponse, ApiError, ErrorCode } from '../../utils/error-handler'
 
 interface Context {
   request: Request
@@ -123,13 +123,17 @@ async function handleGet(context: Context): Promise<Response> {
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
     // 獲取總數
-    const countQuery = `SELECT COUNT(*) as count FROM jobs j ${whereClause}`
-    const countResult = await sql(countQuery, values)
+    let countQuery = `SELECT COUNT(*) as count FROM jobs j ${whereClause}`
+    // 手動替換參數
+    values.forEach((val, idx) => {
+      countQuery = countQuery.replace(`$${idx + 1}`, typeof val === 'string' ? `'${val.replace(/'/g, "''")}'` : String(val))
+    })
+    const countResult = await sql.unsafe(countQuery)
     const total = parseInt(countResult[0]?.count || '0')
 
     // 獲取數據
     const offset = (params.page! - 1) * params.limit!
-    const dataQuery = `
+    let dataQuery = `
       SELECT 
         j.*,
         u.first_name as employer_first_name,
@@ -141,7 +145,12 @@ async function handleGet(context: Context): Promise<Response> {
       ORDER BY j.created_at DESC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `
-    const jobs = await sql(dataQuery, [...values, params.limit, offset])
+    // 手動替換參數
+    const allValues = [...values, params.limit, offset]
+    allValues.forEach((val, idx) => {
+      dataQuery = dataQuery.replace(`$${idx + 1}`, typeof val === 'string' ? `'${val.replace(/'/g, "''")}'` : String(val))
+    })
+    const jobs = await sql.unsafe(dataQuery)
 
     return createSuccessResponse({
       data: jobs,

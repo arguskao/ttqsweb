@@ -5,7 +5,7 @@
  * DELETE /api/v1/jobs/[id] - 刪除工作
  */
 
-import { withErrorHandler, validateToken, parseJwtToken, checkPermission, validateDatabaseUrl, handleDatabaseError, createSuccessResponse, ApiError, ErrorCode } from '../../../../functions/utils/error-handler'
+import { withErrorHandler, validateToken, parseJwtToken, checkPermission, validateDatabaseUrl, handleDatabaseError, createSuccessResponse, ApiError, ErrorCode } from '../../../utils/error-handler'
 
 interface Context {
   request: Request

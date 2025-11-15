@@ -4,7 +4,7 @@
  * POST /api/v1/jobs/[id]/applications - 申請工作
  */
 
-import { withErrorHandler, validateToken, parseJwtToken, validateDatabaseUrl, handleDatabaseError, createSuccessResponse, ApiError, ErrorCode } from '../../../../../functions/utils/error-handler'
+import { withErrorHandler, validateToken, parseJwtToken, validateDatabaseUrl, handleDatabaseError, createSuccessResponse, ApiError, ErrorCode } from '../../../../utils/error-handler'
 
 interface Context {
   request: Request

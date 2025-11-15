@@ -4,7 +4,7 @@
  * POST /api/v1/documents - 上傳文檔
  */
 
-import { withErrorHandler, validateToken, parseJwtToken, checkPermission, validateDatabaseUrl, handleDatabaseError, createSuccessResponse, ApiError, ErrorCode } from '../../../functions/utils/error-handler'
+import { withErrorHandler, validateToken, parseJwtToken, checkPermission, validateDatabaseUrl, handleDatabaseError, createSuccessResponse, ApiError, ErrorCode } from '../../utils/error-handler'
 
 interface Context {
   request: Request
@@ -47,13 +47,17 @@ async function handleGet(context: Context): Promise<Response> {
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
     // 獲取總數
-    const countQuery = `SELECT COUNT(*) as count FROM documents ${whereClause}`
-    const countResult = await sql(countQuery, values)
+    let countQuery = `SELECT COUNT(*) as count FROM documents ${whereClause}`
+    // 手動替換參數
+    values.forEach((val, idx) => {
+      countQuery = countQuery.replace(`$${idx + 1}`, typeof val === 'string' ? `'${val.replace(/'/g, "''")}'` : String(val))
+    })
+    const countResult = await sql.unsafe(countQuery)
     const total = parseInt(countResult[0]?.count || '0')
 
     // 獲取數據
     const offset = (page - 1) * limit
-    const dataQuery = `
+    let dataQuery = `
       SELECT 
         d.*,
         u.first_name as uploader_first_name,
@@ -64,7 +68,12 @@ async function handleGet(context: Context): Promise<Response> {
       ORDER BY d.created_at DESC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `
-    const documents = await sql(dataQuery, [...values, limit, offset])
+    // 手動替換參數
+    const allValues = [...values, limit, offset]
+    allValues.forEach((val, idx) => {
+      dataQuery = dataQuery.replace(`$${idx + 1}`, typeof val === 'string' ? `'${val.replace(/'/g, "''")}'` : String(val))
+    })
+    const documents = await sql.unsafe(dataQuery)
 
     return createSuccessResponse({
       data: documents,

@@ -3,7 +3,7 @@
  * GET /api/v1/job-applications - 獲取用戶的所有申請
  */
 
-import { withErrorHandler, validateToken, parseJwtToken, validateDatabaseUrl, handleDatabaseError, createSuccessResponse } from '../../../functions/utils/error-handler'
+import { withErrorHandler, validateToken, parseJwtToken, validateDatabaseUrl, handleDatabaseError, createSuccessResponse } from '../../utils/error-handler'
 
 interface Context {
   request: Request

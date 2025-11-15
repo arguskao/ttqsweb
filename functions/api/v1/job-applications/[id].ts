@@ -5,7 +5,7 @@
  * DELETE /api/v1/job-applications/[id] - 撤回申請
  */
 
-import { withErrorHandler, validateToken, parseJwtToken, validateDatabaseUrl, handleDatabaseError, createSuccessResponse, ApiError, ErrorCode } from '../../../../functions/utils/error-handler'
+import { withErrorHandler, validateToken, parseJwtToken, validateDatabaseUrl, handleDatabaseError, createSuccessResponse, ApiError, ErrorCode } from '../../../utils/error-handler'
 
 interface Context {
   request: Request

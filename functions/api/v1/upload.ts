@@ -210,9 +210,11 @@ async function handleGetFiles(context: Context): Promise<Response> {
       total = parseInt(countResult[0].count)
     }
 
-    return createSuccessResponse({
-      data: files,
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) }
+    return createSuccessResponse(files, {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
     })
 
   } catch (dbError) {

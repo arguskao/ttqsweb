@@ -90,14 +90,11 @@ async function handleGetExperiences(context: Context): Promise<Response> {
       authorName: `${e.first_name || ''} ${e.last_name || ''}`.trim()
     }))
 
-    return createSuccessResponse({
-      data: formattedExperiences,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
+    return createSuccessResponse(formattedExperiences, {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
     })
 
   } catch (dbError) {

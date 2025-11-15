@@ -12,31 +12,28 @@ export interface AuthenticatedRequest extends ApiRequest {
 
 // JWT token verification
 const verifyToken = (token: string) => {
-  // 嘗試多個可能的 JWT secret
-  const secrets = [
-    process.env.JWT_SECRET,
-    'test-secret',
-    // Cloudflare Workers 使用的 secret
-    '3939889'
-  ].filter(Boolean)
-
-  console.log('[verifyToken] Trying', secrets.length, 'secrets')
-  console.log('[verifyToken] JWT_SECRET from env:', process.env.JWT_SECRET ? 'SET' : 'NOT_SET')
-
-  for (const secret of secrets) {
-    try {
-      const result = jwt.verify(token, secret as string) as any
-      console.log('[verifyToken] Success with secret:', secret === process.env.JWT_SECRET ? 'JWT_SECRET' : secret)
-      return result
-    } catch (error) {
-      console.log('[verifyToken] Failed with secret:', secret === process.env.JWT_SECRET ? 'JWT_SECRET' : secret, 'Error:', error instanceof Error ? error.message : 'Unknown')
-      // 繼續嘗試下一個 secret
-      continue
-    }
+  // 只從環境變量讀取 JWT secret
+  const secret = process.env.JWT_SECRET || (globalThis as any)?.env?.JWT_SECRET
+  
+  // 如果沒有配置 secret，拋出錯誤（不要使用硬編碼的後備值）
+  if (!secret) {
+    console.error('[verifyToken] JWT_SECRET not configured in environment variables')
+    throw new AuthenticationError('服務器配置錯誤：JWT Secret 未設置')
   }
 
-  console.error('[verifyToken] All secrets failed')
-  throw new AuthenticationError('認證令牌無效或已過期')
+  try {
+    const result = jwt.verify(token, secret) as any
+    console.log('[verifyToken] Token verified successfully')
+    return result
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      console.log('[verifyToken] Token expired')
+      throw new AuthenticationError('認證令牌已過期，請重新登入')
+    }
+    
+    console.log('[verifyToken] Token verification failed:', error instanceof Error ? error.message : 'Unknown')
+    throw new AuthenticationError('認證令牌無效或已過期')
+  }
 }
 
 // Authentication middleware

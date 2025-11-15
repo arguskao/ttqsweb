@@ -15,11 +15,18 @@ interface Context {
 }
 
 // 驗證JWT token
-async function verifyToken(token: string, secret: string): Promise<any> {
+async function verifyToken(token: string, secret: string | undefined): Promise<any> {
+  if (!secret) {
+    throw new Error('JWT_SECRET not configured')
+  }
+  
   try {
     const jwt = await import('jsonwebtoken')
     return jwt.verify(token, secret)
   } catch (error) {
+    if (error instanceof Error && error.name === 'TokenExpiredError') {
+      throw new Error('Token expired')
+    }
     throw new Error('Invalid token')
   }
 }
@@ -98,7 +105,7 @@ export async function onRequestPost(context: Context): Promise<Response> {
     const token = authHeader.substring(7)
     let decoded
     try {
-      decoded = await verifyToken(token, env.JWT_SECRET!)
+      decoded = await verifyToken(token, env.JWT_SECRET)
     } catch (error) {
       return new Response(
         JSON.stringify({

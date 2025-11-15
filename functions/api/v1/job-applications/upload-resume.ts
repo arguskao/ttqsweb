@@ -24,11 +24,18 @@ const ALLOWED_RESUME_TYPES = {
 const MAX_RESUME_SIZE = 10 * 1024 * 1024 // 10MB，履歷文件應該更小
 
 // 驗證JWT token
-async function verifyToken(token: string, secret: string): Promise<any> {
+async function verifyToken(token: string, secret: string | undefined): Promise<any> {
+  if (!secret) {
+    throw new Error('JWT_SECRET not configured')
+  }
+  
   try {
     const jwt = await import('jsonwebtoken')
     return jwt.verify(token, secret)
   } catch (error) {
+    if (error instanceof Error && error.name === 'TokenExpiredError') {
+      throw new Error('Token expired')
+    }
     throw new Error('Invalid token')
   }
 }
@@ -57,7 +64,7 @@ export async function onRequestPost(context: Context): Promise<Response> {
     }
 
     const token = authHeader.substring(7)
-    const decoded = await verifyToken(token, env.JWT_SECRET!)
+    const decoded = await verifyToken(token, env.JWT_SECRET)
 
     // 所有登入用戶都可以上傳履歷
     if (!decoded.userId) {

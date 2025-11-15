@@ -54,7 +54,7 @@ async function handleGet(context: Context): Promise<Response> {
     `
 
     return createSuccessResponse({
-      data: documents,
+      documents,
       meta: {
         total,
         page,

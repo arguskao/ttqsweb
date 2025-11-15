@@ -42,11 +42,15 @@
               v-for="message in messages"
               :key="message.id"
               class="message-item"
-              :class="{ 'is-unread': !message.isRead }"
+              :class="{ 
+                'is-unread': !message.isRead && !message.isSentByMe,
+                'is-sent': message.isSentByMe 
+              }"
               @click="openMessage(message)"
             >
               <div class="message-header">
-                <strong>{{ message.senderName }}</strong>
+                <span v-if="message.isSentByMe" class="tag is-info is-small mr-2">已發送</span>
+                <strong>{{ message.isSentByMe ? `給 ${message.recipientName || '講師'}` : message.senderName }}</strong>
                 <span class="message-time">{{ formatTime(message.createdAt) }}</span>
               </div>
               <div class="message-subject">{{ message.subject }}</div>
@@ -400,6 +404,11 @@ onMounted(() => {
 .message-item.is-unread {
   background-color: #eff5fb;
   border-left: 3px solid #3273dc;
+}
+
+.message-item.is-sent {
+  background-color: #f0fdf4;
+  border-left: 3px solid #48c78e;
 }
 
 .message-header {

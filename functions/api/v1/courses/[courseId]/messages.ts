@@ -70,21 +70,28 @@ export async function onRequestGet(context: Context): Promise<Response> {
     }
 
     try {
-      // 獲取用戶收到的訊息（包括群發訊息）
+      // 獲取用戶相關的訊息（收到的、發送的、群發的）
       const messages = await sql`
         SELECT 
           cm.*,
           sender.first_name as sender_first_name,
           sender.last_name as sender_last_name,
-          sender.email as sender_email
+          sender.email as sender_email,
+          recipient.first_name as recipient_first_name,
+          recipient.last_name as recipient_last_name
         FROM course_messages cm
         JOIN users sender ON cm.sender_id = sender.id
+        LEFT JOIN users recipient ON cm.recipient_id = recipient.id
         WHERE cm.course_id = ${courseId}
-          AND (cm.recipient_id = ${userId} OR cm.is_broadcast = TRUE)
+          AND (
+            cm.recipient_id = ${userId} 
+            OR cm.sender_id = ${userId}
+            OR cm.is_broadcast = TRUE
+          )
         ORDER BY cm.created_at DESC
       `
 
-      console.log('[Course Messages] 找到訊息:', messages.length)
+      console.log('[Course Messages] 找到訊息:', messages.length, '(包含發送和接收)')
 
       const formattedMessages = messages.map((msg: any) => ({
         id: msg.id,
@@ -93,10 +100,14 @@ export async function onRequestGet(context: Context): Promise<Response> {
         senderName: `${msg.sender_last_name}${msg.sender_first_name}`,
         senderEmail: msg.sender_email,
         recipientId: msg.recipient_id,
+        recipientName: msg.recipient_first_name && msg.recipient_last_name 
+          ? `${msg.recipient_last_name}${msg.recipient_first_name}`
+          : null,
         subject: msg.subject,
         message: msg.message,
         isBroadcast: msg.is_broadcast,
         isRead: msg.is_read,
+        isSentByMe: msg.sender_id === userId,
         createdAt: msg.created_at,
         readAt: msg.read_at
       }))

@@ -34,6 +34,14 @@
                   <span>發送訊息給學員</span>
                 </button>
               </div>
+              <div class="level-item">
+                <button class="button is-warning" @click="showEvaluationModal = true">
+                  <span class="icon">
+                    <i class="fas fa-clipboard-list"></i>
+                  </span>
+                  <span>設定評估表單</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -175,6 +183,58 @@
         </footer>
       </div>
     </div>
+
+    <!-- Evaluation Form Modal -->
+    <div class="modal" :class="{ 'is-active': showEvaluationModal }">
+      <div class="modal-background" @click="closeEvaluationModal"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title">設定課後評估表單</p>
+          <button class="delete" aria-label="close" @click="closeEvaluationModal"></button>
+        </header>
+        <section class="modal-card-body">
+          <div class="content">
+            <p>請輸入 Google 表單或其他問卷的網址，學員將可以在課程頁面看到「課後評估」按鈕。</p>
+          </div>
+
+          <div class="field">
+            <label class="label">評估表單網址</label>
+            <div class="control">
+              <input 
+                v-model="evaluationFormUrl" 
+                class="input" 
+                type="url" 
+                placeholder="https://forms.gle/xxxxx 或 https://docs.google.com/forms/..."
+              />
+            </div>
+            <p class="help">例如：https://forms.gle/abc123 或完整的 Google 表單網址</p>
+          </div>
+
+          <div v-if="courseData?.evaluationFormUrl" class="notification is-info is-light">
+            <p><strong>目前設定：</strong></p>
+            <p class="is-size-7 mt-2">{{ courseData.evaluationFormUrl }}</p>
+          </div>
+        </section>
+        <footer class="modal-card-foot">
+          <button 
+            class="button is-primary" 
+            :class="{ 'is-loading': isSavingEvaluation }"
+            :disabled="!evaluationFormUrl || isSavingEvaluation"
+            @click="saveEvaluationForm"
+          >
+            儲存
+          </button>
+          <button 
+            v-if="courseData?.evaluationFormUrl"
+            class="button is-danger is-light" 
+            @click="removeEvaluationForm"
+          >
+            移除
+          </button>
+          <button class="button" @click="closeEvaluationModal">取消</button>
+        </footer>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -199,6 +259,9 @@ const messageForm = ref({
   subject: '',
   message: ''
 })
+const showEvaluationModal = ref(false)
+const evaluationFormUrl = ref('')
+const isSavingEvaluation = ref(false)
 
 // Computed
 const studentsInProgress = computed(() => 
@@ -294,6 +357,63 @@ const sendMessage = async () => {
     alert(error.response?.data?.message || '發送訊息失敗')
   } finally {
     isSending.value = false
+  }
+}
+
+const closeEvaluationModal = () => {
+  showEvaluationModal.value = false
+  evaluationFormUrl.value = ''
+}
+
+const saveEvaluationForm = async () => {
+  const courseId = route.params.courseId
+
+  try {
+    isSavingEvaluation.value = true
+
+    const response = await api.patch(`/courses/${courseId}`, {
+      evaluationFormUrl: evaluationFormUrl.value
+    })
+
+    if (response.data?.success) {
+      alert('評估表單網址已儲存')
+      closeEvaluationModal()
+      loadStudents() // 重新載入以更新 courseData
+    } else {
+      alert(response.data?.message || '儲存失敗')
+    }
+  } catch (error: any) {
+    console.error('儲存評估表單失敗:', error)
+    alert(error.response?.data?.message || '儲存失敗')
+  } finally {
+    isSavingEvaluation.value = false
+  }
+}
+
+const removeEvaluationForm = async () => {
+  if (!confirm('確定要移除評估表單網址嗎？')) return
+
+  const courseId = route.params.courseId
+
+  try {
+    isSavingEvaluation.value = true
+
+    const response = await api.patch(`/courses/${courseId}`, {
+      evaluationFormUrl: null
+    })
+
+    if (response.data?.success) {
+      alert('評估表單網址已移除')
+      closeEvaluationModal()
+      loadStudents() // 重新載入以更新 courseData
+    } else {
+      alert(response.data?.message || '移除失敗')
+    }
+  } catch (error: any) {
+    console.error('移除評估表單失敗:', error)
+    alert(error.response?.data?.message || '移除失敗')
+  } finally {
+    isSavingEvaluation.value = false
   }
 }
 

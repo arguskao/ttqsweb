@@ -159,16 +159,17 @@
                         <span>您已註冊此課程</span>
                       </p>
                       <button
-                        class="button is-primary is-fullwidth mt-3"
-                        @click="goToProgress"
+                        v-if="course.evaluationFormUrl"
+                        class="button is-warning is-fullwidth mt-3"
+                        @click="openEvaluationForm"
                       >
                         <span class="icon">
-                          <!-- Inline SVG to avoid external icon dependency -->
+                          <!-- Inline SVG for clipboard/form icon -->
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                            <path d="M3 3h2v16h16v2H3V3zm17.293 4.293l-5.586 5.586-3.293-3.293L7 13v2l4.414-4.414 3.293 3.293 6.293-6.293-1.707-1.293z"/>
+                            <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
                           </svg>
                         </span>
-                        <span>查看學習進度</span>
+                        <span>課後評估</span>
                       </button>
                       <button
                         class="button is-info is-fullwidth mt-2"
@@ -439,13 +440,10 @@ const handleEnroll = async () => {
   }
 }
 
-const goToProgress = () => {
-  if (course.value) {
-    // 記住最近查看的課程，提供學習進度頁面載入依據
-    try {
-      localStorage.setItem('last_course_id', String(course.value.id))
-    } catch {}
-    router.push('/learning-progress')
+const openEvaluationForm = () => {
+  if (course.value?.evaluationFormUrl) {
+    // 開啟講師設定的評估表單
+    window.open(course.value.evaluationFormUrl, '_blank')
   }
 }
 

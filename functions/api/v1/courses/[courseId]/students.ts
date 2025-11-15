@@ -71,7 +71,8 @@ async function handleGetStudents(context: Context): Promise<Response> {
     // 獲取學員名單
     const students = await sql`
       SELECT 
-        u.id,
+        ce.id as enrollment_id,
+        u.id as user_id,
         u.email,
         u.first_name,
         u.last_name,
@@ -91,7 +92,8 @@ async function handleGetStudents(context: Context): Promise<Response> {
 
     // 格式化學員資料
     const formattedStudents = students.map((student: any) => ({
-      id: student.id,
+      id: student.enrollment_id,
+      userId: student.user_id,
       email: student.email,
       firstName: student.first_name,
       lastName: student.last_name,

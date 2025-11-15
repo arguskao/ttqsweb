@@ -130,7 +130,9 @@
                         title="標記為已完成"
                       >
                         <span class="icon is-small">
-                          <i class="fas fa-check"></i>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                          </svg>
                         </span>
                         <span>標記完成</span>
                       </button>
@@ -141,7 +143,9 @@
                         title="取消完成標記"
                       >
                         <span class="icon is-small">
-                          <i class="fas fa-undo"></i>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>
+                          </svg>
                         </span>
                         <span>取消完成</span>
                       </button>

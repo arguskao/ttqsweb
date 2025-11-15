@@ -1,84 +1,51 @@
-interface Env {
-  DATABASE_URL?: string
-}
+/**
+ * User Favorites API - 用戶收藏的工作
+ * GET /api/v1/users/favorites - 獲取用戶收藏的工作列表
+ */
+
+import { withErrorHandler, validateToken, parseJwtToken, validateDatabaseUrl, handleDatabaseError, createSuccessResponse } from '../../../utils/error-handler'
 
 interface Context {
   request: Request
-  env: Env
+  env: { DATABASE_URL?: string; JWT_SECRET?: string }
 }
 
-function unauthorized(message: string): Response {
-  return new Response(JSON.stringify({ success: false, message }), {
-    status: 401,
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-  })
-}
-
-export async function onRequestGet(context: Context): Promise<Response> {
+// GET - 獲取用戶收藏的工作
+async function handleGet(context: Context): Promise<Response> {
   const { request, env } = context
+  
+  const token = validateToken(request.headers.get('Authorization'))
+  const payload = parseJwtToken(token)
+
+  const databaseUrl = validateDatabaseUrl(env.DATABASE_URL)
+  const { neon } = await import('@neondatabase/serverless')
+  const sql = neon(databaseUrl)
+
   try {
-    const authHeader = request.headers.get('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) return unauthorized('未提供認證 token')
-    const token = authHeader.substring(7)
-    let userId: number
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      userId = payload.userId || payload.user_id || payload.id || payload.sub
-      if (!userId) return unauthorized('無效的 token')
-      // 移除用戶類型限制，允許所有登入用戶查看自己的收藏
-    } catch {
-      return unauthorized('無效的 token')
-    }
-
-    const { neon } = await import('@neondatabase/serverless')
-    if (!env.DATABASE_URL) {
-      return new Response(JSON.stringify({ success: false, message: 'Database URL not configured' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      })
-    }
-    const sql = neon(env.DATABASE_URL)
-
-    await sql`
-      CREATE TABLE IF NOT EXISTS job_favorites (
-        id SERIAL PRIMARY KEY,
-        job_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(job_id, user_id)
-      );
-    `
-
     const favorites = await sql`
-      SELECT jf.job_id, jf.created_at, j.title, j.location, j.salary_min, j.salary_max
+      SELECT 
+        jf.id,
+        jf.job_id,
+        jf.created_at,
+        j.title,
+        j.company_name,
+        j.location,
+        j.salary_min,
+        j.salary_max,
+        j.job_type,
+        j.is_active
       FROM job_favorites jf
       LEFT JOIN jobs j ON j.id = jf.job_id
-      WHERE jf.user_id = ${userId}
+      WHERE jf.user_id = ${payload.userId}
       ORDER BY jf.created_at DESC
     `
 
-    return new Response(
-      JSON.stringify({ success: true, data: favorites }),
-      { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-    )
-  } catch (e) {
-    return new Response(JSON.stringify({ success: false, message: '取得收藏清單失敗' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-    })
+    return createSuccessResponse(favorites)
+  } catch (dbError) {
+    handleDatabaseError(dbError, 'Get User Favorites')
   }
 }
 
-export async function onRequestOptions(): Promise<Response> {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-ID, X-CSRF-Token',
-      'Access-Control-Max-Age': '86400'
-    }
-  })
-}
+export const onRequestGet = withErrorHandler(handleGet, 'Get User Favorites')
 
 

@@ -97,7 +97,7 @@ async function handleGet(context: Context): Promise<Response> {
     `
 
     return createSuccessResponse({
-      data: jobs,
+      jobs,
       meta: {
         total,
         page,

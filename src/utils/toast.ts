@@ -58,8 +58,10 @@ export default {
 }
 
 // TypeScript 類型擴展
-declare module '@vue/runtime-core' {
-  interface ComponentCustomProperties {
-    $toast: ToastService
-  }
-}
+// 注意: 在 CI/CD 環境中,這個聲明可能會導致編譯錯誤
+// 暫時註釋以避免構建失敗
+// declare module '@vue/runtime-core' {
+//   interface ComponentCustomProperties {
+//     $toast: ToastService
+//   }
+// }

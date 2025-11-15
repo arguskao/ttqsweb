@@ -26,6 +26,7 @@ export interface Course {
   is_active: boolean
   created_at: string
   updated_at: string
+  evaluation_form_url?: string
   // Legacy camelCase for backward compatibility
   courseType?: 'basic' | 'advanced' | 'internship'
   durationHours?: number
@@ -36,6 +37,7 @@ export interface Course {
   isActive?: boolean
   createdAt?: string
   updatedAt?: string
+  evaluationFormUrl?: string
   instructorFirstName?: string
   instructorLastName?: string
   instructorEmail?: string

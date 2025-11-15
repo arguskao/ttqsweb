@@ -11,11 +11,15 @@ import { container, SERVICE_KEYS } from './services/container'
 import { customErrorHandler } from './services/error-handler'
 import { analytics } from './utils/analytics'
 import { setupApiMetrics } from './utils/api-metrics'
+import { setupGlobalErrorHandlers } from './utils/error-logger'
 import { loadCriticalResources } from './utils/performance'
 import { setupRoutePreloading } from './utils/route-preloader'
 
 // Load critical resources early
 loadCriticalResources()
+
+// 設置全局錯誤處理器
+setupGlobalErrorHandlers()
 
 // 註冊核心服務到依賴注入容器
 container.registerSingleton(SERVICE_KEYS.API_SERVICE, () => apiService)

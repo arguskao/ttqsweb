@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>錯誤處理測試</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+    }
+    h2 {
+      color: #666;
+      font-size: 18px;
+      margin-top: 0;
+    }
+    button {
+      background: #1890ff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #40a9ff;
+    }
+    button.error {
+      background: #ff4d4f;
+    }
+    button.error:hover {
+      background: #ff7875;
+    }
+    button.warning {
+      background: #faad14;
+    }
+    button.warning:hover {
+      background: #ffc53d;
+    }
+    button.success {
+      background: #52c41a;
+    }
+    button.success:hover {
+      background: #73d13d;
+    }
+    .info {
+      background: #e6f7ff;
+      border: 1px solid #91d5ff;
+      padding: 12px;
+      border-radius: 4px;
+      margin-top: 10px;
+      font-size: 14px;
+      color: #0050b3;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 錯誤處理系統測試</h1>
+  
+  <div class="test-section">
+    <h2>Toast 通知測試</h2>
+    <button class="success" onclick="testSuccess()">成功通知</button>
+    <button class="error" onclick="testError()">錯誤通知</button>
+    <button class="warning" onclick="testWarning()">警告通知</button>
+    <button onclick="testInfo()">信息通知</button>
+    <div class="info">
+      點擊按鈕測試不同類型的 Toast 通知
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>API 錯誤模擬</h2>
+    <button class="error" onclick="test400()">400 - 請求錯誤</button>
+    <button class="error" onclick="test401()">401 - 未授權</button>
+    <button class="error" onclick="test403()">403 - 禁止訪問</button>
+    <button class="error" onclick="test404()">404 - 未找到</button>
+    <button class="error" onclick="test500()">500 - 服務器錯誤</button>
+    <button class="error" onclick="testNetwork()">網絡錯誤</button>
+    <div class="info">
+      模擬不同的 API 錯誤響應，查看錯誤處理效果
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>錯誤日誌測試</h2>
+    <button onclick="testDebugLog()">Debug 日誌</button>
+    <button onclick="testInfoLog()">Info 日誌</button>
+    <button class="warning" onclick="testWarningLog()">Warning 日誌</button>
+    <button class="error" onclick="testErrorLog()">Error 日誌</button>
+    <button onclick="viewLogs()">查看日誌</button>
+    <button onclick="clearLogs()">清除日誌</button>
+    <div class="info">
+      測試錯誤日誌記錄功能，打開控制台查看詳細信息
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>全局錯誤測試</h2>
+    <button class="error" onclick="testRuntimeError()">運行時錯誤</button>
+    <button class="error" onclick="testPromiseRejection()">Promise 拒絕</button>
+    <div class="info">
+      測試全局錯誤捕獲機制
+    </div>
+  </div>
+
+  <script type="module">
+    // 這個測試頁面需要在開發服務器中運行
+    // 運行: npm run dev
+    // 然後訪問: http://localhost:5173/scripts/test-error-handling.html
+    
+    window.testSuccess = () => {
+      console.log('✅ 測試成功通知')
+      alert('請在實際應用中測試（需要 Vue 環境）')
+    }
+
+    window.testError = () => {
+      console.log('❌ 測試錯誤通知')
+      alert('請在實際應用中測試（需要 Vue 環境）')
+    }
+
+    window.testWarning = () => {
+      console.log('⚠️ 測試警告通知')
+      alert('請在實際應用中測試（需要 Vue 環境）')
+    }
+
+    window.testInfo = () => {
+      console.log('ℹ️ 測試信息通知')
+      alert('請在實際應用中測試（需要 Vue 環境）')
+    }
+
+    window.test400 = () => {
+      console.error('模擬 400 錯誤')
+    }
+
+    window.test401 = () => {
+      console.error('模擬 401 錯誤')
+    }
+
+    window.test403 = () => {
+      console.error('模擬 403 錯誤')
+    }
+
+    window.test404 = () => {
+      console.error('模擬 404 錯誤')
+    }
+
+    window.test500 = () => {
+      console.error('模擬 500 錯誤')
+    }
+
+    window.testNetwork = () => {
+      console.error('模擬網絡錯誤')
+    }
+
+    window.testDebugLog = () => {
+      console.debug('Debug 日誌測試')
+    }
+
+    window.testInfoLog = () => {
+      console.info('Info 日誌測試')
+    }
+
+    window.testWarningLog = () => {
+      console.warn('Warning 日誌測試')
+    }
+
+    window.testErrorLog = () => {
+      console.error('Error 日誌測試')
+    }
+
+    window.viewLogs = () => {
+      console.log('查看所有日誌')
+    }
+
+    window.clearLogs = () => {
+      console.clear()
+      console.log('日誌已清除')
+    }
+
+    window.testRuntimeError = () => {
+      throw new Error('這是一個測試運行時錯誤')
+    }
+
+    window.testPromiseRejection = () => {
+      Promise.reject('這是一個測試 Promise 拒絕')
+    }
+
+    console.log('🧪 錯誤處理測試頁面已加載')
+    console.log('📝 請在實際應用中測試完整功能')
+  </script>
+</body>
+</html>

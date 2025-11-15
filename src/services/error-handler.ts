@@ -1,18 +1,57 @@
 import { useAuthStore } from '@/stores/auth'
+import { toast } from '@/utils/toast'
+import { errorLogger, ErrorLevel, ErrorCategory } from '@/utils/error-logger'
 
 // 錯誤處理器介面（本地定義以避免循環依賴與錯誤匯入）
 export interface ErrorHandler {
   handleApiError(error: any): void
 }
 
+// 錯誤信息映射
+interface ErrorInfo {
+  message: string
+  level: ErrorLevel
+  category: ErrorCategory
+  showToast: boolean
+}
+
 // 自定義錯誤處理器，與 Pinia store 集成
 export class CustomErrorHandler implements ErrorHandler {
   handleApiError(error: any): void {
     const authStore = useAuthStore()
+    const errorInfo = this.parseError(error)
 
-    // 根據錯誤類型設置相應的錯誤信息
-    let errorMessage = '發生未知錯誤'
+    // 記錄錯誤到日誌系統
+    errorLogger.log(
+      errorInfo.level,
+      errorInfo.category,
+      errorInfo.message,
+      {
+        status: error.response?.status,
+        url: error.config?.url,
+        method: error.config?.method,
+        requestId: error.config?.headers?.['X-Request-ID'],
+        responseData: error.response?.data,
+        stack: error.stack
+      }
+    )
 
+    // 設置錯誤信息到 store
+    authStore.setError(errorInfo.message)
+
+    // 顯示 Toast 通知
+    if (errorInfo.showToast) {
+      this.showErrorToast(errorInfo.message, error.response?.status)
+    }
+
+    // 處理認證錯誤
+    if (error.response?.status === 401) {
+      authStore.clearAuth()
+    }
+  }
+
+  // 解析錯誤信息
+  private parseError(error: any): ErrorInfo {
     if (error.response) {
       // 服務器響應錯誤
       const status = error.response.status
@@ -20,92 +59,109 @@ export class CustomErrorHandler implements ErrorHandler {
 
       switch (status) {
         case 400:
-          errorMessage = data?.error?.message || '請求參數錯誤'
-          break
+          return {
+            message: data?.error?.message || '請求參數錯誤',
+            level: ErrorLevel.WARNING,
+            category: ErrorCategory.VALIDATION,
+            showToast: true
+          }
         case 401:
-          errorMessage = '登入已過期，請重新登入'
-          authStore.clearAuth()
-          break
+          return {
+            message: '登入已過期，請重新登入',
+            level: ErrorLevel.WARNING,
+            category: ErrorCategory.AUTH,
+            showToast: true
+          }
         case 403:
-          errorMessage = '您沒有權限執行此操作'
-          break
+          return {
+            message: '您沒有權限執行此操作',
+            level: ErrorLevel.WARNING,
+            category: ErrorCategory.AUTH,
+            showToast: true
+          }
         case 404:
-          errorMessage = '請求的資源不存在'
-          break
+          return {
+            message: '請求的資源不存在',
+            level: ErrorLevel.WARNING,
+            category: ErrorCategory.API,
+            showToast: true
+          }
         case 409:
-          errorMessage = data?.error?.message || '數據衝突，請檢查後重試'
-          break
+          return {
+            message: data?.error?.message || '數據衝突，請檢查後重試',
+            level: ErrorLevel.WARNING,
+            category: ErrorCategory.VALIDATION,
+            showToast: true
+          }
         case 422:
-          errorMessage = data?.error?.message || '數據驗證失敗'
-          break
+          return {
+            message: data?.error?.message || '數據驗證失敗',
+            level: ErrorLevel.WARNING,
+            category: ErrorCategory.VALIDATION,
+            showToast: true
+          }
         case 429:
-          errorMessage = '請求過於頻繁，請稍後再試'
-          break
+          return {
+            message: '請求過於頻繁，請稍後再試',
+            level: ErrorLevel.WARNING,
+            category: ErrorCategory.API,
+            showToast: true
+          }
         case 500:
-          errorMessage = '服務器內部錯誤，請稍後再試'
-          break
+          return {
+            message: '服務器內部錯誤，請稍後再試',
+            level: ErrorLevel.ERROR,
+            category: ErrorCategory.API,
+            showToast: true
+          }
         case 502:
         case 503:
         case 504:
-          errorMessage = '服務暫時不可用，請稍後再試'
-          break
+          return {
+            message: '服務暫時不可用，請稍後再試',
+            level: ErrorLevel.ERROR,
+            category: ErrorCategory.NETWORK,
+            showToast: true
+          }
         default:
-          errorMessage = data?.error?.message || `請求失敗 (${status})`
+          return {
+            message: data?.error?.message || `請求失敗 (${status})`,
+            level: ErrorLevel.ERROR,
+            category: ErrorCategory.API,
+            showToast: true
+          }
       }
     } else if (error.request) {
       // 網絡錯誤
-      errorMessage = '網絡連接失敗，請檢查網絡設置'
+      return {
+        message: '網絡連接失敗，請檢查網絡設置',
+        level: ErrorLevel.ERROR,
+        category: ErrorCategory.NETWORK,
+        showToast: true
+      }
     } else if (error.code === 'ECONNABORTED') {
       // 超時錯誤
-      errorMessage = '請求超時，請稍後再試'
+      return {
+        message: '請求超時，請稍後再試',
+        level: ErrorLevel.WARNING,
+        category: ErrorCategory.NETWORK,
+        showToast: true
+      }
     } else {
       // 其他錯誤
-      errorMessage = error.message || '發生未知錯誤'
-    }
-
-    // 設置錯誤信息到 store
-    authStore.setError(errorMessage)
-
-    // 記錄詳細錯誤信息到控制台（開發環境）
-    if (import.meta.env.DEV) {
-      console.group('API 錯誤詳情')
-      console.error('錯誤信息:', errorMessage)
-      console.error('原始錯誤:', error)
-      console.error('請求配置:', error.config)
-      console.error('響應數據:', error.response?.data)
-      console.groupEnd()
-    }
-
-    // 發送錯誤報告到監控服務（生產環境）
-    if (import.meta.env.PROD) {
-      this.reportError(error)
+      return {
+        message: error.message || '發生未知錯誤',
+        level: ErrorLevel.ERROR,
+        category: ErrorCategory.UNKNOWN,
+        showToast: true
+      }
     }
   }
 
-  // 發送錯誤報告到監控服務
-  private async reportError(error: any): Promise<void> {
-    try {
-      const errorReport = {
-        message: error.message || 'Unknown error',
-        stack: error.stack,
-        url: window.location.href,
-        userAgent: navigator.userAgent,
-        timestamp: new Date().toISOString(),
-        userId: useAuthStore().user?.id,
-        requestId: error.config?.headers?.['X-Request-ID']
-      }
-
-      // 這裡可以發送到錯誤監控服務
-      // await fetch('/api/v1/errors/report', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(errorReport)
-      // })
-
-      console.log('錯誤報告已發送:', errorReport)
-    } catch (reportError) {
-      console.error('發送錯誤報告失敗:', reportError)
-    }
+  // 顯示錯誤 Toast
+  private showErrorToast(message: string, status?: number): void {
+    const title = status ? `錯誤 ${status}` : '錯誤'
+    toast.error(message, title)
   }
 }
 

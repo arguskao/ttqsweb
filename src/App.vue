@@ -1,16 +1,24 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { RouterView } from 'vue-router'
 
 import AppFooter from './components/layout/AppFooter.vue'
 import AppHeader from './components/layout/AppHeader.vue'
+import ToastContainer from './components/common/ToastContainer.vue'
 import { useAuthStore } from './stores/auth'
+import { toast } from './utils/toast'
 
 const authStore = useAuthStore()
+const toastContainerRef = ref()
 
 // 在應用啟動時加載認證狀態
 onMounted(() => {
   authStore.loadAuth()
+  
+  // 設置 Toast 容器
+  if (toastContainerRef.value) {
+    toast.setContainer(toastContainerRef.value)
+  }
 })
 </script>
 
@@ -25,6 +33,7 @@ onMounted(() => {
       </RouterView>
     </main>
     <AppFooter />
+    <ToastContainer ref="toastContainerRef" />
   </div>
 </template>
 

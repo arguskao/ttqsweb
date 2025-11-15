@@ -129,14 +129,11 @@ async function handleGetCourses(context: Context): Promise<Response> {
       course_type: COURSE_TYPE_REVERSE[course.course_type] || course.course_type
     }))
 
-    return createSuccessResponse({
-      data: processedCourses,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
+    return createSuccessResponse(processedCourses, {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
     })
 
   } catch (dbError) {

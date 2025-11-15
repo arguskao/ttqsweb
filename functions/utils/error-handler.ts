@@ -143,14 +143,17 @@ export function createErrorResponse(
  */
 export function createSuccessResponse<T = any>(
   data: T,
-  message?: string,
+  metaOrMessage?: Record<string, any> | string,
   statusCode: number = 200
 ): Response {
+  const isMessage = typeof metaOrMessage === 'string'
+  
   return new Response(
     JSON.stringify({
       success: true,
       data,
-      ...(message && { message })
+      ...(isMessage && metaOrMessage && { message: metaOrMessage }),
+      ...(!isMessage && metaOrMessage && { meta: metaOrMessage })
     }),
     {
       status: statusCode,

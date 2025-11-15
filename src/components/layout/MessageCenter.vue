@@ -74,13 +74,52 @@
         </header>
         <section class="modal-card-body">
           <div v-if="selectedMessage">
-            <div class="message-meta mb-4">
-              <p><strong>發送者：</strong> {{ selectedMessage.senderName }}</p>
-              <p><strong>課程：</strong> {{ selectedMessage.courseTitle }}</p>
-              <p><strong>時間：</strong> {{ formatDateTime(selectedMessage.createdAt) }}</p>
-            </div>
-            <div class="message-content">
-              <p style="white-space: pre-wrap;">{{ selectedMessage.message }}</p>
+            <!-- 對話串 -->
+            <div class="conversation-thread">
+              <!-- 如果是回覆，顯示原始訊息 -->
+              <div v-if="selectedMessage.subject.startsWith('Re:')" class="original-message mb-4">
+                <div class="notification is-light">
+                  <p class="has-text-weight-semibold mb-2">原始訊息：</p>
+                  <div class="content is-small">
+                    <p><strong>主旨：</strong> {{ selectedMessage.subject.replace('Re: ', '') }}</p>
+                    <p class="has-text-grey-light">（查看完整對話請在訊息列表中找到原始訊息）</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 當前訊息 -->
+              <div class="current-message">
+                <div class="message-meta mb-3">
+                  <div class="level is-mobile">
+                    <div class="level-left">
+                      <div class="level-item">
+                        <span class="icon-text">
+                          <span class="icon">
+                            <i class="fas fa-user"></i>
+                          </span>
+                          <span><strong>{{ selectedMessage.senderName }}</strong></span>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="level-right">
+                      <div class="level-item">
+                        <span class="has-text-grey is-size-7">{{ formatDateTime(selectedMessage.createdAt) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="is-size-7 has-text-grey">
+                    <span class="icon-text">
+                      <span class="icon">
+                        <i class="fas fa-book"></i>
+                      </span>
+                      <span>{{ selectedMessage.courseTitle }}</span>
+                    </span>
+                  </p>
+                </div>
+                <div class="message-content box">
+                  <p style="white-space: pre-wrap;">{{ selectedMessage.message }}</p>
+                </div>
+              </div>
             </div>
 
             <!-- 回覆區域 - 只有學員可以回覆 -->
@@ -189,25 +228,62 @@ const loadMessages = async () => {
   error.value = ''
 
   try {
-    // 獲取用戶所有課程的訊息
-    const enrollmentsResponse = await api.get('/users/enrollments')
-    const enrollments = enrollmentsResponse.data?.data || []
-
     const allMessages: any[] = []
+    const userType = authStore.user?.userType
 
-    // 為每個已報名的課程獲取訊息
-    for (const enrollment of enrollments) {
+    // 講師：獲取自己授課課程的訊息
+    if (userType === 'instructor' || authStore.isApprovedInstructor) {
       try {
-        const messagesResponse = await api.get(`/courses/${enrollment.courseId}/messages`)
-        if (messagesResponse.data?.success) {
-          const courseMessages = messagesResponse.data.data.map((msg: any) => ({
-            ...msg,
-            courseTitle: enrollment.courseTitle || '課程'
-          }))
-          allMessages.push(...courseMessages)
+        const profile = authStore.user
+        const instructorId = profile?.instructorId || profile?.instructor_id
+        
+        if (instructorId) {
+          // 獲取講師的課程列表
+          const coursesResponse = await api.get(`/instructors/${instructorId}/courses`)
+          const courses = coursesResponse.data?.data || []
+
+          console.log('[MessageCenter] 講師課程數:', courses.length)
+
+          // 為每個課程獲取訊息
+          for (const course of courses) {
+            try {
+              const messagesResponse = await api.get(`/courses/${course.id}/messages`)
+              if (messagesResponse.data?.success) {
+                const courseMessages = messagesResponse.data.data.map((msg: any) => ({
+                  ...msg,
+                  courseTitle: course.title || '課程'
+                }))
+                allMessages.push(...courseMessages)
+              }
+            } catch (err) {
+              console.error(`載入課程 ${course.id} 的訊息失敗:`, err)
+            }
+          }
         }
       } catch (err) {
-        console.error(`載入課程 ${enrollment.courseId} 的訊息失敗:`, err)
+        console.error('載入講師課程失敗:', err)
+      }
+    } else {
+      // 學員：獲取已報名課程的訊息
+      const enrollmentsResponse = await api.get('/users/enrollments')
+      const enrollments = enrollmentsResponse.data?.data || []
+
+      console.log('[MessageCenter] 學員報名課程數:', enrollments.length)
+
+      // 為每個已報名的課程獲取訊息
+      for (const enrollment of enrollments) {
+        try {
+          const messagesResponse = await api.get(`/courses/${enrollment.courseId}/messages`)
+          if (messagesResponse.data?.success) {
+            const courseMessages = messagesResponse.data.data.map((msg: any) => ({
+              ...msg,
+              courseTitle: enrollment.courseTitle || '課程'
+            }))
+            allMessages.push(...courseMessages)
+          }
+        } catch (err) {
+          console.error(`載入課程 ${enrollment.courseId} 的訊息失敗:`, err)
+        }
       }
     }
 
@@ -483,6 +559,29 @@ onMounted(() => {
 .reply-section {
   border-top: 1px solid #dbdbdb;
   padding-top: 1rem;
+}
+
+.conversation-thread {
+  margin-bottom: 1rem;
+}
+
+.original-message {
+  position: relative;
+}
+
+.original-message::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: #dbdbdb;
+}
+
+.current-message .message-content {
+  background-color: #ffffff;
+  border: 1px solid #e8e8e8;
 }
 
 @media screen and (max-width: 768px) {

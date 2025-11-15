@@ -234,29 +234,33 @@ const loadMessages = async () => {
     // 講師：獲取自己授課課程的訊息
     if (userType === 'instructor' || authStore.isApprovedInstructor) {
       try {
-        const profile = authStore.user
-        const instructorId = profile?.instructorId || profile?.instructor_id
+        // 先獲取講師資料以取得 instructor_id
+        const profileResponse = await api.get('/instructors/profile')
         
-        if (instructorId) {
-          // 獲取講師的課程列表
-          const coursesResponse = await api.get(`/instructors/${instructorId}/courses`)
-          const courses = coursesResponse.data?.data || []
+        if (profileResponse.data?.success) {
+          const instructorId = profileResponse.data.data?.id
+          
+          if (instructorId) {
+            // 獲取講師的課程列表
+            const coursesResponse = await api.get(`/instructors/${instructorId}/courses`)
+            const courses = coursesResponse.data?.data || []
 
-          console.log('[MessageCenter] 講師課程數:', courses.length)
+            console.log('[MessageCenter] 講師課程數:', courses.length)
 
-          // 為每個課程獲取訊息
-          for (const course of courses) {
-            try {
-              const messagesResponse = await api.get(`/courses/${course.id}/messages`)
-              if (messagesResponse.data?.success) {
-                const courseMessages = messagesResponse.data.data.map((msg: any) => ({
-                  ...msg,
-                  courseTitle: course.title || '課程'
-                }))
-                allMessages.push(...courseMessages)
+            // 為每個課程獲取訊息
+            for (const course of courses) {
+              try {
+                const messagesResponse = await api.get(`/courses/${course.id}/messages`)
+                if (messagesResponse.data?.success) {
+                  const courseMessages = messagesResponse.data.data.map((msg: any) => ({
+                    ...msg,
+                    courseTitle: course.title || '課程'
+                  }))
+                  allMessages.push(...courseMessages)
+                }
+              } catch (err) {
+                console.error(`載入課程 ${course.id} 的訊息失敗:`, err)
               }
-            } catch (err) {
-              console.error(`載入課程 ${course.id} 的訊息失敗:`, err)
             }
           }
         }

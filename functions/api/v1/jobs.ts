@@ -40,100 +40,40 @@ async function handleGet(context: Context): Promise<Response> {
 
   try {
     // 解析查詢參數
-    const params: JobSearchParams = {
-      jobType: url.searchParams.get('jobType') || undefined,
-      location: url.searchParams.get('location') || undefined,
-      search: url.searchParams.get('search') || undefined,
-      salaryMin: url.searchParams.get('salaryMin') ? parseInt(url.searchParams.get('salaryMin')!) : undefined,
-      salaryMax: url.searchParams.get('salaryMax') ? parseInt(url.searchParams.get('salaryMax')!) : undefined,
-      experienceLevel: url.searchParams.get('experienceLevel') || undefined,
-      educationLevel: url.searchParams.get('educationLevel') || undefined,
-      remoteWork: url.searchParams.get('remoteWork') === 'true' ? true : undefined,
-      employerId: url.searchParams.get('employerId') ? parseInt(url.searchParams.get('employerId')!) : undefined,
-      isActive: url.searchParams.get('isActive') !== 'false', // 默認只顯示活躍的
-      page: parseInt(url.searchParams.get('page') || '1'),
-      limit: parseInt(url.searchParams.get('limit') || '9')
-    }
+    const jobType = url.searchParams.get('jobType') || null
+    const location = url.searchParams.get('location') || null
+    const search = url.searchParams.get('search') || null
+    const salaryMin = url.searchParams.get('salaryMin') ? parseInt(url.searchParams.get('salaryMin')!) : null
+    const salaryMax = url.searchParams.get('salaryMax') ? parseInt(url.searchParams.get('salaryMax')!) : null
+    const experienceLevel = url.searchParams.get('experienceLevel') || null
+    const educationLevel = url.searchParams.get('educationLevel') || null
+    const remoteWork = url.searchParams.get('remoteWork') === 'true' ? true : null
+    const employerId = url.searchParams.get('employerId') ? parseInt(url.searchParams.get('employerId')!) : null
+    const isActive = url.searchParams.get('isActive') !== 'false' // 默認只顯示活躍的
+    const page = parseInt(url.searchParams.get('page') || '1')
+    const limit = parseInt(url.searchParams.get('limit') || '9')
+    const offset = (page - 1) * limit
 
-    // 構建 WHERE 條件
-    const conditions: string[] = []
-    const values: any[] = []
-    let paramIndex = 1
-
-    if (params.isActive !== undefined) {
-      conditions.push(`j.is_active = $${paramIndex}`)
-      values.push(params.isActive)
-      paramIndex++
-    }
-
-    if (params.jobType) {
-      conditions.push(`j.job_type = $${paramIndex}`)
-      values.push(params.jobType)
-      paramIndex++
-    }
-
-    if (params.location) {
-      conditions.push(`j.location ILIKE $${paramIndex}`)
-      values.push(`%${params.location}%`)
-      paramIndex++
-    }
-
-    if (params.search) {
-      conditions.push(`(j.title ILIKE $${paramIndex} OR j.description ILIKE $${paramIndex})`)
-      values.push(`%${params.search}%`)
-      paramIndex++
-    }
-
-    if (params.salaryMin !== undefined) {
-      conditions.push(`j.salary_min >= $${paramIndex}`)
-      values.push(params.salaryMin)
-      paramIndex++
-    }
-
-    if (params.salaryMax !== undefined) {
-      conditions.push(`j.salary_max <= $${paramIndex}`)
-      values.push(params.salaryMax)
-      paramIndex++
-    }
-
-    if (params.experienceLevel) {
-      conditions.push(`j.experience_level = $${paramIndex}`)
-      values.push(params.experienceLevel)
-      paramIndex++
-    }
-
-    if (params.educationLevel) {
-      conditions.push(`j.education_level = $${paramIndex}`)
-      values.push(params.educationLevel)
-      paramIndex++
-    }
-
-    if (params.remoteWork !== undefined) {
-      conditions.push(`j.remote_work = $${paramIndex}`)
-      values.push(params.remoteWork)
-      paramIndex++
-    }
-
-    if (params.employerId) {
-      conditions.push(`j.employer_id = $${paramIndex}`)
-      values.push(params.employerId)
-      paramIndex++
-    }
-
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
-
-    // 獲取總數
-    let countQuery = `SELECT COUNT(*) as count FROM jobs j ${whereClause}`
-    // 手動替換參數
-    values.forEach((val, idx) => {
-      countQuery = countQuery.replace(`$${idx + 1}`, typeof val === 'string' ? `'${val.replace(/'/g, "''")}'` : String(val))
-    })
-    const countResult = await sql.unsafe(countQuery)
+    // 使用 1=1 技巧構建動態查詢
+    const countResult = await sql`
+      SELECT COUNT(*) as count 
+      FROM jobs j
+      WHERE 1=1
+        ${isActive !== null ? sql`AND j.is_active = ${isActive}` : sql``}
+        ${jobType ? sql`AND j.job_type = ${jobType}` : sql``}
+        ${location ? sql`AND j.location ILIKE ${`%${location}%`}` : sql``}
+        ${search ? sql`AND (j.title ILIKE ${`%${search}%`} OR j.description ILIKE ${`%${search}%`})` : sql``}
+        ${salaryMin !== null ? sql`AND j.salary_min >= ${salaryMin}` : sql``}
+        ${salaryMax !== null ? sql`AND j.salary_max <= ${salaryMax}` : sql``}
+        ${experienceLevel ? sql`AND j.experience_level = ${experienceLevel}` : sql``}
+        ${educationLevel ? sql`AND j.education_level = ${educationLevel}` : sql``}
+        ${remoteWork !== null ? sql`AND j.remote_work = ${remoteWork}` : sql``}
+        ${employerId !== null ? sql`AND j.employer_id = ${employerId}` : sql``}
+    `
     const total = parseInt(countResult[0]?.count || '0')
 
     // 獲取數據
-    const offset = (params.page! - 1) * params.limit!
-    let dataQuery = `
+    const jobs = await sql`
       SELECT 
         j.*,
         u.first_name as employer_first_name,
@@ -141,24 +81,28 @@ async function handleGet(context: Context): Promise<Response> {
         u.email as employer_email
       FROM jobs j
       LEFT JOIN users u ON j.employer_id = u.id
-      ${whereClause}
+      WHERE 1=1
+        ${isActive !== null ? sql`AND j.is_active = ${isActive}` : sql``}
+        ${jobType ? sql`AND j.job_type = ${jobType}` : sql``}
+        ${location ? sql`AND j.location ILIKE ${`%${location}%`}` : sql``}
+        ${search ? sql`AND (j.title ILIKE ${`%${search}%`} OR j.description ILIKE ${`%${search}%`})` : sql``}
+        ${salaryMin !== null ? sql`AND j.salary_min >= ${salaryMin}` : sql``}
+        ${salaryMax !== null ? sql`AND j.salary_max <= ${salaryMax}` : sql``}
+        ${experienceLevel ? sql`AND j.experience_level = ${experienceLevel}` : sql``}
+        ${educationLevel ? sql`AND j.education_level = ${educationLevel}` : sql``}
+        ${remoteWork !== null ? sql`AND j.remote_work = ${remoteWork}` : sql``}
+        ${employerId !== null ? sql`AND j.employer_id = ${employerId}` : sql``}
       ORDER BY j.created_at DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      LIMIT ${limit} OFFSET ${offset}
     `
-    // 手動替換參數
-    const allValues = [...values, params.limit, offset]
-    allValues.forEach((val, idx) => {
-      dataQuery = dataQuery.replace(`$${idx + 1}`, typeof val === 'string' ? `'${val.replace(/'/g, "''")}'` : String(val))
-    })
-    const jobs = await sql.unsafe(dataQuery)
 
     return createSuccessResponse({
       data: jobs,
       meta: {
         total,
-        page: params.page,
-        limit: params.limit,
-        totalPages: Math.ceil(total / params.limit!)
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
       }
     })
   } catch (dbError) {

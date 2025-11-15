@@ -22,58 +22,36 @@ async function handleGet(context: Context): Promise<Response> {
 
   try {
     // 解析查詢參數
-    const category = url.searchParams.get('category')
-    const search = url.searchParams.get('search')
+    const category = url.searchParams.get('category') || null
+    const search = url.searchParams.get('search') || null
     const page = parseInt(url.searchParams.get('page') || '1')
     const limit = parseInt(url.searchParams.get('limit') || '20')
+    const offset = (page - 1) * limit
 
-    // 構建 WHERE 條件
-    const conditions: string[] = []
-    const values: any[] = []
-    let paramIndex = 1
-
-    if (category) {
-      conditions.push(`category = $${paramIndex}`)
-      values.push(category)
-      paramIndex++
-    }
-
-    if (search) {
-      conditions.push(`(title ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`)
-      values.push(`%${search}%`)
-      paramIndex++
-    }
-
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
-
-    // 獲取總數
-    let countQuery = `SELECT COUNT(*) as count FROM documents ${whereClause}`
-    // 手動替換參數
-    values.forEach((val, idx) => {
-      countQuery = countQuery.replace(`$${idx + 1}`, typeof val === 'string' ? `'${val.replace(/'/g, "''")}'` : String(val))
-    })
-    const countResult = await sql.unsafe(countQuery)
+    // 使用 1=1 技巧構建動態查詢
+    const countResult = await sql`
+      SELECT COUNT(*) as count 
+      FROM documents
+      WHERE 1=1
+        ${category ? sql`AND category = ${category}` : sql``}
+        ${search ? sql`AND (title ILIKE ${`%${search}%`} OR description ILIKE ${`%${search}%`})` : sql``}
+    `
     const total = parseInt(countResult[0]?.count || '0')
 
     // 獲取數據
-    const offset = (page - 1) * limit
-    let dataQuery = `
+    const documents = await sql`
       SELECT 
         d.*,
         u.first_name as uploader_first_name,
         u.last_name as uploader_last_name
       FROM documents d
       LEFT JOIN users u ON d.uploaded_by = u.id
-      ${whereClause}
+      WHERE 1=1
+        ${category ? sql`AND d.category = ${category}` : sql``}
+        ${search ? sql`AND (d.title ILIKE ${`%${search}%`} OR d.description ILIKE ${`%${search}%`})` : sql``}
       ORDER BY d.created_at DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      LIMIT ${limit} OFFSET ${offset}
     `
-    // 手動替換參數
-    const allValues = [...values, limit, offset]
-    allValues.forEach((val, idx) => {
-      dataQuery = dataQuery.replace(`$${idx + 1}`, typeof val === 'string' ? `'${val.replace(/'/g, "''")}'` : String(val))
-    })
-    const documents = await sql.unsafe(dataQuery)
 
     return createSuccessResponse({
       data: documents,

@@ -24,14 +24,8 @@ export async function onRequestGet(context: Context): Promise<Response> {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]))
       userId = payload.userId || payload.user_id || payload.id || payload.sub
-      const userType = payload.userType || payload.role
       if (!userId) return unauthorized('無效的 token')
-      if (userType !== 'job_seeker') {
-        return new Response(
-          JSON.stringify({ success: false, message: '僅求職者可查看收藏' }),
-          { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-        )
-      }
+      // 移除用戶類型限制，允許所有登入用戶查看自己的收藏
     } catch {
       return unauthorized('無效的 token')
     }

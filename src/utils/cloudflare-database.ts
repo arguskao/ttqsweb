@@ -261,8 +261,45 @@ export class CloudflareDatabaseUtils {
     return result?.exists || false
   }
 
-  // 獲取表行數
+  // 獲取表行數（帶 SQL 注入防護）
   async getTableRowCount(tableName: string): Promise<number> {
+    // 定義允許的表名白名單
+    const ALLOWED_TABLES = [
+      'users',
+      'courses',
+      'jobs',
+      'enrollments',
+      'job_applications',
+      'instructors',
+      'experiences',
+      'forum_topics',
+      'forum_comments',
+      'forum_likes',
+      'groups',
+      'group_members',
+      'messages',
+      'documents',
+      'course_progress',
+      'course_reviews'
+    ]
+
+    // 驗證表名是否在白名單中
+    if (!ALLOWED_TABLES.includes(tableName)) {
+      throw new Error(`Invalid table name: ${tableName}. Table not in whitelist.`)
+    }
+
+    // 驗證表名格式（額外的安全檢查）
+    if (!/^[a-z_][a-z0-9_]*$/i.test(tableName)) {
+      throw new Error(`Invalid table name format: ${tableName}`)
+    }
+
+    // 檢查表是否存在
+    const tableExists = await this.tableExists(tableName)
+    if (!tableExists) {
+      throw new Error(`Table does not exist: ${tableName}`)
+    }
+
+    // 現在可以安全地使用表名
     const result = await this.queryOne<{ count: string }>({
       text: `SELECT COUNT(*) as count FROM ${tableName}`
     })

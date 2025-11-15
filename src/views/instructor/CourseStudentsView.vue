@@ -113,15 +113,39 @@
                     </span>
                   </td>
                   <td>
-                    <button 
-                      class="button is-small is-info"
-                      @click="openMessageModal(student)"
-                    >
-                      <span class="icon is-small">
-                        <i class="fas fa-envelope"></i>
-                      </span>
-                      <span>發送訊息</span>
-                    </button>
+                    <div class="buttons">
+                      <button 
+                        class="button is-small is-info"
+                        @click="openMessageModal(student)"
+                      >
+                        <span class="icon is-small">
+                          <i class="fas fa-envelope"></i>
+                        </span>
+                        <span>發送訊息</span>
+                      </button>
+                      <button 
+                        v-if="student.status !== 'completed'"
+                        class="button is-small is-success"
+                        @click="markAsCompleted(student)"
+                        title="標記為已完成"
+                      >
+                        <span class="icon is-small">
+                          <i class="fas fa-check"></i>
+                        </span>
+                        <span>標記完成</span>
+                      </button>
+                      <button 
+                        v-else
+                        class="button is-small is-light"
+                        @click="markAsInProgress(student)"
+                        title="取消完成標記"
+                      >
+                        <span class="icon is-small">
+                          <i class="fas fa-undo"></i>
+                        </span>
+                        <span>取消完成</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -414,6 +438,50 @@ const removeEvaluationForm = async () => {
     alert(error.response?.data?.message || '移除失敗')
   } finally {
     isSavingEvaluation.value = false
+  }
+}
+
+const markAsCompleted = async (student: any) => {
+  if (!confirm(`確定要將 ${student.fullName} 標記為已完成嗎？`)) return
+
+  const courseId = route.params.courseId
+
+  try {
+    const response = await api.patch(`/courses/${courseId}/enrollments/${student.id}`, {
+      status: 'completed'
+    })
+
+    if (response.data?.success) {
+      alert('已標記為完成')
+      loadStudents() // 重新載入學員列表
+    } else {
+      alert(response.data?.message || '標記失敗')
+    }
+  } catch (error: any) {
+    console.error('標記完成失敗:', error)
+    alert(error.response?.data?.message || '標記失敗')
+  }
+}
+
+const markAsInProgress = async (student: any) => {
+  if (!confirm(`確定要取消 ${student.fullName} 的完成標記嗎？`)) return
+
+  const courseId = route.params.courseId
+
+  try {
+    const response = await api.patch(`/courses/${courseId}/enrollments/${student.id}`, {
+      status: 'in_progress'
+    })
+
+    if (response.data?.success) {
+      alert('已取消完成標記')
+      loadStudents() // 重新載入學員列表
+    } else {
+      alert(response.data?.message || '取消失敗')
+    }
+  } catch (error: any) {
+    console.error('取消完成標記失敗:', error)
+    alert(error.response?.data?.message || '取消失敗')
   }
 }
 

@@ -131,13 +131,13 @@ export class AuthServiceEnhanced {
       console.log('[getProfile] Fetching profile from /auth/profile')
       console.log('[getProfile] Token:', sessionStorage.getItem(this.accessTokenKey))
 
-      const response = await apiService.get<{ user: User }>('/auth/profile')
+      const response = await apiService.get<User>('/auth/profile')
 
       console.log('[getProfile] Response:', response)
 
       if (response.success && response.data) {
-        authStore.updateUser(response.data.user)
-        return response.data.user
+        authStore.updateUser(response.data)
+        return response.data
       }
 
       throw new Error(response.error?.message || '獲取用戶資料失敗')

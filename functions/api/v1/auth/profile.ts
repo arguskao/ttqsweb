@@ -31,8 +31,6 @@ async function handleGet(context: Context): Promise<Response> {
         last_name,
         phone,
         user_type,
-        bio,
-        avatar_url,
         created_at,
         updated_at
       FROM users
@@ -69,11 +67,9 @@ async function handlePut(context: Context): Promise<Response> {
         first_name = COALESCE(${body.firstName}, first_name),
         last_name = COALESCE(${body.lastName}, last_name),
         phone = COALESCE(${body.phone}, phone),
-        bio = COALESCE(${body.bio}, bio),
-        avatar_url = COALESCE(${body.avatarUrl}, avatar_url),
         updated_at = NOW()
       WHERE id = ${payload.userId}
-      RETURNING id, email, first_name, last_name, phone, user_type, bio, avatar_url
+      RETURNING id, email, first_name, last_name, phone, user_type
     `
 
     if (result.length === 0) {

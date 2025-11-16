@@ -95,12 +95,12 @@ export const authService = {
       authStore.setLoading(true)
       authStore.setError(null)
 
-      const response = await apiService.get<{ user: User }>('/auth/profile')
+      const response = await apiService.get<User>('/auth/profile')
 
       if (response.success && response.data) {
         // 更新 store 中的用戶資料
-        authStore.updateUser(response.data.user)
-        return response.data.user
+        authStore.updateUser(response.data)
+        return response.data
       }
 
       throw new Error(response.error?.message || '獲取用戶資料失敗')

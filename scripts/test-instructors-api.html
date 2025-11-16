@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>測試 Instructors API</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>測試 Instructors API</h1>
+    <button onclick="testAPI()">測試 API</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>測試中...</p>';
+
+            try {
+                const response = await fetch('https://ttqs.24cc.cc/api/v1/instructors?page=1&limit=20');
+                const data = await response.json();
+
+                let html = '<h2 class="success">✓ API 調用成功</h2>';
+                html += '<h3>完整響應：</h3>';
+                html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+
+                html += '<h3>數據分析：</h3>';
+                html += '<ul>';
+                html += '<li>success: ' + data.success + '</li>';
+                html += '<li>data 類型: ' + typeof data.data + '</li>';
+                html += '<li>data.instructors 存在: ' + (data.data.instructors ? '是' : '否') + '</li>';
+                html += '<li>data.instructors 是陣列: ' + (Array.isArray(data.data.instructors) ? '是' : '否') + '</li>';
+                html += '<li>講師數量: ' + (data.data.instructors ? data.data.instructors.length : 0) + '</li>';
+                html += '<li>data.data 存在: ' + (data.data.data ? '是' : '否') + '</li>';
+                html += '</ul>';
+
+                if (data.data.instructors && data.data.instructors.length > 0) {
+                    html += '<h3>第一個講師：</h3>';
+                    html += '<pre>' + JSON.stringify(data.data.instructors[0], null, 2) + '</pre>';
+                }
+
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = '<h2 class="error">✗ API 調用失敗</h2><pre>' + error.message + '</pre>';
+            }
+        }
+
+        // 自動執行測試
+        window.onload = () => testAPI();
+    </script>
+</body>
+</html>

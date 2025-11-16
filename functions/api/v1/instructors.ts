@@ -28,28 +28,27 @@ async function handleGet(context: Context): Promise<Response> {
     const limit = parseInt(url.searchParams.get('limit') || '20')
     const offset = (page - 1) * limit
 
-    // 構建查詢條件
-    const conditions = []
-    if (isActive === 'true') {
-      conditions.push(sql`ia.status = 'approved' AND ia.is_active = true`)
-    }
+    // 基礎查詢，只查詢已核准且活躍的講師
+    let whereConditions = `WHERE ia.status = 'approved' AND ia.is_active = true`
+    
+    // 添加搜尋條件
     if (search) {
-      conditions.push(sql`(u.first_name ILIKE ${`%${search}%`} OR u.last_name ILIKE ${`%${search}%`} OR ia.bio ILIKE ${`%${search}%`})`)
+      whereConditions += ` AND (u.first_name ILIKE '%${search}%' OR u.last_name ILIKE '%${search}%' OR ia.bio ILIKE '%${search}%')`
     }
+    
+    // 添加專業領域過濾
     if (specialization) {
-      conditions.push(sql`ia.specialization ILIKE ${`%${specialization}%`}`)
+      whereConditions += ` AND ia.specialization ILIKE '%${specialization}%'`
     }
-
-    const whereClause = conditions.length > 0 
-      ? sql`WHERE ${sql.join(conditions, sql` AND `)}`
-      : sql``
 
     // 計算總數
     const countResult = await sql`
       SELECT COUNT(*) as count 
       FROM instructor_applications ia
       JOIN users u ON u.id = ia.user_id
-      ${whereClause}
+      WHERE ia.status = 'approved' AND ia.is_active = true
+      ${search ? sql`AND (u.first_name ILIKE ${`%${search}%`} OR u.last_name ILIKE ${`%${search}%`} OR ia.bio ILIKE ${`%${search}%`})` : sql``}
+      ${specialization ? sql`AND ia.specialization ILIKE ${`%${specialization}%`}` : sql``}
     `
     const total = parseInt(countResult[0]?.count || '0')
 
@@ -73,7 +72,9 @@ async function handleGet(context: Context): Promise<Response> {
         ia.created_at
       FROM instructor_applications ia
       JOIN users u ON u.id = ia.user_id
-      ${whereClause}
+      WHERE ia.status = 'approved' AND ia.is_active = true
+      ${search ? sql`AND (u.first_name ILIKE ${`%${search}%`} OR u.last_name ILIKE ${`%${search}%`} OR ia.bio ILIKE ${`%${search}%`})` : sql``}
+      ${specialization ? sql`AND ia.specialization ILIKE ${`%${specialization}%`}` : sql``}
       ORDER BY ia.average_rating DESC, ia.created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `

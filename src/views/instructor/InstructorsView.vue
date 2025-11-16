@@ -224,7 +224,9 @@ const loadInstructors = async () => {
     console.log('響應數據:', response.data)
 
     if (response.data?.success) {
-      const responseData = response.data.instructors || response.data.data
+      // response.data 是 API 的完整響應: { success, data: { instructors, meta } }
+      // response.data.data 是實際的數據對象: { instructors, meta }
+      const responseData = response.data.data?.instructors || response.data.data
       console.log('提取的數據:', responseData)
       console.log('數據類型:', typeof responseData)
       console.log('是否為陣列:', Array.isArray(responseData))
@@ -240,8 +242,8 @@ const loadInstructors = async () => {
         instructors.value = []
       }
 
-      if (response.data.meta) {
-        meta.value = response.data.meta
+      if (response.data.data?.meta) {
+        meta.value = response.data.data.meta
         console.log('設置分頁信息:', meta.value)
       }
     } else {

@@ -1,225 +1,156 @@
 /**
- * 訓練計劃 API 端點
- * 使用 Neon tagged template 語法
+ * TTQS Training Plans API - TTQS 訓練計劃管理
+ * GET /api/v1/ttqs/plans - 獲取訓練計劃列表
+ * POST /api/v1/ttqs/plans - 創建訓練計劃
  */
 
-interface Env {
-  DATABASE_URL?: string
-  JWT_SECRET?: string
-}
+import { withErrorHandler, validateToken, parseJwtToken, validateDatabaseUrl, handleDatabaseError, createSuccessResponse, ApiError, ErrorCode } from '../../../utils/error-handler'
 
 interface Context {
   request: Request
-  env: Env
+  env: { DATABASE_URL?: string; JWT_SECRET?: string }
 }
 
-// 驗證 JWT Token
-async function verifyToken(request: Request, env: Env): Promise<any> {
-  const authHeader = request.headers.get('Authorization')
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null
-  }
-
-  const token = authHeader.substring(7)
-
-  try {
-    const parts = token.split('.')
-    if (parts.length !== 3) return null
-
-    const payload = JSON.parse(atob(parts[1]))
-
-    if (payload.exp && payload.exp < Date.now() / 1000) {
-      return null
-    }
-
-    return payload
-  } catch (error) {
-    console.error('[Auth] Token 解析失敗:', error)
-    return null
-  }
-}
-
-// GET /api/v1/ttqs/plans - 獲取訓練計劃列表
-export async function onRequestGet(context: Context): Promise<Response> {
+// GET - 獲取訓練計劃列表
+async function handleGet(context: Context): Promise<Response> {
   const { request, env } = context
+  const url = new URL(request.url)
+  
+  const token = validateToken(request.headers.get('Authorization'))
+  parseJwtToken(token)
+
+  const databaseUrl = validateDatabaseUrl(env.DATABASE_URL)
+  const { neon } = await import('@neondatabase/serverless')
+  const sql = neon(databaseUrl)
 
   try {
-    // 驗證用戶身份
-    const user = await verifyToken(request, env)
-    if (!user || !user.userId) {
-      return Response.json(
-        { success: false, error: { message: '未授權，請先登入' } },
-        { status: 401 }
-      )
-    }
-
-    const { neon } = await import('@neondatabase/serverless')
-    const databaseUrl = env.DATABASE_URL
-    if (!databaseUrl) {
-      return Response.json(
-        { success: false, error: { message: 'Database URL not configured' } },
-        { status: 500 }
-      )
-    }
-
-    const sql = neon(databaseUrl)
-    const url = new URL(request.url)
-
-    // 獲取查詢參數
-    const page = parseInt(url.searchParams.get('page') || '1', 10)
-    const limit = parseInt(url.searchParams.get('limit') || '10', 10)
-    const offset = (page - 1) * limit
+    const page = parseInt(url.searchParams.get('page') || '1')
+    const limit = parseInt(url.searchParams.get('limit') || '20')
     const status = url.searchParams.get('status')
+    const offset = (page - 1) * limit
 
-    // 根據條件查詢
-    let plans: any[]
-    let total: number
-
+    let whereClause = 'WHERE 1=1'
     if (status) {
-      const countResult = await sql`
-        SELECT COUNT(*) as count FROM training_plans WHERE status = ${status}
-      `
-      total = parseInt(countResult[0]?.count || '0', 10)
-
-      plans = await sql`
-        SELECT 
-          tp.*,
-          u.first_name,
-          u.last_name
-        FROM training_plans tp
-        LEFT JOIN users u ON tp.created_by = u.id
-        WHERE tp.status = ${status}
-        ORDER BY tp.created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `
-    } else {
-      const countResult = await sql`
-        SELECT COUNT(*) as count FROM training_plans
-      `
-      total = parseInt(countResult[0]?.count || '0', 10)
-
-      plans = await sql`
-        SELECT 
-          tp.*,
-          u.first_name,
-          u.last_name
-        FROM training_plans tp
-        LEFT JOIN users u ON tp.created_by = u.id
-        ORDER BY tp.created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `
+      whereClause += ` AND status = '${status}'`
     }
 
-    return Response.json({
-      success: true,
-      data: plans.map((p: any) => ({
-        ...p,
-        creatorName: `${p.first_name || ''} ${p.last_name || ''}`.trim()
-      })),
+    const countResult = await sql`
+      SELECT COUNT(*) as count 
+      FROM ttqs_plans 
+      ${sql.unsafe(whereClause)}
+    `
+    const total = parseInt(countResult[0]?.count || '0')
+
+    const plans = await sql`
+      SELECT 
+        tp.*,
+        u.first_name as creator_first_name,
+        u.last_name as creator_last_name
+      FROM ttqs_plans tp
+      LEFT JOIN users u ON tp.created_by = u.id
+      ${sql.unsafe(whereClause)}
+      ORDER BY tp.created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `
+
+    const formattedPlans = plans.map((plan: any) => ({
+      id: plan.id,
+      title: plan.title,
+      description: plan.description,
+      startDate: plan.start_date,
+      endDate: plan.end_date,
+      status: plan.status,
+      targetAudience: plan.target_audience,
+      objectives: plan.objectives,
+      budget: plan.budget,
+      createdBy: plan.created_by,
+      createdAt: plan.created_at,
+      updatedAt: plan.updated_at,
+      creatorName: plan.creator_first_name && plan.creator_last_name
+        ? `${plan.creator_first_name} ${plan.creator_last_name}`
+        : null
+    }))
+
+    return createSuccessResponse({
+      plans: formattedPlans,
       meta: {
+        total,
         page,
         limit,
-        total,
         totalPages: Math.ceil(total / limit)
       }
     })
-  } catch (error: any) {
-    console.error('[Training Plans] 獲取訓練計劃失敗:', error)
-    return Response.json(
-      { success: false, error: { message: '獲取訓練計劃失敗', details: error.message } },
-      { status: 500 }
-    )
+  } catch (dbError) {
+    handleDatabaseError(dbError, 'Get TTQS Plans')
   }
 }
 
-// POST /api/v1/ttqs/plans - 創建新訓練計劃
-export async function onRequestPost(context: Context): Promise<Response> {
+// POST - 創建訓練計劃
+async function handlePost(context: Context): Promise<Response> {
   const { request, env } = context
+  
+  const token = validateToken(request.headers.get('Authorization'))
+  const payload = parseJwtToken(token)
+
+  const databaseUrl = validateDatabaseUrl(env.DATABASE_URL)
+  const { neon } = await import('@neondatabase/serverless')
+  const sql = neon(databaseUrl)
 
   try {
-    // 驗證用戶身份
-    const user = await verifyToken(request, env)
-    if (!user || !user.userId) {
-      return Response.json(
-        { success: false, error: { message: '未授權，請先登入' } },
-        { status: 401 }
-      )
+    const body = await request.json() as any
+
+    if (!body.title) {
+      throw new ApiError(ErrorCode.VALIDATION_ERROR, '標題為必填項')
     }
 
-    const { neon } = await import('@neondatabase/serverless')
-    const databaseUrl = env.DATABASE_URL
-    if (!databaseUrl) {
-      return Response.json(
-        { success: false, error: { message: 'Database URL not configured' } },
-        { status: 500 }
-      )
-    }
-
-    const sql = neon(databaseUrl)
-    const body = (await request.json()) as any
-
-    // 驗證必填欄位
-    if (!body.title || !body.objectives) {
-      return Response.json(
-        { success: false, error: { message: '標題和目標為必填' } },
-        { status: 400 }
-      )
-    }
-
-    // 處理日期欄位：空字串轉換為 null
-    const startDate = body.start_date && body.start_date.trim() !== '' ? body.start_date : null
-    const endDate = body.end_date && body.end_date.trim() !== '' ? body.end_date : null
-
-    // 創建訓練計劃
     const result = await sql`
-      INSERT INTO training_plans (
+      INSERT INTO ttqs_plans (
         title,
         description,
-        objectives,
-        target_audience,
-        duration_weeks,
         start_date,
         end_date,
+        status,
+        target_audience,
+        objectives,
+        budget,
         created_by,
-        status
-      )
-      VALUES (
+        created_at,
+        updated_at
+      ) VALUES (
         ${body.title},
         ${body.description || null},
-        ${body.objectives},
-        ${body.target_audience || null},
-        ${body.duration_weeks ? parseInt(body.duration_weeks) : null},
-        ${startDate},
-        ${endDate},
-        ${user.userId},
-        ${body.status || 'draft'}
+        ${body.startDate || null},
+        ${body.endDate || null},
+        ${body.status || 'draft'},
+        ${body.targetAudience || null},
+        ${body.objectives || null},
+        ${body.budget || null},
+        ${payload.userId},
+        NOW(),
+        NOW()
       )
       RETURNING *
     `
 
-    return Response.json({
-      success: true,
-      data: result[0]
+    const plan = result[0]
+    return createSuccessResponse({
+      id: plan.id,
+      title: plan.title,
+      description: plan.description,
+      startDate: plan.start_date,
+      endDate: plan.end_date,
+      status: plan.status,
+      targetAudience: plan.target_audience,
+      objectives: plan.objectives,
+      budget: plan.budget,
+      createdBy: plan.created_by,
+      createdAt: plan.created_at,
+      updatedAt: plan.updated_at
     })
-  } catch (error: any) {
-    console.error('[Training Plans] 創建訓練計劃失敗:', error)
-    return Response.json(
-      { success: false, error: { message: '創建訓練計劃失敗', details: error.message } },
-      { status: 500 }
-    )
+  } catch (dbError) {
+    handleDatabaseError(dbError, 'Create TTQS Plan')
   }
 }
 
-// OPTIONS - CORS 預檢
-export async function onRequestOptions(): Promise<Response> {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Max-Age': '86400'
-    }
-  })
-}
-
+export const onRequestGet = withErrorHandler(handleGet, 'Get TTQS Plans')
+export const onRequestPost = withErrorHandler(handlePost, 'Create TTQS Plan')

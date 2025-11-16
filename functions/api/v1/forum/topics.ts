@@ -1,294 +1,144 @@
 /**
- * 論壇主題 API 端點
+ * Forum Topics API - 討論區主題管理
+ * GET /api/v1/forum/topics - 獲取主題列表
+ * POST /api/v1/forum/topics - 創建主題
  */
 
-interface Env {
-  DATABASE_URL?: string
-  JWT_SECRET?: string
-}
+import { withErrorHandler, validateToken, parseJwtToken, validateDatabaseUrl, handleDatabaseError, createSuccessResponse, ApiError, ErrorCode } from '../../../utils/error-handler'
 
 interface Context {
   request: Request
-  env: Env
+  env: { DATABASE_URL?: string; JWT_SECRET?: string }
 }
 
-// 驗證 JWT Token
-async function verifyToken(request: Request, env: Env): Promise<any> {
-  const authHeader = request.headers.get('Authorization')
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null
-  }
-
-  const token = authHeader.substring(7)
-
-  try {
-    const parts = token.split('.')
-    if (parts.length !== 3) return null
-
-    const payload = JSON.parse(atob(parts[1]))
-
-    if (payload.exp && payload.exp < Date.now() / 1000) {
-      return null
-    }
-
-    return payload
-  } catch (error) {
-    console.error('[Auth] Token 解析失敗:', error)
-    return null
-  }
-}
-
-// GET /api/v1/forum/topics - 獲取討論主題列表
-export async function onRequestGet(context: Context): Promise<Response> {
+// GET - 獲取主題列表
+async function handleGet(context: Context): Promise<Response> {
   const { request, env } = context
+  const url = new URL(request.url)
+
+  const databaseUrl = validateDatabaseUrl(env.DATABASE_URL)
+  const { neon } = await import('@neondatabase/serverless')
+  const sql = neon(databaseUrl)
 
   try {
-    const { neon } = await import('@neondatabase/serverless')
-    const databaseUrl = env.DATABASE_URL
-    if (!databaseUrl) {
-      return Response.json(
-        { success: false, error: { message: 'Database URL not configured' } },
-        { status: 500 }
-      )
-    }
-
-    const sql = neon(databaseUrl)
-    const url = new URL(request.url)
-
-    // 獲取查詢參數
-    const page = parseInt(url.searchParams.get('page') || '1', 10)
-    const limit = parseInt(url.searchParams.get('limit') || '20', 10)
-    const offset = (page - 1) * limit
-    const groupId = url.searchParams.get('group_id')
+    const page = parseInt(url.searchParams.get('page') || '1')
+    const limit = parseInt(url.searchParams.get('limit') || '20')
     const category = url.searchParams.get('category')
-    const sortBy = url.searchParams.get('sortBy') || 'latest'
+    const offset = (page - 1) * limit
 
-    // 根據條件構建不同的查詢（使用 tagged template）
-    let topics: any[]
-    let total: number
-
-    if (groupId && category) {
-      const groupIdNum = parseInt(groupId)
-      const countResult = await sql`SELECT COUNT(*) as count FROM forum_topics WHERE group_id = ${groupIdNum} AND category = ${category}`
-      total = parseInt(countResult[0]?.count || '0', 10)
-
-      topics = await sql`
-        SELECT t.*, u.first_name, u.last_name
-        FROM forum_topics t
-        LEFT JOIN users u ON t.author_id = u.id
-        WHERE t.group_id = ${groupIdNum} AND t.category = ${category}
-        ORDER BY t.is_pinned DESC, t.created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `
-    } else if (groupId) {
-      const groupIdNum = parseInt(groupId)
-      const countResult = await sql`SELECT COUNT(*) as count FROM forum_topics WHERE group_id = ${groupIdNum}`
-      total = parseInt(countResult[0]?.count || '0', 10)
-
-      topics = await sql`
-        SELECT t.*, u.first_name, u.last_name
-        FROM forum_topics t
-        LEFT JOIN users u ON t.author_id = u.id
-        WHERE t.group_id = ${groupIdNum}
-        ORDER BY t.is_pinned DESC, t.created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `
-    } else if (category) {
-      const countResult = await sql`SELECT COUNT(*) as count FROM forum_topics WHERE category = ${category}`
-      total = parseInt(countResult[0]?.count || '0', 10)
-
-      topics = await sql`
-        SELECT t.*, u.first_name, u.last_name
-        FROM forum_topics t
-        LEFT JOIN users u ON t.author_id = u.id
-        WHERE t.category = ${category}
-        ORDER BY t.is_pinned DESC, t.created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `
-    } else {
-      const countResult = await sql`SELECT COUNT(*) as count FROM forum_topics`
-      total = parseInt(countResult[0]?.count || '0', 10)
-
-      topics = await sql`
-        SELECT t.*, u.first_name, u.last_name
-        FROM forum_topics t
-        LEFT JOIN users u ON t.author_id = u.id
-        ORDER BY t.is_pinned DESC, t.created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `
+    let whereClause = 'WHERE 1=1'
+    if (category) {
+      whereClause += ` AND category = '${category}'`
     }
 
-    // 根據排序方式重新排序（在記憶體中）
-    if (sortBy === 'popular') {
-      topics.sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
-    } else if (sortBy === 'unanswered') {
-      topics = topics.filter(t => (t.reply_count || 0) === 0)
-    }
+    const countResult = await sql`
+      SELECT COUNT(*) as count 
+      FROM forum_topics 
+      ${sql.unsafe(whereClause)}
+    `
+    const total = parseInt(countResult[0]?.count || '0')
 
-    return Response.json({
-      success: true,
-      data: topics.map((t: any) => ({
-        ...t,
-        authorName: `${t.first_name || ''} ${t.last_name || ''}`.trim()
-      })),
+    const topics = await sql`
+      SELECT 
+        ft.*,
+        u.first_name,
+        u.last_name,
+        u.email,
+        (SELECT COUNT(*) FROM forum_comments WHERE topic_id = ft.id) as comment_count
+      FROM forum_topics ft
+      LEFT JOIN users u ON ft.created_by = u.id
+      ${sql.unsafe(whereClause)}
+      ORDER BY ft.is_pinned DESC, ft.created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `
+
+    const formattedTopics = topics.map((topic: any) => ({
+      id: topic.id,
+      title: topic.title,
+      content: topic.content,
+      category: topic.category,
+      isPinned: topic.is_pinned,
+      isLocked: topic.is_locked,
+      viewCount: topic.view_count,
+      commentCount: parseInt(topic.comment_count || '0'),
+      createdBy: topic.created_by,
+      createdAt: topic.created_at,
+      updatedAt: topic.updated_at,
+      author: {
+        firstName: topic.first_name,
+        lastName: topic.last_name,
+        email: topic.email
+      }
+    }))
+
+    return createSuccessResponse({
+      topics: formattedTopics,
       meta: {
+        total,
         page,
         limit,
-        total,
         totalPages: Math.ceil(total / limit)
       }
     })
-  } catch (error: any) {
-    console.error('[Forum] 獲取討論主題失敗:', error)
-    return Response.json(
-      { success: false, error: { message: '獲取討論主題失敗', details: error.message } },
-      { status: 500 }
-    )
+  } catch (dbError) {
+    handleDatabaseError(dbError, 'Get Forum Topics')
   }
 }
 
-// DELETE /api/v1/forum/topics - 刪除討論主題（管理員）
-export async function onRequestDelete(context: Context): Promise<Response> {
+// POST - 創建主題
+async function handlePost(context: Context): Promise<Response> {
   const { request, env } = context
+  
+  const token = validateToken(request.headers.get('Authorization'))
+  const payload = parseJwtToken(token)
+
+  const databaseUrl = validateDatabaseUrl(env.DATABASE_URL)
+  const { neon } = await import('@neondatabase/serverless')
+  const sql = neon(databaseUrl)
 
   try {
-    // 驗證用戶身份
-    const user = await verifyToken(request, env)
-    if (!user || !user.userId) {
-      return Response.json(
-        { success: false, error: { message: '未授權，請先登入' } },
-        { status: 401 }
-      )
+    const body = await request.json() as any
+
+    if (!body.title || !body.content) {
+      throw new ApiError(ErrorCode.VALIDATION_ERROR, '標題和內容為必填項')
     }
 
-    // 檢查是否為管理員
-    if (user.userType !== 'admin') {
-      return Response.json(
-        { success: false, error: { message: '只有管理員可以刪除討論主題' } },
-        { status: 403 }
-      )
-    }
-
-    const { neon } = await import('@neondatabase/serverless')
-    const databaseUrl = env.DATABASE_URL
-    if (!databaseUrl) {
-      return Response.json(
-        { success: false, error: { message: 'Database URL not configured' } },
-        { status: 500 }
-      )
-    }
-
-    const sql = neon(databaseUrl)
-    const url = new URL(request.url)
-    const topicId = url.searchParams.get('id')
-
-    if (!topicId) {
-      return Response.json(
-        { success: false, error: { message: '討論主題 ID 為必填' } },
-        { status: 400 }
-      )
-    }
-
-    // 檢查討論主題是否存在
-    const existing = await sql`
-      SELECT id, title FROM forum_topics WHERE id = ${parseInt(topicId)}
-    `
-
-    if (existing.length === 0) {
-      return Response.json(
-        { success: false, error: { message: '討論主題不存在' } },
-        { status: 404 }
-      )
-    }
-
-    // 刪除相關的回覆
-    await sql`DELETE FROM forum_replies WHERE topic_id = ${parseInt(topicId)}`
-    
-    // 刪除討論主題
-    await sql`DELETE FROM forum_topics WHERE id = ${parseInt(topicId)}`
-
-    return Response.json({
-      success: true,
-      message: '討論主題已刪除'
-    })
-  } catch (error: any) {
-    console.error('[Forum] 刪除討論主題失敗:', error)
-    return Response.json(
-      { success: false, error: { message: '刪除討論主題失敗', details: error.message } },
-      { status: 500 }
-    )
-  }
-}
-
-// POST /api/v1/forum/topics - 創建新討論主題
-export async function onRequestPost(context: Context): Promise<Response> {
-  const { request, env } = context
-
-  try {
-    // 驗證用戶身份
-    const user = await verifyToken(request, env)
-    if (!user || !user.userId) {
-      return Response.json(
-        { success: false, error: { message: '未授權，請先登入' } },
-        { status: 401 }
-      )
-    }
-
-    const { neon } = await import('@neondatabase/serverless')
-    const databaseUrl = env.DATABASE_URL
-    if (!databaseUrl) {
-      return Response.json(
-        { success: false, error: { message: 'Database URL not configured' } },
-        { status: 500 }
-      )
-    }
-
-    const sql = neon(databaseUrl)
-    const body = (await request.json()) as any
-
-    // 驗證必填欄位
-    if (!body.title || !body.content || !body.category) {
-      return Response.json(
-        { success: false, error: { message: '標題、內容和分類為必填' } },
-        { status: 400 }
-      )
-    }
-
-    // 創建討論主題
     const result = await sql`
-      INSERT INTO forum_topics (title, content, category, group_id, author_id)
-      VALUES (
+      INSERT INTO forum_topics (
+        title,
+        content,
+        category,
+        created_by,
+        created_at,
+        updated_at
+      ) VALUES (
         ${body.title},
         ${body.content},
-        ${body.category},
-        ${body.groupId || null},
-        ${user.userId}
+        ${body.category || 'general'},
+        ${payload.userId},
+        NOW(),
+        NOW()
       )
       RETURNING *
     `
 
-    return Response.json({
-      success: true,
-      data: result[0]
+    const topic = result[0]
+    return createSuccessResponse({
+      id: topic.id,
+      title: topic.title,
+      content: topic.content,
+      category: topic.category,
+      isPinned: topic.is_pinned,
+      isLocked: topic.is_locked,
+      viewCount: topic.view_count,
+      createdBy: topic.created_by,
+      createdAt: topic.created_at,
+      updatedAt: topic.updated_at
     })
-  } catch (error: any) {
-    console.error('[Forum] 創建討論主題失敗:', error)
-    return Response.json(
-      { success: false, error: { message: '創建討論主題失敗', details: error.message } },
-      { status: 500 }
-    )
+  } catch (dbError) {
+    handleDatabaseError(dbError, 'Create Forum Topic')
   }
 }
 
-// OPTIONS - CORS 預檢
-export async function onRequestOptions(): Promise<Response> {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Max-Age': '86400'
-    }
-  })
-}
+export const onRequestGet = withErrorHandler(handleGet, 'Get Forum Topics')
+export const onRequestPost = withErrorHandler(handlePost, 'Create Forum Topic')

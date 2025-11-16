@@ -2,7 +2,7 @@
 
 > **更新時間**: 2024年12月19日  
 > **當前階段**: 批量遷移中  
-> **完成度**: ~50%
+> **完成度**: ~65%
 
 ---
 
@@ -40,19 +40,59 @@
   - PUT /api/v1/documents/[id] - 更新文檔
   - DELETE /api/v1/documents/[id] - 刪除文檔
 
+### TTQS 模塊（新增完成）
+- [x] `functions/api/v1/ttqs/plans.ts` - 訓練計劃
+  - GET /api/v1/ttqs/plans - 計劃列表
+  - POST /api/v1/ttqs/plans - 創建計劃
+
+- [x] `functions/api/v1/ttqs/plans/[id].ts` - 計劃詳情
+  - GET /api/v1/ttqs/plans/[id] - 獲取詳情
+  - PUT /api/v1/ttqs/plans/[id] - 更新計劃
+
+- [x] `functions/api/v1/ttqs/executions.ts` - 訓練執行
+  - GET /api/v1/ttqs/executions - 執行列表
+  - POST /api/v1/ttqs/executions - 創建執行
+
+- [x] `functions/api/v1/ttqs/executions/[id].ts` - 執行詳情
+  - GET /api/v1/ttqs/executions/[id] - 獲取詳情
+  - PUT /api/v1/ttqs/executions/[id] - 更新執行
+
+- [x] `functions/api/v1/ttqs/improvements.ts` - 改善行動
+  - GET /api/v1/ttqs/improvements - 改善列表
+  - POST /api/v1/ttqs/improvements - 創建改善
+
+- [x] `functions/api/v1/ttqs/improvements/[id].ts` - 改善詳情
+  - GET /api/v1/ttqs/improvements/[id] - 獲取詳情
+  - PUT /api/v1/ttqs/improvements/[id] - 更新改善
+
+### Forum 模塊（新增完成）
+- [x] `functions/api/v1/forum/topics.ts` - 討論區主題
+  - GET /api/v1/forum/topics - 主題列表
+  - POST /api/v1/forum/topics - 創建主題
+
+- [x] `functions/api/v1/forum/topics/[id].ts` - 主題詳情
+  - GET /api/v1/forum/topics/[id] - 獲取詳情
+  - PUT /api/v1/forum/topics/[id] - 更新主題
+  - DELETE /api/v1/forum/topics/[id] - 刪除主題
+
+### Groups 模塊（新增完成）
+- [x] `functions/api/v1/groups.ts` - 學習小組
+  - GET /api/v1/groups - 小組列表
+  - POST /api/v1/groups - 創建小組
+
 ---
 
 ## 📊 統計
 
 ### 本次新增
-- **新增文件**: 7 個
-- **新增路由**: ~15 個
-- **代碼行數**: ~1,200 行
+- **新增文件**: 16 個
+- **新增路由**: ~35 個
+- **代碼行數**: ~2,800 行
 
 ### 總計
-- **已遷移文件**: 40+ 個
-- **已遷移路由**: ~80 個
-- **完成度**: ~50%
+- **已遷移文件**: 50+ 個
+- **已遷移路由**: ~100 個
+- **完成度**: ~65%
 
 ---
 

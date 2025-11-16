@@ -150,11 +150,10 @@
               <JobCard
                 :job="job"
                 :show-apply="true"
-                :show-favorite="isJobSeeker"
-                :favorited="isFavorited(job.id)"
+                :show-favorite="false"
+                :favorited="false"
                 @view-details="viewJobDetails"
                 @apply="applyToJob"
-                @toggle-favorite="toggleFavorite"
               />
             </div>
           </div>

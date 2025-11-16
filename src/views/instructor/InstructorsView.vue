@@ -229,9 +229,12 @@ const loadInstructors = async () => {
       console.log('數據類型:', typeof responseData)
       console.log('是否為陣列:', Array.isArray(responseData))
 
+      console.log('開始設置講師列表...')
       if (Array.isArray(responseData)) {
+        console.log('確認是陣列，長度:', responseData.length)
         instructors.value = responseData
-        console.log('設置講師列表成功，長度:', instructors.value.length)
+        console.log('設置完成，instructors.value.length:', instructors.value.length)
+        console.log('設置完成，instructors.value:', instructors.value)
       } else {
         console.error('響應數據不是陣列:', responseData)
         instructors.value = []

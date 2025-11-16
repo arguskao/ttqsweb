@@ -224,7 +224,7 @@ const loadInstructors = async () => {
     console.log('響應數據:', response.data)
 
     if (response.data?.success) {
-      const responseData = response.data.data
+      const responseData = response.data.instructors || response.data.data
       console.log('提取的數據:', responseData)
       console.log('數據類型:', typeof responseData)
       console.log('是否為陣列:', Array.isArray(responseData))

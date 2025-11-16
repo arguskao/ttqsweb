@@ -288,7 +288,7 @@ export function handleDatabaseError(error: any, context?: string): Response {
     process.env.NODE_ENV === 'development' ? error.message : undefined
   )
   
-  return apiError.toResponse()
+  return createErrorResponse(apiError, context)
 }
 
 /**

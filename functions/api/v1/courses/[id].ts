@@ -53,11 +53,11 @@ async function handleGetCourse(context: Context): Promise<Response> {
       FROM courses c
       LEFT JOIN instructor_applications ia ON c.instructor_id = ia.id
       LEFT JOIN users u ON ia.user_id = u.id
-      WHERE c.id = ${courseId} AND c.is_active = true
+      WHERE c.id = ${courseId}
     `
 
     if (courses.length === 0) {
-      throw new ApiError(ErrorCode.NOT_FOUND, '課程不存在或已停用')
+      throw new ApiError(ErrorCode.NOT_FOUND, '課程不存在')
     }
 
     const course = courses[0]
@@ -104,7 +104,8 @@ async function handleGetCourse(context: Context): Promise<Response> {
     return createSuccessResponse(processedCourse)
 
   } catch (dbError) {
-    handleDatabaseError(dbError, 'Course Detail Query')
+    console.error('Course Detail Query Error:', dbError)
+    return handleDatabaseError(dbError, 'Course Detail Query')
   }
 }
 
@@ -173,7 +174,8 @@ async function handleUpdateCourse(context: Context): Promise<Response> {
     }, '課程更新成功')
 
   } catch (dbError) {
-    handleDatabaseError(dbError, 'Course Update')
+    console.error('Course Update Error:', dbError)
+    return handleDatabaseError(dbError, 'Course Update')
   }
 }
 

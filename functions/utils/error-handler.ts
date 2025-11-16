@@ -278,15 +278,17 @@ export function checkPermission(
 /**
  * 處理資料庫錯誤
  */
-export function handleDatabaseError(error: any, context?: string): never {
+export function handleDatabaseError(error: any, context?: string): Response {
   const logPrefix = context ? `[${context}]` : '[Database]'
   console.error(`${logPrefix} 資料庫錯誤:`, error)
 
-  throw new ApiError(
+  const apiError = new ApiError(
     ErrorCode.DB_ERROR,
     '資料庫操作失敗',
     process.env.NODE_ENV === 'development' ? error.message : undefined
   )
+  
+  return apiError.toResponse()
 }
 
 /**

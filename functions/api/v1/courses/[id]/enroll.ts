@@ -51,11 +51,11 @@ async function handleEnrollCourse(context: Context): Promise<Response> {
     // 檢查課程是否存在
     const courses = await sql`
       SELECT * FROM courses 
-      WHERE id = ${courseId} AND is_active = true
+      WHERE id = ${courseId}
     `
 
     if (courses.length === 0) {
-      throw new ApiError(ErrorCode.NOT_FOUND, '課程不存在或已停用')
+      throw new ApiError(ErrorCode.NOT_FOUND, '課程不存在')
     }
 
     const course = courses[0]

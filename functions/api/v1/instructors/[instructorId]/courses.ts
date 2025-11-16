@@ -55,7 +55,7 @@ export async function onRequestGet(context: Context): Promise<Response> {
       const countResult = await sql`
         SELECT COUNT(*) as count 
         FROM courses 
-        WHERE instructor_id = ${instructorId} AND is_active = true
+        WHERE instructor_id = ${instructorId}
       `
       const total = parseInt(countResult[0]?.count || '0', 10)
 
@@ -66,7 +66,7 @@ export async function onRequestGet(context: Context): Promise<Response> {
           COUNT(ce.id) as enrollment_count
         FROM courses c
         LEFT JOIN course_enrollments ce ON c.id = ce.course_id
-        WHERE c.instructor_id = ${instructorId} AND c.is_active = true
+        WHERE c.instructor_id = ${instructorId}
         GROUP BY c.id
         ORDER BY c.created_at DESC 
         LIMIT ${limit} OFFSET ${offset}

@@ -78,9 +78,20 @@ async function handleGetCourses(context: Context): Promise<Response> {
       total = parseInt(countResult[0]?.count || '0', 10)
 
       courses = await sql`
-        SELECT * FROM courses 
-        WHERE is_active = true AND course_type = ${dbCourseType}
-        ORDER BY created_at DESC 
+        SELECT 
+          c.*,
+          i.id as instructor_db_id,
+          u.first_name as instructor_first_name,
+          u.last_name as instructor_last_name,
+          u.email as instructor_email,
+          i.bio as instructor_bio,
+          i.expertise as instructor_expertise,
+          i.average_rating as instructor_rating
+        FROM courses c
+        LEFT JOIN instructors i ON c.instructor_id = i.id
+        LEFT JOIN users u ON i.user_id = u.id
+        WHERE c.is_active = true AND c.course_type = ${dbCourseType}
+        ORDER BY c.created_at DESC 
         LIMIT ${limit} OFFSET ${offset}
       `
     } else if (search) {
@@ -96,10 +107,21 @@ async function handleGetCourses(context: Context): Promise<Response> {
       total = parseInt(countResult[0]?.count || '0', 10)
 
       courses = await sql`
-        SELECT * FROM courses 
-        WHERE is_active = true 
-        AND (title ILIKE ${`%${search}%`} OR description ILIKE ${`%${search}%`})
-        ORDER BY created_at DESC 
+        SELECT 
+          c.*,
+          i.id as instructor_db_id,
+          u.first_name as instructor_first_name,
+          u.last_name as instructor_last_name,
+          u.email as instructor_email,
+          i.bio as instructor_bio,
+          i.expertise as instructor_expertise,
+          i.average_rating as instructor_rating
+        FROM courses c
+        LEFT JOIN instructors i ON c.instructor_id = i.id
+        LEFT JOIN users u ON i.user_id = u.id
+        WHERE c.is_active = true 
+        AND (c.title ILIKE ${`%${search}%`} OR c.description ILIKE ${`%${search}%`})
+        ORDER BY c.created_at DESC 
         LIMIT ${limit} OFFSET ${offset}
       `
     } else {
@@ -114,20 +136,54 @@ async function handleGetCourses(context: Context): Promise<Response> {
       total = parseInt(countResult[0]?.count || '0', 10)
 
       courses = await sql`
-        SELECT * FROM courses 
-        WHERE is_active = true
-        ORDER BY created_at DESC 
+        SELECT 
+          c.*,
+          i.id as instructor_db_id,
+          u.first_name as instructor_first_name,
+          u.last_name as instructor_last_name,
+          u.email as instructor_email,
+          i.bio as instructor_bio,
+          i.expertise as instructor_expertise,
+          i.average_rating as instructor_rating
+        FROM courses c
+        LEFT JOIN instructors i ON c.instructor_id = i.id
+        LEFT JOIN users u ON i.user_id = u.id
+        WHERE c.is_active = true
+        ORDER BY c.created_at DESC 
         LIMIT ${limit} OFFSET ${offset}
       `
     }
 
     console.log('[Courses] 查詢到的課程數:', courses.length, '總數:', total)
 
-    // 轉換課程類型為前端格式
-    const processedCourses = courses.map((course: any) => ({
-      ...course,
-      course_type: COURSE_TYPE_REVERSE[course.course_type] || course.course_type
-    }))
+    // 轉換課程類型為前端格式，並整理講師信息
+    const processedCourses = courses.map((course: any) => {
+      const { 
+        instructor_db_id,
+        instructor_first_name, 
+        instructor_last_name, 
+        instructor_email,
+        instructor_bio,
+        instructor_expertise,
+        instructor_rating,
+        ...courseData 
+      } = course
+      
+      return {
+        ...courseData,
+        course_type: COURSE_TYPE_REVERSE[courseData.course_type] || courseData.course_type,
+        instructor: instructor_db_id ? {
+          id: instructor_db_id,
+          first_name: instructor_first_name,
+          last_name: instructor_last_name,
+          full_name: `${instructor_first_name || ''} ${instructor_last_name || ''}`.trim(),
+          email: instructor_email,
+          bio: instructor_bio,
+          expertise: instructor_expertise,
+          rating: instructor_rating
+        } : null
+      }
+    })
 
     return createSuccessResponse(processedCourses, {
       page,

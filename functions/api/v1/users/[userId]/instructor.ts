@@ -1,5 +1,5 @@
 /**
- * User Instructor Profile API - 用戶的講師資料
+ * User Instructor Profile API - 用戶講師資料
  * GET /api/v1/users/[userId]/instructor - 獲取用戶的講師資料
  */
 
@@ -11,7 +11,6 @@ interface Context {
   params: { userId: string }
 }
 
-// GET - 獲取用戶的講師資料
 async function handleGet(context: Context): Promise<Response> {
   const { request, params, env } = context
   const userId = parseInt(params.userId)
@@ -23,7 +22,7 @@ async function handleGet(context: Context): Promise<Response> {
   const token = validateToken(request.headers.get('Authorization'))
   const payload = parseJwtToken(token)
 
-  // 檢查權限：只能查看自己的資料或管理員
+  // 只能查看自己的講師資料或管理員可以查看
   if (payload.userId !== userId && payload.userType !== 'admin') {
     throw new ApiError(ErrorCode.FORBIDDEN, '無權限查看此用戶的講師資料')
   }
@@ -33,60 +32,54 @@ async function handleGet(context: Context): Promise<Response> {
   const sql = neon(databaseUrl)
 
   try {
-    // 檢查用戶是否為講師
-    const user = await sql`
+    const result = await sql`
       SELECT 
-        id,
-        email,
-        first_name,
-        last_name,
-        phone,
-        user_type,
-        bio,
-        avatar_url
-      FROM users
-      WHERE id = ${userId} AND user_type = 'instructor'
+        i.*,
+        u.first_name,
+        u.last_name,
+        u.email
+      FROM instructors i
+      LEFT JOIN users u ON i.user_id = u.id
+      WHERE i.user_id = ${userId}
     `
 
-    if (user.length === 0) {
-      throw new ApiError(ErrorCode.NOT_FOUND, '用戶不是講師或不存在')
+    if (result.length === 0) {
+      throw new ApiError(ErrorCode.NOT_FOUND, '講師資料不存在')
     }
 
-    // 獲取講師統計
-    const stats = await sql`
-      SELECT 
-        COUNT(DISTINCT c.id) as course_count,
-        COUNT(DISTINCT e.id) as student_count
-      FROM users u
-      LEFT JOIN courses c ON u.id = c.instructor_id
-      LEFT JOIN enrollments e ON c.id = e.course_id
-      WHERE u.id = ${userId}
-      GROUP BY u.id
-    `
+    const instructor = result[0]
 
-    // 獲取最近的課程
-    const recentCourses = await sql`
-      SELECT 
-        id,
-        title,
-        description,
-        thumbnail_url,
-        duration,
-        level,
-        created_at
-      FROM courses
-      WHERE instructor_id = ${userId}
-      ORDER BY created_at DESC
-      LIMIT 5
+    // 獲取經驗列表
+    const experiences = await sql`
+      SELECT * FROM experiences 
+      WHERE instructor_id = ${instructor.id}
+      ORDER BY start_date DESC
     `
 
     return createSuccessResponse({
-      ...user[0],
-      stats: stats[0] || {
-        course_count: 0,
-        student_count: 0
+      id: instructor.id,
+      userId: instructor.user_id,
+      bio: instructor.bio,
+      expertise: instructor.expertise,
+      rating: instructor.rating,
+      totalStudents: instructor.total_students,
+      totalCourses: instructor.total_courses,
+      status: instructor.status,
+      createdAt: instructor.created_at,
+      updatedAt: instructor.updated_at,
+      user: {
+        firstName: instructor.first_name,
+        lastName: instructor.last_name,
+        email: instructor.email
       },
-      recentCourses
+      experiences: experiences.map((exp: any) => ({
+        id: exp.id,
+        title: exp.title,
+        company: exp.company,
+        startDate: exp.start_date,
+        endDate: exp.end_date,
+        description: exp.description
+      }))
     })
   } catch (dbError) {
     handleDatabaseError(dbError, 'Get User Instructor Profile')

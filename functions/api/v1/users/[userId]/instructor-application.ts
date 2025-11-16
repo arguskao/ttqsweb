@@ -1,150 +1,76 @@
 /**
- * Cloudflare Pages Function for User Instructor Application
- * 處理用戶講師申請查詢的 API 端點
+ * User Instructor Application API - 用戶講師申請
+ * GET /api/v1/users/[userId]/instructor-application - 獲取用戶的講師申請
  */
 
-interface Env {
-    DATABASE_URL?: string
-    JWT_SECRET?: string
-    ENVIRONMENT?: string
+import { withErrorHandler, validateToken, parseJwtToken, validateDatabaseUrl, handleDatabaseError, createSuccessResponse, ApiError, ErrorCode } from '../../../../utils/error-handler'
+
+interface Context {
+  request: Request
+  env: { DATABASE_URL?: string; JWT_SECRET?: string }
+  params: { userId: string }
 }
 
-export const onRequest: PagesFunction<Env> = async context => {
-  const { request, env, params } = context
-
-  // Handle CORS preflight requests
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-ID',
-        'Access-Control-Max-Age': '86400'
-      }
-    })
+async function handleGet(context: Context): Promise<Response> {
+  const { request, params, env } = context
+  const userId = parseInt(params.userId)
+  
+  if (isNaN(userId)) {
+    throw new ApiError(ErrorCode.VALIDATION_ERROR, '無效的用戶 ID')
   }
 
-  const method = request.method.toUpperCase()
-  const userId = params.userId as string
+  const token = validateToken(request.headers.get('Authorization'))
+  const payload = parseJwtToken(token)
 
-  console.log(`[UserInstructorApp] ${method} /users/${userId}/instructor-application`)
-
-  // 只處理 GET 請求
-  if (method !== 'GET') {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: `Method ${method} not allowed` }
-      }),
-      {
-        status: 405,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      }
-    )
+  // 只能查看自己的申請或管理員可以查看
+  if (payload.userId !== userId && payload.userType !== 'admin') {
+    throw new ApiError(ErrorCode.FORBIDDEN, '無權限查看此用戶的講師申請')
   }
+
+  const databaseUrl = validateDatabaseUrl(env.DATABASE_URL)
+  const { neon } = await import('@neondatabase/serverless')
+  const sql = neon(databaseUrl)
 
   try {
-    // 導入 Neon 數據庫
-    const { neon } = await import('@neondatabase/serverless')
-    const databaseUrl = env.DATABASE_URL
-
-    if (!databaseUrl) {
-      console.error('[UserInstructorApp] DATABASE_URL 未配置')
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: { code: 'DB_ERROR', message: 'Database not configured' }
-        }),
-        {
-          status: 500,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-        }
-      )
-    }
-
-    const sql = neon(databaseUrl)
-
-    // 驗證用戶 ID
-    const userIdNum = parseInt(userId)
-    if (isNaN(userIdNum)) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'Invalid user ID' }
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-        }
-      )
-    }
-
-    // 檢查表是否存在
-    const tableCheck = await sql`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'instructor_applications'
-      ) as table_exists
-    `
-
-    if (!tableCheck[0]?.table_exists) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: null
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-        }
-      )
-    }
-
-    // 查詢用戶的申請
-    const applications = await sql`
-      SELECT * FROM instructor_applications 
-      WHERE user_id = ${userIdNum}
-      ORDER BY created_at DESC
+    const result = await sql`
+      SELECT 
+        ia.*,
+        u.first_name,
+        u.last_name,
+        u.email
+      FROM instructor_applications ia
+      LEFT JOIN users u ON ia.user_id = u.id
+      WHERE ia.user_id = ${userId}
+      ORDER BY ia.created_at DESC
       LIMIT 1
     `
 
-    if (applications.length === 0) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: null
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-        }
-      )
+    if (result.length === 0) {
+      throw new ApiError(ErrorCode.NOT_FOUND, '講師申請不存在')
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        data: applications[0]
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    const application = result[0]
+    return createSuccessResponse({
+      id: application.id,
+      userId: application.user_id,
+      bio: application.bio,
+      expertise: application.expertise,
+      experience: application.experience,
+      status: application.status,
+      reviewedBy: application.reviewed_by,
+      reviewedAt: application.reviewed_at,
+      reviewNotes: application.review_notes,
+      createdAt: application.created_at,
+      updatedAt: application.updated_at,
+      user: {
+        firstName: application.first_name,
+        lastName: application.last_name,
+        email: application.email
       }
-    )
-
-  } catch (error: any) {
-    console.error('[UserInstructorApp] 處理錯誤:', error.message)
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: { code: 'SERVER_ERROR', message: 'Server error' }
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      }
-    )
+    })
+  } catch (dbError) {
+    handleDatabaseError(dbError, 'Get User Instructor Application')
   }
 }
+
+export const onRequestGet = withErrorHandler(handleGet, 'Get User Instructor Application')

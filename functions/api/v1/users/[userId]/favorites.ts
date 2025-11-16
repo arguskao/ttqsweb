@@ -1,6 +1,6 @@
 /**
- * User Documents API - 用戶文檔管理
- * GET /api/v1/users/[userId]/documents - 獲取用戶的文檔列表
+ * User Favorites API - 用戶收藏管理
+ * GET /api/v1/users/[userId]/favorites - 獲取用戶收藏的工作列表
  */
 
 import { withErrorHandler, validateToken, parseJwtToken, validateDatabaseUrl, handleDatabaseError, createSuccessResponse, ApiError, ErrorCode } from '../../../../utils/error-handler'
@@ -22,9 +22,9 @@ async function handleGet(context: Context): Promise<Response> {
   const token = validateToken(request.headers.get('Authorization'))
   const payload = parseJwtToken(token)
 
-  // 只能查看自己的文檔或管理員可以查看
+  // 只能查看自己的收藏
   if (payload.userId !== userId && payload.userType !== 'admin') {
-    throw new ApiError(ErrorCode.FORBIDDEN, '無權限查看此用戶的文檔')
+    throw new ApiError(ErrorCode.FORBIDDEN, '無權限查看此用戶的收藏')
   }
 
   const databaseUrl = validateDatabaseUrl(env.DATABASE_URL)
@@ -35,44 +35,42 @@ async function handleGet(context: Context): Promise<Response> {
     const url = new URL(request.url)
     const page = parseInt(url.searchParams.get('page') || '1')
     const limit = parseInt(url.searchParams.get('limit') || '20')
-    const type = url.searchParams.get('type')
     const offset = (page - 1) * limit
-
-    let whereClause = `WHERE uploaded_by = ${userId}`
-    if (type) {
-      whereClause += ` AND type = '${type}'`
-    }
 
     const countResult = await sql`
       SELECT COUNT(*) as count 
-      FROM documents 
-      ${sql.unsafe(whereClause)}
+      FROM job_favorites 
+      WHERE user_id = ${userId}
     `
     const total = parseInt(countResult[0]?.count || '0')
 
-    const documents = await sql`
-      SELECT * FROM documents
-      ${sql.unsafe(whereClause)}
-      ORDER BY created_at DESC
+    const favorites = await sql`
+      SELECT 
+        jf.created_at as favorited_at,
+        j.*
+      FROM job_favorites jf
+      LEFT JOIN jobs j ON jf.job_id = j.id
+      WHERE jf.user_id = ${userId}
+      ORDER BY jf.created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `
 
-    const formattedDocuments = documents.map((doc: any) => ({
-      id: doc.id,
-      title: doc.title,
-      description: doc.description,
-      type: doc.type,
-      fileUrl: doc.file_url,
-      fileSize: doc.file_size,
-      mimeType: doc.mime_type,
-      status: doc.status,
-      uploadedBy: doc.uploaded_by,
-      createdAt: doc.created_at,
-      updatedAt: doc.updated_at
+    const formattedFavorites = favorites.map((fav: any) => ({
+      jobId: fav.id,
+      title: fav.title,
+      company: fav.company,
+      location: fav.location,
+      salary: fav.salary,
+      type: fav.type,
+      description: fav.description,
+      requirements: fav.requirements,
+      status: fav.status,
+      favoritedAt: fav.favorited_at,
+      createdAt: fav.created_at
     }))
 
     return createSuccessResponse({
-      documents: formattedDocuments,
+      favorites: formattedFavorites,
       meta: {
         total,
         page,
@@ -81,8 +79,8 @@ async function handleGet(context: Context): Promise<Response> {
       }
     })
   } catch (dbError) {
-    handleDatabaseError(dbError, 'Get User Documents')
+    handleDatabaseError(dbError, 'Get User Favorites')
   }
 }
 
-export const onRequestGet = withErrorHandler(handleGet, 'Get User Documents')
+export const onRequestGet = withErrorHandler(handleGet, 'Get User Favorites')

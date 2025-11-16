@@ -41,7 +41,18 @@ async function handleGet(context: Context): Promise<Response> {
       throw new ApiError(ErrorCode.NOT_FOUND, '用戶不存在')
     }
 
-    return createSuccessResponse(result[0])
+    // 轉換欄位名稱為 camelCase
+    const user = result[0]
+    return createSuccessResponse({
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      phone: user.phone,
+      userType: user.user_type,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at
+    })
   } catch (dbError) {
     handleDatabaseError(dbError, 'Get Profile')
   }
@@ -69,14 +80,25 @@ async function handlePut(context: Context): Promise<Response> {
         phone = COALESCE(${body.phone}, phone),
         updated_at = NOW()
       WHERE id = ${payload.userId}
-      RETURNING id, email, first_name, last_name, phone, user_type
+      RETURNING id, email, first_name, last_name, phone, user_type, created_at, updated_at
     `
 
     if (result.length === 0) {
       throw new ApiError(ErrorCode.NOT_FOUND, '用戶不存在')
     }
 
-    return createSuccessResponse(result[0])
+    // 轉換欄位名稱為 camelCase
+    const user = result[0]
+    return createSuccessResponse({
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      phone: user.phone,
+      userType: user.user_type,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at
+    })
   } catch (dbError) {
     handleDatabaseError(dbError, 'Update Profile')
   }

@@ -58,7 +58,7 @@ async function handleGet(context: Context): Promise<Response> {
         COUNT(DISTINCT c.id) as course_count,
         COUNT(DISTINCT e.id) as student_count
       FROM users u
-      LEFT JOIN courses c ON u.id = c.instructor_id AND c.is_active = true
+      LEFT JOIN courses c ON u.id = c.instructor_id
       LEFT JOIN enrollments e ON c.id = e.course_id
       WHERE u.id = ${userId}
       GROUP BY u.id
@@ -75,7 +75,7 @@ async function handleGet(context: Context): Promise<Response> {
         level,
         created_at
       FROM courses
-      WHERE instructor_id = ${userId} AND is_active = true
+      WHERE instructor_id = ${userId}
       ORDER BY created_at DESC
       LIMIT 5
     `

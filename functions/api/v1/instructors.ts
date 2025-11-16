@@ -49,7 +49,7 @@ async function handleGet(context: Context): Promise<Response> {
         COUNT(DISTINCT c.id) as course_count,
         COUNT(DISTINCT e.id) as student_count
       FROM users u
-      LEFT JOIN courses c ON u.id = c.instructor_id AND c.is_active = true
+      LEFT JOIN courses c ON u.id = c.instructor_id
       LEFT JOIN enrollments e ON c.id = e.course_id
       WHERE u.user_type = 'instructor'
         ${search ? sql`AND (u.first_name ILIKE ${`%${search}%`} OR u.last_name ILIKE ${`%${search}%`} OR u.email ILIKE ${`%${search}%`})` : sql``}

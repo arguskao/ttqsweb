@@ -38,12 +38,10 @@ async function handleGet(context: Context): Promise<Response> {
         u.avatar_url,
         u.created_at,
         COUNT(DISTINCT c.id) as course_count,
-        COUNT(DISTINCT e.id) as student_count,
-        AVG(cr.rating) as average_rating
+        COUNT(DISTINCT e.id) as student_count
       FROM users u
       LEFT JOIN courses c ON u.id = c.instructor_id AND c.is_active = true
       LEFT JOIN enrollments e ON c.id = e.course_id
-      LEFT JOIN course_reviews cr ON c.id = cr.course_id
       WHERE u.id = ${instructorId} AND u.user_type = 'instructor'
       GROUP BY u.id
     `
@@ -61,11 +59,9 @@ async function handleGet(context: Context): Promise<Response> {
         c.thumbnail_url,
         c.duration,
         c.level,
-        COUNT(DISTINCT e.id) as enrollment_count,
-        AVG(cr.rating) as average_rating
+        COUNT(DISTINCT e.id) as enrollment_count
       FROM courses c
       LEFT JOIN enrollments e ON c.id = e.course_id
-      LEFT JOIN course_reviews cr ON c.id = cr.course_id
       WHERE c.instructor_id = ${instructorId} AND c.is_active = true
       GROUP BY c.id
       ORDER BY c.created_at DESC

@@ -56,13 +56,10 @@ async function handleGet(context: Context): Promise<Response> {
     const stats = await sql`
       SELECT 
         COUNT(DISTINCT c.id) as course_count,
-        COUNT(DISTINCT e.id) as student_count,
-        AVG(cr.rating) as average_rating,
-        COUNT(DISTINCT cr.id) as review_count
+        COUNT(DISTINCT e.id) as student_count
       FROM users u
       LEFT JOIN courses c ON u.id = c.instructor_id AND c.is_active = true
       LEFT JOIN enrollments e ON c.id = e.course_id
-      LEFT JOIN course_reviews cr ON c.id = cr.course_id
       WHERE u.id = ${userId}
       GROUP BY u.id
     `
@@ -87,9 +84,7 @@ async function handleGet(context: Context): Promise<Response> {
       ...user[0],
       stats: stats[0] || {
         course_count: 0,
-        student_count: 0,
-        average_rating: null,
-        review_count: 0
+        student_count: 0
       },
       recentCourses
     })

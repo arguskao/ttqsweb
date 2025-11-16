@@ -192,7 +192,7 @@
             <!-- Image Preview -->
             <div v-else-if="isImageFile(previewDocument)" class="mt-4">
               <figure class="image">
-                <img :src="previewDocument.fileUrl" :alt="previewDocument.title" />
+                <img :src="previewDocument.fileUrl" :alt="previewDocument.title" loading="lazy" />
               </figure>
             </div>
 

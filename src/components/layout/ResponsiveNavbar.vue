@@ -2,7 +2,7 @@
   <nav class="navbar responsive-nav" role="navigation" aria-label="主導航">
     <div class="navbar-brand">
       <RouterLink to="/" class="navbar-item">
-        <img src="/logo.svg" alt="藥助Next學院" class="logo" />
+        <img src="/logo.svg" alt="藥助Next學院" class="logo" loading="eager" />
         <span class="brand-text">藥助Next學院</span>
       </RouterLink>
 

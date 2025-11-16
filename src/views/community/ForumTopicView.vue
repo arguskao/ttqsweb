@@ -74,7 +74,7 @@
             <div class="level-left">
               <div class="level-item">
                 <figure class="image is-48x48">
-                  <img :src="`https://ui-avatars.com/api/?name=${topic.authorName}`" alt="avatar" />
+                  <img :src="`https://ui-avatars.com/api/?name=${topic.authorName}`" alt="avatar" loading="lazy" />
                 </figure>
                 <div class="ml-3">
                   <p class="heading">{{ topic.authorName }}</p>
@@ -107,6 +107,7 @@
                       <img
                         :src="`https://ui-avatars.com/api/?name=${reply.authorName}`"
                         alt="avatar"
+                        loading="lazy"
                       />
                     </figure>
                     <div class="ml-3">

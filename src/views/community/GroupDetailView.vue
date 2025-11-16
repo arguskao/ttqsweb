@@ -98,7 +98,7 @@
             <div v-for="member in members" :key="member.id" class="column is-one-quarter">
               <div class="box has-text-centered">
                 <figure class="image is-64x64 mb-3" style="margin-left: auto; margin-right: auto">
-                  <img :src="`https://ui-avatars.com/api/?name=${member.userName}`" alt="avatar" />
+                  <img :src="`https://ui-avatars.com/api/?name=${member.userName}`" alt="avatar" loading="lazy" />
                 </figure>
                 <p class="title is-6">{{ member.userName }}</p>
                 <p class="subtitle is-7">

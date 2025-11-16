@@ -1,138 +1,101 @@
-interface Env {
-  DATABASE_URL?: string
-}
+/**
+ * Job Favorite API - 工作收藏
+ * POST /api/v1/jobs/[id]/favorite - 收藏工作
+ * DELETE /api/v1/jobs/[id]/favorite - 取消收藏
+ */
+
+import { withErrorHandler, validateToken, parseJwtToken, validateDatabaseUrl, handleDatabaseError, createSuccessResponse, ApiError, ErrorCode } from '../../../../utils/error-handler'
 
 interface Context {
   request: Request
-  env: Env
+  env: { DATABASE_URL?: string; JWT_SECRET?: string }
   params: { id: string }
 }
 
-async function getUserFromAuth(request: Request): Promise<{ id: number; userType?: string }> {
-  const authHeader = request.headers.get('Authorization')
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw new Response(JSON.stringify({ success: false, message: '未提供認證 token' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-    })
+// POST - 收藏工作
+async function handlePost(context: Context): Promise<Response> {
+  const { request, params, env } = context
+  const jobId = parseInt(params.id)
+  
+  if (isNaN(jobId)) {
+    throw new ApiError(ErrorCode.VALIDATION_ERROR, '無效的工作 ID')
   }
-  const token = authHeader.substring(7)
+
+  const token = validateToken(request.headers.get('Authorization'))
+  const payload = parseJwtToken(token)
+
+  const databaseUrl = validateDatabaseUrl(env.DATABASE_URL)
+  const { neon } = await import('@neondatabase/serverless')
+  const sql = neon(databaseUrl)
+
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    const userId = payload.userId || payload.user_id || payload.id || payload.sub
-    if (!userId) throw new Error('Token payload missing user id')
-    return { id: Number(userId), userType: payload.userType || payload.role }
-  } catch {
-    throw new Response(JSON.stringify({ success: false, message: '無效的 token' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    // 檢查工作是否存在
+    const job = await sql`SELECT id FROM jobs WHERE id = ${jobId}`
+    if (job.length === 0) {
+      throw new ApiError(ErrorCode.NOT_FOUND, '工作不存在')
+    }
+
+    // 檢查是否已經收藏
+    const existing = await sql`
+      SELECT id FROM job_favorites 
+      WHERE job_id = ${jobId} AND user_id = ${payload.userId}
+    `
+
+    if (existing.length > 0) {
+      throw new ApiError(ErrorCode.VALIDATION_ERROR, '已經收藏過此工作')
+    }
+
+    // 創建收藏
+    const result = await sql`
+      INSERT INTO job_favorites (job_id, user_id, created_at)
+      VALUES (${jobId}, ${payload.userId}, NOW())
+      RETURNING *
+    `
+
+    return createSuccessResponse({
+      message: '收藏成功',
+      favorite: result[0]
     })
+  } catch (dbError) {
+    handleDatabaseError(dbError, 'Favorite Job')
   }
 }
 
-async function ensureTables(sql: any) {
-  await sql`
-    CREATE TABLE IF NOT EXISTS job_favorites (
-      id SERIAL PRIMARY KEY,
-      job_id INTEGER NOT NULL,
-      user_id INTEGER NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(job_id, user_id)
-    );
-  `
-}
+// DELETE - 取消收藏
+async function handleDelete(context: Context): Promise<Response> {
+  const { request, params, env } = context
+  const jobId = parseInt(params.id)
+  
+  if (isNaN(jobId)) {
+    throw new ApiError(ErrorCode.VALIDATION_ERROR, '無效的工作 ID')
+  }
 
-export async function onRequestPost(context: Context): Promise<Response> {
-  const { request, env, params } = context
+  const token = validateToken(request.headers.get('Authorization'))
+  const payload = parseJwtToken(token)
+
+  const databaseUrl = validateDatabaseUrl(env.DATABASE_URL)
+  const { neon } = await import('@neondatabase/serverless')
+  const sql = neon(databaseUrl)
+
   try {
-    const jobId = parseInt(params.id, 10)
-    if (!jobId) {
-      return new Response(JSON.stringify({ success: false, message: '無效的工作ID' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      })
+    // 刪除收藏
+    const result = await sql`
+      DELETE FROM job_favorites 
+      WHERE job_id = ${jobId} AND user_id = ${payload.userId}
+      RETURNING *
+    `
+
+    if (result.length === 0) {
+      throw new ApiError(ErrorCode.NOT_FOUND, '未收藏此工作')
     }
 
-    const { neon } = await import('@neondatabase/serverless')
-    if (!env.DATABASE_URL) {
-      return new Response(JSON.stringify({ success: false, message: 'Database URL not configured' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      })
-    }
-    const sql = neon(env.DATABASE_URL)
-    await ensureTables(sql)
-
-    const user = await getUserFromAuth(request)
-    if (user.userType !== 'job_seeker') {
-      return new Response(JSON.stringify({ success: false, message: '僅求職者可使用收藏功能' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      })
-    }
-
-    // 插入收藏（若已存在則忽略）
-    try {
-      await sql`INSERT INTO job_favorites (job_id, user_id) VALUES (${jobId}, ${user.id}) ON CONFLICT (job_id, user_id) DO NOTHING;`
-    } catch (e) {}
-
-    return new Response(JSON.stringify({ success: true, data: { jobId } }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    return createSuccessResponse({
+      message: '取消收藏成功'
     })
-  } catch (res: any) {
-    if (res instanceof Response) return res
-    return new Response(JSON.stringify({ success: false, message: '收藏工作失敗' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-    })
+  } catch (dbError) {
+    handleDatabaseError(dbError, 'Unfavorite Job')
   }
 }
 
-export async function onRequestDelete(context: Context): Promise<Response> {
-  const { request, env, params } = context
-  try {
-    const jobId = parseInt(params.id, 10)
-    const { neon } = await import('@neondatabase/serverless')
-    if (!env.DATABASE_URL) {
-      return new Response(JSON.stringify({ success: false, message: 'Database URL not configured' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      })
-    }
-    const sql = neon(env.DATABASE_URL)
-    await ensureTables(sql)
-    const user = await getUserFromAuth(request)
-    if (user.userType !== 'job_seeker') {
-      return new Response(JSON.stringify({ success: false, message: '僅求職者可使用收藏功能' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      })
-    }
-    await sql`DELETE FROM job_favorites WHERE job_id = ${jobId} AND user_id = ${user.id}`
-    return new Response(JSON.stringify({ success: true, data: { jobId } }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-    })
-  } catch (res: any) {
-    if (res instanceof Response) return res
-    return new Response(JSON.stringify({ success: false, message: '取消收藏失敗' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-    })
-  }
-}
-
-export async function onRequestOptions(): Promise<Response> {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-ID, X-CSRF-Token',
-      'Access-Control-Max-Age': '86400'
-    }
-  })
-}
-
-
+export const onRequestPost = withErrorHandler(handlePost, 'Favorite Job')
+export const onRequestDelete = withErrorHandler(handleDelete, 'Unfavorite Job')

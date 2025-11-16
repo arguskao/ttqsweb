@@ -342,48 +342,16 @@ const applyToJob = (jobId: number) => {
   router.push(`/jobs/${jobId}`)
 }
 
-const favoriteIds = ref<Set<number>>(new Set())
-
-const loadFavorites = async () => {
-  // 只在用戶已登入時才載入收藏
-  if (!authStore.isAuthenticated) {
-    return
-  }
-  
-  try {
-    const ids = await jobService.getUserFavoriteIds()
-    favoriteIds.value = new Set(ids)
-  } catch (e) {
-    // 忽略錯誤（token 過期等）
-    console.debug('載入收藏失敗:', e)
-  }
-}
-
-const isFavorited = (jobId: number) => favoriteIds.value.has(jobId)
-
-const toggleFavorite = async (jobId: number) => {
-  if (!authStore.isAuthenticated) {
-    error.value = '請先登入才能收藏工作'
-    return
-  }
-  
-  try {
-    if (favoriteIds.value.has(jobId)) {
-      await jobService.unfavoriteJob(jobId)
-      favoriteIds.value.delete(jobId)
-    } else {
-      await jobService.favoriteJob(jobId)
-      favoriteIds.value.add(jobId)
-    }
-  } catch (e) {
-    console.error('切換收藏失敗', e)
-    error.value = '操作失敗，請稍後再試'
-  }
-}
+// 移除收藏功能 - 網站目前不支援此功能
+// const favoriteIds = ref<Set<number>>(new Set())
+// const loadFavorites = async () => { ... }
+// const isFavorited = (jobId: number) => favoriteIds.value.has(jobId)
+// const toggleFavorite = async (jobId: number) => { ... }
 
 onMounted(() => {
   fetchJobs()
-  loadFavorites()
+  // 不再載入收藏列表
+  // loadFavorites()
 })
 </script>
 

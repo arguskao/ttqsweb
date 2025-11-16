@@ -80,7 +80,7 @@ async function handleGet(context: Context): Promise<Response> {
     `
 
     return createSuccessResponse({
-      data: instructors,
+      instructors,
       meta: {
         total,
         page,

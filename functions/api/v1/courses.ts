@@ -172,6 +172,10 @@ async function handleGetCourses(context: Context): Promise<Response> {
       return {
         ...courseData,
         course_type: COURSE_TYPE_REVERSE[courseData.course_type] || courseData.course_type,
+        // 保持向後兼容：同時提供扁平格式和嵌套格式
+        instructorFirstName: instructor_first_name,
+        instructorLastName: instructor_last_name,
+        instructorEmail: instructor_email,
         instructor: instructor_db_id ? {
           id: instructor_db_id,
           first_name: instructor_first_name,

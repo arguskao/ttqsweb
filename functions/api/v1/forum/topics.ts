@@ -26,31 +26,49 @@ async function handleGet(context: Context): Promise<Response> {
     const category = url.searchParams.get('category')
     const offset = (page - 1) * limit
 
-    let whereClause = 'WHERE 1=1'
+    let countResult, topics
+
     if (category) {
-      whereClause += ` AND category = '${category}'`
+      countResult = await sql`
+        SELECT COUNT(*) as count 
+        FROM forum_topics 
+        WHERE category = ${category}
+      `
+      
+      topics = await sql`
+        SELECT 
+          ft.*,
+          u.first_name,
+          u.last_name,
+          u.email,
+          (SELECT COUNT(*) FROM forum_comments WHERE topic_id = ft.id) as comment_count
+        FROM forum_topics ft
+        LEFT JOIN users u ON ft.created_by = u.id
+        WHERE ft.category = ${category}
+        ORDER BY ft.is_pinned DESC, ft.created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `
+    } else {
+      countResult = await sql`
+        SELECT COUNT(*) as count 
+        FROM forum_topics
+      `
+      
+      topics = await sql`
+        SELECT 
+          ft.*,
+          u.first_name,
+          u.last_name,
+          u.email,
+          (SELECT COUNT(*) FROM forum_comments WHERE topic_id = ft.id) as comment_count
+        FROM forum_topics ft
+        LEFT JOIN users u ON ft.created_by = u.id
+        ORDER BY ft.is_pinned DESC, ft.created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `
     }
 
-    const countResult = await sql`
-      SELECT COUNT(*) as count 
-      FROM forum_topics 
-      ${sql.unsafe(whereClause)}
-    `
     const total = parseInt(countResult[0]?.count || '0')
-
-    const topics = await sql`
-      SELECT 
-        ft.*,
-        u.first_name,
-        u.last_name,
-        u.email,
-        (SELECT COUNT(*) FROM forum_comments WHERE topic_id = ft.id) as comment_count
-      FROM forum_topics ft
-      LEFT JOIN users u ON ft.created_by = u.id
-      ${sql.unsafe(whereClause)}
-      ORDER BY ft.is_pinned DESC, ft.created_at DESC
-      LIMIT ${limit} OFFSET ${offset}
-    `
 
     const formattedTopics = topics.map((topic: any) => ({
       id: topic.id,

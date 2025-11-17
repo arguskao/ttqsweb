@@ -26,6 +26,7 @@ async function handleGet(context: Context): Promise<Response> {
     
     // 暫時返回空數組，避免表不存在的問題
     const formattedGroups: any[] = []
+    const total = 0
 
     return createSuccessResponse({
       groups: formattedGroups,
@@ -33,7 +34,7 @@ async function handleGet(context: Context): Promise<Response> {
         total,
         page,
         limit,
-        totalPages: Math.ceil(total / limit)
+        totalPages: 0
       }
     })
   } catch (dbError) {

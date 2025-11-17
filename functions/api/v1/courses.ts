@@ -158,35 +158,50 @@ async function handleGetCourses(context: Context): Promise<Response> {
 
     // 轉換課程類型為前端格式，並整理講師信息
     const processedCourses = courses.map((course: any) => {
-      const { 
-        instructor_db_id,
-        instructor_first_name, 
-        instructor_last_name, 
-        instructor_email,
-        instructor_bio,
-        instructor_expertise,
-        instructor_rating,
-        ...courseData 
-      } = course
-      
-      return {
-        ...courseData,
-        course_type: COURSE_TYPE_REVERSE[courseData.course_type] || courseData.course_type,
-        // 保持向後兼容：同時提供扁平格式和嵌套格式
-        instructorFirstName: instructor_first_name,
-        instructorLastName: instructor_last_name,
-        instructorEmail: instructor_email,
-        instructor: instructor_db_id ? {
-          id: instructor_db_id,
-          first_name: instructor_first_name,
-          last_name: instructor_last_name,
-          full_name: `${instructor_first_name || ''} ${instructor_last_name || ''}`.trim(),
-          email: instructor_email,
-          bio: instructor_bio,
-          expertise: instructor_expertise,
-          rating: instructor_rating
-        } : null
+      // 提取講師相關字段
+      const instructorFields = {
+        instructor_db_id: course.instructor_db_id,
+        instructor_first_name: course.instructor_first_name,
+        instructor_last_name: course.instructor_last_name,
+        instructor_email: course.instructor_email,
+        instructor_bio: course.instructor_bio,
+        instructor_expertise: course.instructor_expertise,
+        instructor_rating: course.instructor_rating
       }
+      
+      // 移除講師字段，保留課程字段
+      const courseData: any = {}
+      for (const key in course) {
+        if (!key.startsWith('instructor_')) {
+          courseData[key] = course[key]
+        }
+      }
+      
+      // 轉換課程類型
+      courseData.course_type = COURSE_TYPE_REVERSE[courseData.course_type] || courseData.course_type
+      
+      // 添加向後兼容的扁平格式
+      if (instructorFields.instructor_first_name) {
+        courseData.instructorFirstName = instructorFields.instructor_first_name
+        courseData.instructorLastName = instructorFields.instructor_last_name
+        courseData.instructorEmail = instructorFields.instructor_email
+      }
+      
+      // 添加新的嵌套格式
+      if (instructorFields.instructor_db_id) {
+        courseData.instructor = {
+          id: instructorFields.instructor_db_id,
+          first_name: instructorFields.instructor_first_name,
+          last_name: instructorFields.instructor_last_name,
+          full_name: `${instructorFields.instructor_first_name || ''} ${instructorFields.instructor_last_name || ''}`.trim(),
+          email: instructorFields.instructor_email,
+          bio: instructorFields.instructor_bio,
+          expertise: instructorFields.instructor_expertise,
+          rating: instructorFields.instructor_rating
+        }
+      }
+      
+      return courseData
     })
 
     return createSuccessResponse(processedCourses, {

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token 測試</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>JWT Token 測試工具</h1>
+    
+    <div>
+        <h2>步驟 1: 登入並獲取 Token</h2>
+        <button onclick="testLogin()">測試登入</button>
+        <button onclick="clearStorage()">清除所有儲存</button>
+    </div>
+    
+    <div id="loginResult"></div>
+    
+    <div>
+        <h2>步驟 2: 檢查儲存的資料</h2>
+        <button onclick="checkStorage()">檢查 Storage</button>
+    </div>
+    
+    <div id="storageResult"></div>
+    
+    <script>
+        async function testLogin() {
+            const resultDiv = document.getElementById('loginResult');
+            resultDiv.innerHTML = '<p>正在登入...</p>';
+            
+            try {
+                const response = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'wii543@gmail.com',
+                        password: 'ppt11567'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const token = data.data.tokens.accessToken;
+                    
+                    // 測試解析 token
+                    try {
+                        const parts = token.split('.');
+                        if (parts.length !== 3) {
+                            throw new Error('Token 格式錯誤');
+                        }
+                        
+                        const payload = JSON.parse(atob(parts[1]));
+                        
+                        resultDiv.innerHTML = `
+                            <div class="result success">
+                                <h3>✅ 登入成功！Token 解析正常</h3>
+                                <h4>Token Payload:</h4>
+                                <pre>${JSON.stringify(payload, null, 2)}</pre>
+                                <h4>用戶資料:</h4>
+                                <pre>${JSON.stringify(data.data.user, null, 2)}</pre>
+                            </div>
+                        `;
+                        
+                        // 存儲到 sessionStorage
+                        sessionStorage.setItem('access_token', token);
+                        sessionStorage.setItem('user', JSON.stringify(data.data.user));
+                        
+                    } catch (parseError) {
+                        resultDiv.innerHTML = `
+                            <div class="result error">
+                                <h3>❌ Token 解析失敗</h3>
+                                <p>錯誤: ${parseError.message}</p>
+                                <h4>Token:</h4>
+                                <pre>${token}</pre>
+                            </div>
+                        `;
+                    }
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <h3>❌ 登入失敗</h3>
+                            <p>${data.message || '未知錯誤'}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h3>❌ 請求失敗</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function checkStorage() {
+            const resultDiv = document.getElementById('storageResult');
+            const results = [];
+            
+            // 檢查 sessionStorage
+            const sessionToken = sessionStorage.getItem('access_token');
+            const sessionUser = sessionStorage.getItem('user');
+            
+            // 檢查 localStorage
+            const localToken = localStorage.getItem('auth_token');
+            const localUser = localStorage.getItem('auth_user');
+            
+            results.push('<h3>SessionStorage:</h3>');
+            if (sessionToken) {
+                try {
+                    const parts = sessionToken.split('.');
+                    const payload = JSON.parse(atob(parts[1]));
+                    results.push(`<div class="result success">
+                        <p>✅ Token 可以正常解析</p>
+                        <pre>${JSON.stringify(payload, null, 2)}</pre>
+                    </div>`);
+                } catch (e) {
+                    results.push(`<div class="result error">
+                        <p>❌ Token 解析失敗: ${e.message}</p>
+                        <pre>${sessionToken}</pre>
+                    </div>`);
+                }
+            } else {
+                results.push('<p>無 token</p>');
+            }
+            
+            if (sessionUser) {
+                results.push(`<p>User: <pre>${sessionUser}</pre></p>`);
+            }
+            
+            results.push('<h3>LocalStorage:</h3>');
+            if (localToken) {
+                try {
+                    const parts = localToken.split('.');
+                    const payload = JSON.parse(atob(parts[1]));
+                    results.push(`<div class="result success">
+                        <p>✅ Token 可以正常解析</p>
+                        <pre>${JSON.stringify(payload, null, 2)}</pre>
+                    </div>`);
+                } catch (e) {
+                    results.push(`<div class="result error">
+                        <p>❌ Token 解析失敗: ${e.message}</p>
+                        <pre>${localToken}</pre>
+                    </div>`);
+                }
+            } else {
+                results.push('<p>無 token</p>');
+            }
+            
+            if (localUser) {
+                results.push(`<p>User: <pre>${localUser}</pre></p>`);
+            }
+            
+            resultDiv.innerHTML = results.join('');
+        }
+        
+        function clearStorage() {
+            localStorage.clear();
+            sessionStorage.clear();
+            document.getElementById('loginResult').innerHTML = '<div class="result success"><p>✅ 所有儲存已清除</p></div>';
+            document.getElementById('storageResult').innerHTML = '';
+        }
+        
+        // 頁面載入時自動檢查
+        window.addEventListener('load', checkStorage);
+    </script>
+</body>
+</html>

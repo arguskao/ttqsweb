@@ -390,7 +390,7 @@ export class AuthServiceEnhanced {
         try {
           // 先驗證 token 是否可以被正確解析
           const parts = token.split('.')
-          if (parts.length === 3) {
+          if (parts.length === 3 && parts[1]) {
             JSON.parse(atob(parts[1]))
           }
           

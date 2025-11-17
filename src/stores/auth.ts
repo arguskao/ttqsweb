@@ -82,7 +82,7 @@ export const useAuthStore = defineStore('auth', () => {
         // 先驗證 token 是否可以被正確解析（避免中文字符問題）
         try {
           const parts = storedToken.split('.')
-          if (parts.length === 3) {
+          if (parts.length === 3 && parts[1]) {
             // 嘗試解析 payload，如果失敗就清除舊 token
             JSON.parse(atob(parts[1]))
           }

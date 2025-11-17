@@ -545,7 +545,7 @@ router.beforeEach(async (to, from, next) => {
       try {
         // 先驗證 token 是否可以被正確解析
         const parts = sessionToken.split('.')
-        if (parts.length === 3) {
+        if (parts.length === 3 && parts[1]) {
           JSON.parse(atob(parts[1]))
         }
         
@@ -574,7 +574,7 @@ router.beforeEach(async (to, from, next) => {
       try {
         // 先驗證 token 是否可以被正確解析
         const parts = localToken.split('.')
-        if (parts.length === 3) {
+        if (parts.length === 3 && parts[1]) {
           JSON.parse(atob(parts[1]))
         }
         

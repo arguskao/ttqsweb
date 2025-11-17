@@ -57,7 +57,7 @@
                           <div class="control">
                             <span class="tag is-success">
                               <span class="icon">
-                                <i class="fas fa-user-graduate"></i>
+                                <i class="fas fa-users"></i>
                               </span>
                               <span>{{ course.enrollment_count ?? 0 }} 學員</span>
                             </span>

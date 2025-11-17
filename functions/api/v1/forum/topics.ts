@@ -23,19 +23,58 @@ async function handleGet(context: Context): Promise<Response> {
   try {
     const page = parseInt(url.searchParams.get('page') || '1')
     const limit = parseInt(url.searchParams.get('limit') || '20')
+    const category = url.searchParams.get('category')
+    const offset = (page - 1) * limit
+
+    // 嘗試查詢真實資料
+    let countResult, topics
     
-    // 暫時返回空數組，避免表不存在的問題
+    if (category) {
+      countResult = await sql`SELECT COUNT(*) as count FROM forum_topics WHERE category = ${category}`
+      topics = await sql`
+        SELECT * FROM forum_topics 
+        WHERE category = ${category}
+        ORDER BY is_pinned DESC, created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `
+    } else {
+      countResult = await sql`SELECT COUNT(*) as count FROM forum_topics`
+      topics = await sql`
+        SELECT * FROM forum_topics
+        ORDER BY is_pinned DESC, created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `
+    }
+
+    const total = parseInt(countResult[0]?.count || '0')
+    
+    const formattedTopics = topics.map((topic: any) => ({
+      id: topic.id,
+      title: topic.title,
+      content: topic.content,
+      category: topic.category,
+      isPinned: topic.is_pinned,
+      isLocked: topic.is_locked,
+      viewCount: topic.view_count,
+      commentCount: 0,
+      createdBy: topic.created_by,
+      createdAt: topic.created_at,
+      updatedAt: topic.updated_at,
+      authorName: '匿名用戶'
+    }))
+
     return createSuccessResponse({
-      topics: [],
+      topics: formattedTopics,
       meta: {
-        total: 0,
+        total,
         page,
         limit,
-        totalPages: 0
+        totalPages: Math.ceil(total / limit)
       }
     })
   } catch (dbError) {
-    // 如果出錯，也返回空數組而不是拋出錯誤
+    // 如果表不存在或查詢失敗，返回空數組
+    console.error('[Forum Topics] 查詢失敗，返回空數組:', dbError)
     return createSuccessResponse({
       topics: [],
       meta: {

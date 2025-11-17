@@ -65,7 +65,24 @@ api.interceptors.request.use(
     const token = sessionToken || localToken
 
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+      // 驗證 token 格式，避免發送無效 token 導致後端崩潰
+      try {
+        const parts = token.split('.')
+        if (parts.length === 3 && parts[1]) {
+          // Token 格式正確，加入 Authorization header
+          config.headers.Authorization = `Bearer ${token}`
+        } else {
+          // Token 格式錯誤，清除無效 token
+          console.warn('[API] 偵測到無效 token 格式，已清除')
+          sessionStorage.removeItem('access_token')
+          localStorage.removeItem('auth_token')
+        }
+      } catch (e) {
+        // Token 驗證失敗，清除無效 token
+        console.warn('[API] Token 驗證失敗，已清除')
+        sessionStorage.removeItem('access_token')
+        localStorage.removeItem('auth_token')
+      }
     }
 
     // 添加請求 ID 用於追蹤

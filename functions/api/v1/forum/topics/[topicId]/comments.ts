@@ -44,6 +44,8 @@ async function handleGet(context: Context): Promise<Response> {
       createdBy: comment.created_by,
       createdAt: comment.created_at,
       updatedAt: comment.updated_at,
+      // 向後兼容：提供 authorName
+      authorName: `${comment.first_name || ''} ${comment.last_name || ''}`.trim() || '匿名用戶',
       author: {
         firstName: comment.first_name,
         lastName: comment.last_name,

@@ -64,6 +64,8 @@ async function handleGet(context: Context): Promise<Response> {
       createdBy: topic.created_by,
       createdAt: topic.created_at,
       updatedAt: topic.updated_at,
+      // 向後兼容：提供 authorName
+      authorName: `${topic.first_name || ''} ${topic.last_name || ''}`.trim() || '匿名用戶',
       author: {
         firstName: topic.first_name,
         lastName: topic.last_name,

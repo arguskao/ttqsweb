@@ -220,7 +220,7 @@ export function validateToken(authHeader: string | null): string {
 export function parseJwtToken(token: string): any {
   try {
     const parts = token.split('.')
-    if (parts.length !== 3) {
+    if (parts.length !== 3 || !parts[1]) {
       throw new Error('Invalid token format')
     }
 

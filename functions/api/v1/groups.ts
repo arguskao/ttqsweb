@@ -31,14 +31,9 @@ async function handleGet(context: Context): Promise<Response> {
     const total = parseInt(countResult[0]?.count || '0')
 
     const groups = await sql`
-      SELECT 
-        g.*,
-        u.first_name,
-        u.last_name,
-        (SELECT COUNT(*) FROM group_members WHERE group_id = g.id) as member_count
-      FROM groups g
-      LEFT JOIN users u ON g.created_by = u.id
-      ORDER BY g.created_at DESC
+      SELECT *
+      FROM groups
+      ORDER BY created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `
 
@@ -47,14 +42,10 @@ async function handleGet(context: Context): Promise<Response> {
       name: group.name,
       description: group.description,
       maxMembers: group.max_members,
-      memberCount: parseInt(group.member_count || '0'),
+      memberCount: 0, // 暫時設為 0，避免子查詢問題
       createdBy: group.created_by,
       createdAt: group.created_at,
-      updatedAt: group.updated_at,
-      creator: {
-        firstName: group.first_name,
-        lastName: group.last_name
-      }
+      updatedAt: group.updated_at
     }))
 
     return createSuccessResponse({

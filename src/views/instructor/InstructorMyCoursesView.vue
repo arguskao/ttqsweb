@@ -27,10 +27,7 @@
                 <p class="title is-4">目前沒有授課</p>
                 <p class="mb-4">您還沒有開設任何課程</p>
                 <router-link to="/instructor/course-application" class="button is-primary">
-                  <span class="icon">
-                    <i class="fas fa-plus"></i>
-                  </span>
-                  <span>申請開課</span>
+                  <span>➕ 申請開課</span>
                 </router-link>
               </div>
             </div>

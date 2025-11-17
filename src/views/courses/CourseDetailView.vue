@@ -52,18 +52,12 @@
                   <div class="columns is-mobile">
                     <div class="column">
                       <div class="icon-text">
-                        <span class="icon has-text-info">
-                          <i class="fas fa-clock"></i>
-                        </span>
-                        <span><strong>課程時數：</strong>{{ course.durationHours }} 小時</span>
+                        <span>⏰ <strong>課程時數：</strong>{{ course.durationHours }} 小時</span>
                       </div>
                     </div>
                     <div class="column">
                       <div class="icon-text">
-                        <span class="icon has-text-success">
-                          <i class="fas fa-dollar-sign"></i>
-                        </span>
-                        <span><strong>課程費用：</strong>NT$ {{ course.price?.toLocaleString() || '免費' }}</span>
+                        <span>💰 <strong>課程費用：</strong>NT$ {{ course.price?.toLocaleString() || '免費' }}</span>
                       </div>
                     </div>
                   </div>
@@ -129,20 +123,14 @@
                   <div v-if="authStore.isInstructor">
                     <div class="notification is-info is-light">
                       <p class="has-text-centered">
-                        <span class="icon">
-                          <i class="fas fa-chalkboard-teacher"></i>
-                        </span>
-                        <span>您是講師身份</span>
+                        <span>👨‍🏫 您是講師身份</span>
                       </p>
                     </div>
                     <button
                       class="button is-info is-large is-fullwidth"
                       @click="goToInstructorDashboard"
                     >
-                      <span class="icon">
-                        <i class="fas fa-users"></i>
-                      </span>
-                      <span>查看學員管理</span>
+                      <span>👥 查看學員管理</span>
                     </button>
                   </div>
                   
@@ -153,10 +141,7 @@
                     </div>
                     <div v-else-if="isEnrolled" class="notification is-success is-light">
                       <p class="has-text-centered">
-                        <span class="icon">
-                          <i class="fas fa-check-circle"></i>
-                        </span>
-                        <span>您已註冊此課程</span>
+                        <span>✅ 您已註冊此課程</span>
                       </p>
                       <button
                         v-if="course.evaluationFormUrl"
@@ -175,10 +160,7 @@
                         class="button is-info is-fullwidth mt-2"
                         @click="goToMessages"
                       >
-                        <span class="icon">
-                          <i class="fas fa-envelope"></i>
-                        </span>
-                        <span>查看課程訊息</span>
+                        <span>✉️ 查看課程訊息</span>
                       </button>
                     </div>
                     <div v-else>
@@ -188,10 +170,7 @@
                         :disabled="enrolling"
                         @click="handleEnroll"
                       >
-                        <span class="icon">
-                          <i class="fas fa-graduation-cap"></i>
-                        </span>
-                        <span>立即報名</span>
+                        <span>🎓 立即報名</span>
                       </button>
                     </div>
                   </div>
@@ -201,10 +180,7 @@
                     class="button is-primary is-large is-fullwidth"
                     @click="goToLogin"
                   >
-                    <span class="icon">
-                      <i class="fas fa-sign-in-alt"></i>
-                    </span>
-                    <span>登入後報名</span>
+                    <span>🔑 登入後報名</span>
                   </button>
                 </div>
 

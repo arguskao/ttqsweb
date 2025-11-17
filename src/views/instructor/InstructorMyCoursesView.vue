@@ -56,10 +56,7 @@
                         <div class="field is-grouped mt-3">
                           <div class="control">
                             <span class="tag is-success">
-                              <span class="icon">
-                                <i class="fas fa-users"></i>
-                              </span>
-                              <span>{{ course.enrollment_count ?? 0 }} 學員</span>
+                              <span>👥 {{ course.enrollment_count ?? 0 }} 學員</span>
                             </span>
                           </div>
                         </div>
@@ -71,10 +68,7 @@
                         查看詳情
                       </router-link>
                       <router-link :to="`/instructor/courses/${course.id}/students`" class="card-footer-item">
-                        <span class="icon">
-                          <i class="fas fa-users"></i>
-                        </span>
-                        <span>學員管理</span>
+                        <span>👥 學員管理</span>
                       </router-link>
                     </footer>
                   </div>

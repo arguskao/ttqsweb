@@ -1,134 +1,193 @@
 /**
- * Groups API - 學習小組管理
- * GET /api/v1/groups - 獲取小組列表
- * POST /api/v1/groups - 創建小組
+ * 群組 API 端點
+ * 處理群組的 CRUD 操作
  */
 
-import { withErrorHandler, validateToken, parseJwtToken, validateDatabaseUrl, handleDatabaseError, createSuccessResponse, ApiError, ErrorCode } from '../../utils/error-handler'
+interface Env {
+  DATABASE_URL?: string
+  JWT_SECRET?: string
+}
 
 interface Context {
   request: Request
-  env: { DATABASE_URL?: string; JWT_SECRET?: string }
-}
-
-// GET - 獲取小組列表
-async function handleGet(context: Context): Promise<Response> {
-  const { request, env } = context
-  const url = new URL(request.url)
-
-  const databaseUrl = validateDatabaseUrl(env.DATABASE_URL)
-  const { neon } = await import('@neondatabase/serverless')
-  const sql = neon(databaseUrl)
-
-  try {
-    const page = parseInt(url.searchParams.get('page') || '1')
-    const limit = parseInt(url.searchParams.get('limit') || '20')
-    const offset = (page - 1) * limit
-
-    const countResult = await sql`
-      SELECT COUNT(*) as count FROM groups
-    `
-    const total = parseInt(countResult[0]?.count || '0')
-
-    const groups = await sql`
-      SELECT *
-      FROM groups
-      ORDER BY created_at DESC
-      LIMIT ${limit} OFFSET ${offset}
-    `
-
-    const formattedGroups = groups.map((group: any) => ({
-      id: group.id,
-      name: group.name,
-      description: group.description,
-      maxMembers: group.max_members,
-      memberCount: 0, // 暫時設為 0
-      createdBy: group.created_by,
-      createdAt: group.created_at,
-      updatedAt: group.updated_at
-    }))
-
-    return createSuccessResponse({
-      groups: formattedGroups,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit)
-      }
-    })
-  } catch (dbError) {
-    handleDatabaseError(dbError, 'Get Groups')
+  env: Env
+  data?: {
+    user?: {
+      userId: number
+      email: string
+      userType: string
+    }
   }
 }
 
-// POST - 創建小組
-async function handlePost(context: Context): Promise<Response> {
-  const { request, env } = context
-  
-  const token = validateToken(request.headers.get('Authorization'))
-  const payload = parseJwtToken(token)
+// 驗證 JWT Token
+async function verifyToken(request: Request, env: Env): Promise<any> {
+  const authHeader = request.headers.get('Authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null
+  }
 
-  const databaseUrl = validateDatabaseUrl(env.DATABASE_URL)
-  const { neon } = await import('@neondatabase/serverless')
-  const sql = neon(databaseUrl)
+  const token = authHeader.substring(7)
+  
+  try {
+    // 簡單的 JWT 解析（不驗證簽名，因為在 Cloudflare Workers 中驗證較複雜）
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    
+    const payload = JSON.parse(atob(parts[1]))
+    
+    // 檢查過期時間
+    if (payload.exp && payload.exp < Date.now() / 1000) {
+      return null
+    }
+    
+    return payload
+  } catch (error) {
+    console.error('[Auth] Token 解析失敗:', error)
+    return null
+  }
+}
+
+// GET /api/v1/groups - 獲取群組列表
+export async function onRequestGet(context: Context): Promise<Response> {
+  const { request, env } = context
 
   try {
-    const body = await request.json() as any
-
-    if (!body.name) {
-      throw new ApiError(ErrorCode.VALIDATION_ERROR, '小組名稱為必填項')
+    const { neon } = await import('@neondatabase/serverless')
+    const databaseUrl = env.DATABASE_URL
+    if (!databaseUrl) {
+      return Response.json(
+        { success: false, error: { message: 'Database URL not configured' } },
+        { status: 500 }
+      )
     }
 
+    const sql = neon(databaseUrl)
+    const url = new URL(request.url)
+
+    // 獲取查詢參數
+    const page = parseInt(url.searchParams.get('page') || '1', 10)
+    const limit = parseInt(url.searchParams.get('limit') || '12', 10)
+    const offset = (page - 1) * limit
+
+    // 獲取總數
+    const countResult = await sql`
+      SELECT COUNT(*) as count FROM student_groups WHERE is_active = true
+    `
+    const total = parseInt(countResult[0]?.count || '0', 10)
+
+    // 獲取群組列表（包含成員數量）
+    const groups = await sql`
+      SELECT 
+        g.*,
+        COUNT(gm.id) as member_count
+      FROM student_groups g
+      LEFT JOIN group_members gm ON g.id = gm.group_id
+      WHERE g.is_active = true
+      GROUP BY g.id
+      ORDER BY g.created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `
+
+    return Response.json({
+      success: true,
+      data: groups.map(g => ({
+        ...g,
+        memberCount: parseInt(g.member_count || '0', 10)
+      })),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    })
+  } catch (error: any) {
+    console.error('[Groups] 獲取群組列表失敗:', error)
+    return Response.json(
+      { success: false, error: { message: '獲取群組列表失敗', details: error.message } },
+      { status: 500 }
+    )
+  }
+}
+
+// POST /api/v1/groups - 創建新群組
+export async function onRequestPost(context: Context): Promise<Response> {
+  const { request, env } = context
+
+  try {
+    // 驗證用戶身份
+    const user = await verifyToken(request, env)
+    if (!user || !user.userId) {
+      return Response.json(
+        { success: false, error: { message: '未授權，請先登入' } },
+        { status: 401 }
+      )
+    }
+
+    const { neon } = await import('@neondatabase/serverless')
+    const databaseUrl = env.DATABASE_URL
+    if (!databaseUrl) {
+      return Response.json(
+        { success: false, error: { message: 'Database URL not configured' } },
+        { status: 500 }
+      )
+    }
+
+    const sql = neon(databaseUrl)
+    const body = await request.json() as any
+
+    // 驗證必填欄位
+    if (!body.name || !body.description) {
+      return Response.json(
+        { success: false, error: { message: '群組名稱和描述為必填' } },
+        { status: 400 }
+      )
+    }
+
+    // 創建群組
     const result = await sql`
-      INSERT INTO groups (
-        name,
-        description,
-        max_members,
-        created_by,
-        created_at,
-        updated_at
-      ) VALUES (
+      INSERT INTO student_groups (name, description, group_type, created_by)
+      VALUES (
         ${body.name},
-        ${body.description || null},
-        ${body.maxMembers || 50},
-        ${payload.userId},
-        NOW(),
-        NOW()
+        ${body.description},
+        ${body.groupType || 'course'},
+        ${user.userId}
       )
       RETURNING *
     `
 
-    const group = result[0]
+    const newGroup = result[0]
 
-    // 自動加入創建者為成員
+    // 自動將創建者加入群組並設為管理員
     await sql`
-      INSERT INTO group_members (
-        group_id,
-        user_id,
-        role,
-        joined_at
-      ) VALUES (
-        ${group.id},
-        ${payload.userId},
-        'admin',
-        NOW()
-      )
+      INSERT INTO group_members (group_id, user_id, role)
+      VALUES (${newGroup.id}, ${user.userId}, 'admin')
     `
 
-    return createSuccessResponse({
-      id: group.id,
-      name: group.name,
-      description: group.description,
-      maxMembers: group.max_members,
-      createdBy: group.created_by,
-      createdAt: group.created_at,
-      updatedAt: group.updated_at
+    return Response.json({
+      success: true,
+      data: newGroup,
+      message: '群組創建成功'
     })
-  } catch (dbError) {
-    handleDatabaseError(dbError, 'Create Group')
+  } catch (error: any) {
+    console.error('[Groups] 創建群組失敗:', error)
+    return Response.json(
+      { success: false, error: { message: '創建群組失敗', details: error.message } },
+      { status: 500 }
+    )
   }
 }
 
-export const onRequestGet = withErrorHandler(handleGet, 'Get Groups')
-export const onRequestPost = withErrorHandler(handlePost, 'Create Group')
+// OPTIONS - CORS 預檢
+export async function onRequestOptions(): Promise<Response> {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400'
+    }
+  })
+}

@@ -78,20 +78,9 @@ async function handleGetCourses(context: Context): Promise<Response> {
       total = parseInt(countResult[0]?.count || '0', 10)
 
       courses = await sql`
-        SELECT 
-          c.*,
-          i.id as instructor_db_id,
-          u.first_name as instructor_first_name,
-          u.last_name as instructor_last_name,
-          u.email as instructor_email,
-          i.bio as instructor_bio,
-          i.expertise as instructor_expertise,
-          i.average_rating as instructor_rating
-        FROM courses c
-        LEFT JOIN instructors i ON c.instructor_id = i.id
-        LEFT JOIN users u ON i.user_id = u.id
-        WHERE c.is_active = true AND c.course_type = ${dbCourseType}
-        ORDER BY c.created_at DESC 
+        SELECT * FROM courses 
+        WHERE is_active = true AND course_type = ${dbCourseType}
+        ORDER BY created_at DESC 
         LIMIT ${limit} OFFSET ${offset}
       `
     } else if (search) {
@@ -107,21 +96,10 @@ async function handleGetCourses(context: Context): Promise<Response> {
       total = parseInt(countResult[0]?.count || '0', 10)
 
       courses = await sql`
-        SELECT 
-          c.*,
-          i.id as instructor_db_id,
-          u.first_name as instructor_first_name,
-          u.last_name as instructor_last_name,
-          u.email as instructor_email,
-          i.bio as instructor_bio,
-          i.expertise as instructor_expertise,
-          i.average_rating as instructor_rating
-        FROM courses c
-        LEFT JOIN instructors i ON c.instructor_id = i.id
-        LEFT JOIN users u ON i.user_id = u.id
-        WHERE c.is_active = true 
-        AND (c.title ILIKE ${`%${search}%`} OR c.description ILIKE ${`%${search}%`})
-        ORDER BY c.created_at DESC 
+        SELECT * FROM courses 
+        WHERE is_active = true 
+        AND (title ILIKE ${`%${search}%`} OR description ILIKE ${`%${search}%`})
+        ORDER BY created_at DESC 
         LIMIT ${limit} OFFSET ${offset}
       `
     } else {
@@ -136,73 +114,20 @@ async function handleGetCourses(context: Context): Promise<Response> {
       total = parseInt(countResult[0]?.count || '0', 10)
 
       courses = await sql`
-        SELECT 
-          c.*,
-          i.id as instructor_db_id,
-          u.first_name as instructor_first_name,
-          u.last_name as instructor_last_name,
-          u.email as instructor_email,
-          i.bio as instructor_bio,
-          i.expertise as instructor_expertise,
-          i.average_rating as instructor_rating
-        FROM courses c
-        LEFT JOIN instructors i ON c.instructor_id = i.id
-        LEFT JOIN users u ON i.user_id = u.id
-        WHERE c.is_active = true
-        ORDER BY c.created_at DESC 
+        SELECT * FROM courses 
+        WHERE is_active = true
+        ORDER BY created_at DESC 
         LIMIT ${limit} OFFSET ${offset}
       `
     }
 
     console.log('[Courses] 查詢到的課程數:', courses.length, '總數:', total)
 
-    // 轉換課程類型為前端格式，並整理講師信息
-    const processedCourses = courses.map((course: any) => {
-      // 提取講師相關字段
-      const instructorFields = {
-        instructor_db_id: course.instructor_db_id,
-        instructor_first_name: course.instructor_first_name,
-        instructor_last_name: course.instructor_last_name,
-        instructor_email: course.instructor_email,
-        instructor_bio: course.instructor_bio,
-        instructor_expertise: course.instructor_expertise,
-        instructor_rating: course.instructor_rating
-      }
-      
-      // 移除講師字段，保留課程字段
-      const courseData: any = {}
-      for (const key in course) {
-        if (!key.startsWith('instructor_')) {
-          courseData[key] = course[key]
-        }
-      }
-      
-      // 轉換課程類型
-      courseData.course_type = COURSE_TYPE_REVERSE[courseData.course_type] || courseData.course_type
-      
-      // 添加向後兼容的扁平格式
-      if (instructorFields.instructor_first_name) {
-        courseData.instructorFirstName = instructorFields.instructor_first_name
-        courseData.instructorLastName = instructorFields.instructor_last_name
-        courseData.instructorEmail = instructorFields.instructor_email
-      }
-      
-      // 添加新的嵌套格式
-      if (instructorFields.instructor_db_id) {
-        courseData.instructor = {
-          id: instructorFields.instructor_db_id,
-          first_name: instructorFields.instructor_first_name,
-          last_name: instructorFields.instructor_last_name,
-          full_name: `${instructorFields.instructor_first_name || ''} ${instructorFields.instructor_last_name || ''}`.trim(),
-          email: instructorFields.instructor_email,
-          bio: instructorFields.instructor_bio,
-          expertise: instructorFields.instructor_expertise,
-          rating: instructorFields.instructor_rating
-        }
-      }
-      
-      return courseData
-    })
+    // 轉換課程類型為前端格式
+    const processedCourses = courses.map((course: any) => ({
+      ...course,
+      course_type: COURSE_TYPE_REVERSE[course.course_type] || course.course_type
+    }))
 
     return createSuccessResponse(processedCourses, {
       page,

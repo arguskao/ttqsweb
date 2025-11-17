@@ -23,7 +23,7 @@ async function verifyToken(request: Request, env: Env): Promise<any> {
 
   try {
     const parts = token.split('.')
-    if (parts.length !== 3) return null
+    if (parts.length !== 3 || !parts[1]) return null
 
     const payload = JSON.parse(atob(parts[1]))
 

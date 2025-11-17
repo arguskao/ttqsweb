@@ -32,7 +32,7 @@ async function verifyToken(request: Request, env: Env): Promise<any> {
   try {
     // 簡單的 JWT 解析（不驗證簽名，因為在 Cloudflare Workers 中驗證較複雜）
     const parts = token.split('.')
-    if (parts.length !== 3) return null
+    if (parts.length !== 3 || !parts[1]) return null
     
     const payload = JSON.parse(atob(parts[1]))
     

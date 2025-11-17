@@ -79,9 +79,23 @@ export const useAuthStore = defineStore('auth', () => {
       const storedUser = localStorage.getItem('auth_user')
 
       if (storedToken && storedUser) {
-        token.value = storedToken
-        user.value = JSON.parse(storedUser)
-        error.value = null
+        // 先驗證 token 是否可以被正確解析（避免中文字符問題）
+        try {
+          const parts = storedToken.split('.')
+          if (parts.length === 3) {
+            // 嘗試解析 payload，如果失敗就清除舊 token
+            JSON.parse(atob(parts[1]))
+          }
+          
+          // Token 可以正確解析，設置到 store
+          token.value = storedToken
+          user.value = JSON.parse(storedUser)
+          error.value = null
+        } catch (parseError) {
+          console.warn('[Auth] 偵測到舊版 token（包含中文或無效字符），已自動清除')
+          // Token 解析失敗，清除所有舊資料
+          clearAuth()
+        }
       }
     } catch (error) {
       console.error('Error loading auth from localStorage:', error)
@@ -130,7 +144,10 @@ export const useAuthStore = defineStore('auth', () => {
 
       const now = Math.floor(Date.now() / 1000)
       return payload.exp < now
-    } catch {
+    } catch (error) {
+      console.error('[Auth] Token 解析失敗 (可能包含中文或無效字符)，清除舊 token:', error)
+      // 解析失敗時清除舊 token，強制用戶重新登入
+      clearAuth()
       return true
     }
   }

@@ -543,6 +543,12 @@ router.beforeEach(async (to, from, next) => {
     if (sessionToken && sessionUser) {
       console.log('Recovering auth from sessionStorage')
       try {
+        // 先驗證 token 是否可以被正確解析
+        const parts = sessionToken.split('.')
+        if (parts.length === 3) {
+          JSON.parse(atob(parts[1]))
+        }
+        
         const userData = JSON.parse(sessionUser)
         // Update the auth store
         const authStore = useAuthStore()
@@ -557,11 +563,21 @@ router.beforeEach(async (to, from, next) => {
           return
         }
       } catch (error) {
-        console.error('Failed to recover auth from sessionStorage:', error)
+        console.warn('[Router] 偵測到無效 token，已清除')
+        // 清除無效的 token
+        sessionStorage.removeItem('access_token')
+        sessionStorage.removeItem('user')
+        sessionStorage.removeItem('token_expiry')
       }
     } else if (localToken && localUser) {
       console.log('Recovering auth from localStorage')
       try {
+        // 先驗證 token 是否可以被正確解析
+        const parts = localToken.split('.')
+        if (parts.length === 3) {
+          JSON.parse(atob(parts[1]))
+        }
+        
         const userData = JSON.parse(localUser)
         // Update the auth store
         const authStore = useAuthStore()
@@ -578,6 +594,11 @@ router.beforeEach(async (to, from, next) => {
           return
         }
       } catch (error) {
+        console.warn('[Router] 偵測到無效 token，已清除')
+        // 清除無效的 token
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('auth_user')
+        localStorage.removeItem('refresh_token')
         console.error('Failed to recover auth from localStorage:', error)
       }
     }

@@ -251,7 +251,9 @@ export class AuthServiceEnhanced {
       const bufferTime = 60 // 1 minute buffer in seconds
       return payload.exp < (now + bufferTime)
     } catch (error) {
-      console.error('[Auth] Token parsing error:', error)
+      console.error('[Auth] Token parsing error (可能包含中文或無效字符):', error)
+      // 解析失敗時清除舊 token，強制用戶重新登入
+      this.clearTokens()
       return true
     }
   }
@@ -386,6 +388,12 @@ export class AuthServiceEnhanced {
 
       if (token && refreshToken && userDataStr) {
         try {
+          // 先驗證 token 是否可以被正確解析
+          const parts = token.split('.')
+          if (parts.length === 3) {
+            JSON.parse(atob(parts[1]))
+          }
+          
           const userData = JSON.parse(userDataStr)
 
           if (this.isTokenExpired()) {
@@ -403,7 +411,7 @@ export class AuthServiceEnhanced {
             authStore.setAuth(userData, token)
           }
         } catch (error) {
-          console.error('Failed to parse user data:', error)
+          console.warn('[Auth] 偵測到無效 token，已自動清除')
           this.clearTokens()
           authStore.clearAuth()
         }

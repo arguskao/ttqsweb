@@ -133,8 +133,14 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       // 簡單的 JWT 解析 (不驗證簽名)
-      const part = token.value.split('.')[1] ?? ''
-      const payload = JSON.parse(atob(String(part)))
+      const parts = token.value.split('.')
+      if (parts.length !== 3 || !parts[1]) {
+        console.warn('[Auth] Token 格式不正確')
+        clearAuth()
+        return true
+      }
+
+      const payload = JSON.parse(atob(parts[1]))
 
       // 如果沒有 exp 字段，視為已過期
       if (!payload.exp) {

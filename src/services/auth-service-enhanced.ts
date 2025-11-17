@@ -237,7 +237,8 @@ export class AuthServiceEnhanced {
       const parts = token.split('.')
       if (parts.length !== 3) return true
 
-      const payload = JSON.parse(atob(parts[1] || ''))
+      if (!parts[1]) return true
+      const payload = JSON.parse(atob(parts[1]))
 
       // 如果沒有 exp 字段，檢查是否是我們的測試 token
       if (!payload.exp) {

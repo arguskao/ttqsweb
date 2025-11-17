@@ -214,46 +214,36 @@ export class AuthServiceEnhanced {
     return localStorage.getItem(this.refreshTokenKey)
   }
 
-  // 檢查 token 是否過期
+  // 檢查 token 是否過期（優化版：優先使用快取的過期時間）
   isTokenExpired(): boolean {
-    // First check sessionStorage
+    // 優先使用 sessionStorage 中的過期時間（最快）
     const sessionExpiry = sessionStorage.getItem(this.tokenExpiryKey)
     if (sessionExpiry) {
       const expiryTimestamp = parseInt(sessionExpiry, 10)
-      const currentTime = Date.now()
       const bufferTime = 60 * 1000 // 1 minute buffer
-      return currentTime >= expiryTimestamp - bufferTime
+      return Date.now() >= expiryTimestamp - bufferTime
     }
 
-    // Fallback: check token directly from either storage
-    const sessionToken = sessionStorage.getItem(this.accessTokenKey)
-    const localToken = localStorage.getItem('auth_token')
-    const token = sessionToken || localToken
-
+    // 如果沒有快取的過期時間，才解析 token（較慢）
+    const token = sessionStorage.getItem(this.accessTokenKey)
     if (!token) return true
 
     try {
-      // 簡單的 JWT 解析 (不驗證簽名)
       const parts = token.split('.')
-      if (parts.length !== 3) return true
-
-      if (!parts[1]) return true
+      if (parts.length !== 3 || !parts[1]) return true
+      
       const payload = JSON.parse(atob(parts[1]))
-
-      // 如果沒有 exp 字段，檢查是否是我們的測試 token
+      
       if (!payload.exp) {
-        console.warn('[Auth] Token 沒有過期時間')
-        // For tokens without expiry, assume they're valid for a reasonable time
-        // or implement your own logic here
-        return false // Don't expire tokens without exp field for now
+        // 沒有過期時間的 token，假設有效（或設定預設過期時間）
+        return false
       }
 
       const now = Math.floor(Date.now() / 1000)
-      const bufferTime = 60 // 1 minute buffer in seconds
+      const bufferTime = 60 // 1 minute buffer
       return payload.exp < (now + bufferTime)
     } catch (error) {
-      console.error('[Auth] Token parsing error (可能包含中文或無效字符):', error)
-      // 解析失敗時清除舊 token，強制用戶重新登入
+      console.error('[Auth] Token parsing error:', error)
       this.clearTokens()
       return true
     }
@@ -326,44 +316,35 @@ export class AuthServiceEnhanced {
     return token
   }
 
-  // 檢查用戶是否已認證
+  // 檢查用戶是否已認證（優化版：減少不必要的檢查）
   isAuthenticated(): boolean {
     const authStore = useAuthStore()
-    const sessionToken = sessionStorage.getItem(this.accessTokenKey)
-    const localToken = localStorage.getItem('auth_token')
-    const token = sessionToken || localToken
-    const isExpired = this.isTokenExpired()
-    const hasUser = !!authStore.user
-
-    console.log('isAuthenticated check:', {
-      hasSessionToken: !!sessionToken,
-      hasLocalToken: !!localToken,
-      hasToken: !!token,
-      isExpired,
-      hasUser,
-      user: authStore.user
-    })
-
-    // If we have a valid token but no user in store, try to sync
-    if (token && !isExpired && !hasUser) {
-      console.log('Token valid but no user in store, attempting to sync...')
-      const sessionUser = sessionStorage.getItem('user')
-      const localUser = localStorage.getItem('auth_user')
-      const userStr = sessionUser || localUser
-
+    const token = sessionStorage.getItem(this.accessTokenKey)
+    
+    // 快速路徑：如果沒有 token，直接返回 false
+    if (!token) return false
+    
+    // 快速路徑：如果有 user 且 token 未過期，直接返回 true
+    if (authStore.user && !this.isTokenExpired()) {
+      return true
+    }
+    
+    // 只在必要時才嘗試同步（token 存在但 user 不存在）
+    if (!authStore.user) {
+      const userStr = sessionStorage.getItem('user')
       if (userStr) {
         try {
           const userData = JSON.parse(userStr)
           authStore.setAuth(userData, token)
-          console.log('Auth state synced successfully')
-          return true
+          return !this.isTokenExpired()
         } catch (error) {
           console.error('Failed to sync auth state:', error)
+          return false
         }
       }
     }
 
-    return !!token && !isExpired && !!authStore.user
+    return false
   }
 
   // 獲取當前用戶

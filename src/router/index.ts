@@ -500,7 +500,7 @@ const router = createRouter({
 
 // Navigation guards
 router.beforeEach(async (to, from, next) => {
-  // 等待認證初始化完成
+  // 只在第一次初始化認證（不阻塞後續導航）
   if (!(window as any).__authInitialized) {
     try {
       await authServiceEnhanced.initializeAuth()
@@ -510,99 +510,9 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // 檢查是否有有效的 token
-  const token = sessionStorage.getItem('access_token')
-  const tokenExpiry = sessionStorage.getItem('token_expiry')
-  const hasValidToken = token && tokenExpiry && Date.now() < parseInt(tokenExpiry, 10)
-
-  const isAuthenticated = authService.isAuthenticated() && hasValidToken
+  // 快速檢查認證狀態（避免重複的複雜邏輯）
+  const isAuthenticated = authService.isAuthenticated()
   const user = authService.getCurrentUser()
-
-  // 調試日誌 - Enhanced debugging
-  console.log('Router guard check:', {
-    to: to.path,
-    requiresAuth: to.meta.requiresAuth,
-    isAuthenticated,
-    user,
-    sessionToken: sessionStorage.getItem('access_token'),
-    localToken: localStorage.getItem('auth_token'),
-    sessionUser: sessionStorage.getItem('user'),
-    localUser: localStorage.getItem('auth_user'),
-    storeUser: authService.getCurrentUser(),
-    storeToken: authService.getToken()
-  })
-
-  // Sync storage if there's a mismatch
-  if (!isAuthenticated) {
-    const sessionToken = sessionStorage.getItem('access_token')
-    const localToken = localStorage.getItem('auth_token')
-    const sessionUser = sessionStorage.getItem('user')
-    const localUser = localStorage.getItem('auth_user')
-
-    // Try to recover authentication state from either storage
-    if (sessionToken && sessionUser) {
-      console.log('Recovering auth from sessionStorage')
-      try {
-        // 先驗證 token 是否可以被正確解析
-        const parts = sessionToken.split('.')
-        if (parts.length === 3 && parts[1]) {
-          JSON.parse(atob(parts[1]))
-        }
-        
-        const userData = JSON.parse(sessionUser)
-        // Update the auth store
-        const authStore = useAuthStore()
-        authStore.setAuth(userData, sessionToken)
-        // Sync to localStorage
-        localStorage.setItem('auth_token', sessionToken)
-        localStorage.setItem('auth_user', sessionUser)
-        // Re-check authentication
-        if (authService.isAuthenticated()) {
-          console.log('Auth recovered successfully')
-          next()
-          return
-        }
-      } catch (error) {
-        console.warn('[Router] 偵測到無效 token，已清除')
-        // 清除無效的 token
-        sessionStorage.removeItem('access_token')
-        sessionStorage.removeItem('user')
-        sessionStorage.removeItem('token_expiry')
-      }
-    } else if (localToken && localUser) {
-      console.log('Recovering auth from localStorage')
-      try {
-        // 先驗證 token 是否可以被正確解析
-        const parts = localToken.split('.')
-        if (parts.length === 3 && parts[1]) {
-          JSON.parse(atob(parts[1]))
-        }
-        
-        const userData = JSON.parse(localUser)
-        // Update the auth store
-        const authStore = useAuthStore()
-        authStore.setAuth(userData, localToken)
-        // Sync to sessionStorage
-        sessionStorage.setItem('access_token', localToken)
-        sessionStorage.setItem('user', localUser)
-        const expiryTime = Date.now() + 60 * 60 * 1000 // 1 hour default
-        sessionStorage.setItem('token_expiry', expiryTime.toString())
-        // Re-check authentication
-        if (authService.isAuthenticated()) {
-          console.log('Auth recovered successfully')
-          next()
-          return
-        }
-      } catch (error) {
-        console.warn('[Router] 偵測到無效 token，已清除')
-        // 清除無效的 token
-        localStorage.removeItem('auth_token')
-        localStorage.removeItem('auth_user')
-        localStorage.removeItem('refresh_token')
-        console.error('Failed to recover auth from localStorage:', error)
-      }
-    }
-  }
 
   // Check if route requires authentication
   if (to.meta.requiresAuth && !isAuthenticated) {
@@ -632,13 +542,12 @@ router.beforeEach(async (to, from, next) => {
   // Check if route requires approved instructor (for course application)
   if (to.meta.requiresInstructor && user?.userType === 'instructor') {
     const authStore = useAuthStore()
-    // 如果講師狀態還沒檢查，先檢查
+    // 只在需要時才檢查講師狀態（不阻塞導航）
     if (!authStore.instructorStatus) {
-      await authStore.checkInstructorStatus()
-    }
-
-    // 檢查是否為已批准的講師
-    if (!authStore.isApprovedInstructor) {
+      // 非阻塞式檢查，讓頁面先載入
+      authStore.checkInstructorStatus().catch(console.error)
+    } else if (!authStore.isApprovedInstructor) {
+      // 只有在已經有狀態且未批准時才阻止
       console.log('User is instructor but not approved, redirecting to home')
       next({ name: 'home' })
       return

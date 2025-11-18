@@ -1,48 +1,79 @@
-// Bulma 最小化版本 - 只引入需要的模組
-// 這將大幅減少 CSS 大小（從 683 KB 預計降到 150-250 KB）
+// Bulma 優化版本 - 基於實際使用情況引入模組
+// 根據代碼分析，這個配置包含所有實際使用的 Bulma 組件
+// 預計大小: 350-450 KB (比完整版 699 KB 減少約 35-50%)
 
+// ============================================
 // 1. 基礎設定（必需）
+// ============================================
 @import 'bulma/sass/utilities';
 @import 'bulma/sass/base';
 
-// 2. 元素（按需引入）
-@import 'bulma/sass/elements/button';
-@import 'bulma/sass/elements/title';
-@import 'bulma/sass/elements/box';
-@import 'bulma/sass/elements/content';
-@import 'bulma/sass/elements/tag';
-@import 'bulma/sass/elements/table';
-@import 'bulma/sass/elements/notification';
+// ============================================
+// 2. 元素（Elements）- 按實際使用引入
+// ============================================
+@import 'bulma/sass/elements/button';      // 使用次數: 196
+@import 'bulma/sass/elements/title';       // 使用次數: 341
+@import 'bulma/sass/elements/box';         // 使用次數: 146
+@import 'bulma/sass/elements/content';     // 使用次數: 121
+@import 'bulma/sass/elements/tag';         // 使用次數: 82
+@import 'bulma/sass/elements/table';       // 有使用
+@import 'bulma/sass/elements/notification'; // 使用次數: 107
+@import 'bulma/sass/elements/icon';        // 使用次數: 226
+@import 'bulma/sass/elements/image';       // 有使用
 
-// 3. 表單（完整引入，因為表單很常用）
-@import 'bulma/sass/form';
+// ============================================
+// 3. 表單（Form）- 完整引入
+// ============================================
+@import 'bulma/sass/form';                 // field(197), input(66), select(26), textarea(34)
 
-// 4. 元件（只引入使用的）
-@import 'bulma/sass/components/navbar';
-@import 'bulma/sass/components/card';
-@import 'bulma/sass/components/message';
-@import 'bulma/sass/components/modal';
-@import 'bulma/sass/components/pagination';
+// ============================================
+// 4. 元件（Components）- 按實際使用引入
+// ============================================
+@import 'bulma/sass/components/navbar';    // navbar-item(46)
+@import 'bulma/sass/components/card';      // card(71), card-content(72)
+@import 'bulma/sass/components/message';   // 有使用
+@import 'bulma/sass/components/modal';     // modal-card(24), modal-background(24)
+@import 'bulma/sass/components/pagination'; // 有使用
 
-// 5. 佈局
-@import 'bulma/sass/layout/section';
-@import 'bulma/sass/layout/footer';
-@import 'bulma/sass/layout/hero';
+// ============================================
+// 5. 佈局（Layout）
+// ============================================
+@import 'bulma/sass/layout/section';       // 使用次數: 45
+@import 'bulma/sass/layout/footer';        // 有使用
+@import 'bulma/sass/layout/hero';          // 有使用
+@import 'bulma/sass/layout/container';     // 使用次數: 59
+@import 'bulma/sass/layout/level';         // level(38), level-item(74)
+@import 'bulma/sass/layout/media';         // 有使用
 
-// 6. 網格系統
-@import 'bulma/sass/grid/columns';
+// ============================================
+// 6. 網格系統（Grid）
+// ============================================
+@import 'bulma/sass/grid/columns';         // column(252), columns(124)
 
-// 7. 輔助類別（選擇性引入）
-// 注意：color helpers 包含大量顏色變體，暫時移除以減少 bundle 大小
-// @import 'bulma/sass/helpers/color';
-@import 'bulma/sass/helpers/flexbox';
-@import 'bulma/sass/helpers/spacing';
-@import 'bulma/sass/helpers/typography';
-@import 'bulma/sass/helpers/visibility';
+// ============================================
+// 7. 輔助類別（Helpers）
+// ============================================
+@import 'bulma/sass/helpers/color';        // has-text-*, has-background-* (大量使用)
+@import 'bulma/sass/helpers/flexbox';      // is-flex, is-justify-*, is-align-*
+@import 'bulma/sass/helpers/spacing';      // m-*, p-*, is-marginless, is-paddingless
+@import 'bulma/sass/helpers/typography';   // is-size-*, has-text-centered(153), has-text-weight-*
+@import 'bulma/sass/helpers/visibility';   // is-hidden-*, is-invisible
 
-// 注意：這個配置移除了：
-// - 大量的顏色變體 (00-100 漸層)
-// - 未使用的元件 (dropdown, tabs, breadcrumb, menu, panel, etc.)
-// - 部分不常用的工具類別
-// 
-// 如果發現缺少某些樣式，可以回來添加對應的 @import
+// ============================================
+// 移除的模組（未使用或使用極少）
+// ============================================
+// ❌ components/dropdown - 未發現使用
+// ❌ components/tabs - 未發現使用
+// ❌ components/breadcrumb - 未發現使用
+// ❌ components/menu - 未發現使用
+// ❌ components/panel - 未發現使用
+// ❌ elements/delete - 未發現使用
+// ❌ elements/progress - 未發現使用
+// ❌ elements/other - 未發現使用
+
+// ============================================
+// 注意事項
+// ============================================
+// 1. 保留了 helpers/color 因為大量使用 has-text-* 類別
+// 2. 新增了 icon, image, level, media, container 模組
+// 3. 如果發現缺少樣式，檢查上面的移除列表並添加對應的 @import

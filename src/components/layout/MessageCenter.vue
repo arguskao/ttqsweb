@@ -232,7 +232,7 @@ const loadMessages = async () => {
     const userType = authStore.user?.userType
 
     // 講師：獲取自己授課課程的訊息
-    if (userType === 'instructor' || authStore.isApprovedInstructor) {
+    if ((userType === 'instructor' || authStore.isApprovedInstructor) && authStore.isAuthenticated) {
       try {
         // 先獲取講師資料以取得 instructor_id
         const profileResponse = await api.get('/instructors/profile')

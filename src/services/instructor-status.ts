@@ -34,8 +34,21 @@ export class InstructorStatusService {
         isApprovedInstructor: false,
         applicationStatus: undefined
       }
-    } catch (error) {
-      console.error('檢查講師狀態失敗:', error)
+    } catch (error: any) {
+      // 在開發環境中，如果是連接錯誤（API server 未啟動），靜默處理
+      const isDev = import.meta.env.DEV
+      const isConnectionError = error?.code === 'ERR_NETWORK' || error?.message?.includes('Network Error')
+      
+      if (isDev && isConnectionError) {
+        // 開發環境且 API 未啟動，靜默返回
+        return {
+          isApprovedInstructor: false,
+          applicationStatus: undefined
+        }
+      }
+      
+      // 其他錯誤記錄到控制台
+      console.warn('檢查講師狀態失敗:', error?.message || error)
 
       // 發生錯誤時返回未通過狀態
       return {

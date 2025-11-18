@@ -74,9 +74,12 @@ async function handleLogin(context: Context): Promise<Response> {
       const bcrypt = await import('bcryptjs')
       isPasswordValid = await bcrypt.compare(password, user.password_hash)
     } else if (user.password_hash.length === 64 && /^[a-f0-9]+$/.test(user.password_hash)) {
-      // SHA-256 格式（舊格式）
-      const crypto = await import('crypto')
-      const sha256Hash = crypto.createHash('sha256').update(password).digest('hex')
+      // SHA-256 格式（舊格式）- 使用 Web Crypto API
+      const encoder = new TextEncoder()
+      const data = encoder.encode(password)
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+      const hashArray = Array.from(new Uint8Array(hashBuffer))
+      const sha256Hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
       isPasswordValid = sha256Hash === user.password_hash
     } else {
       console.error('[Login] 未知的密碼格式:', {

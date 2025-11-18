@@ -26,7 +26,7 @@
           <h2 class="title is-4">申請狀態</h2>
           <div class="content">
             <p><strong>狀態：</strong>{{ getStatusText(existingApplication.status) }}</p>
-            <p><strong>提交時間：</strong>{{ formatDate(existingApplication.submitted_at) }}</p>
+            <p><strong>提交時間：</strong>{{ existingApplication.submitted_at ? formatDate(existingApplication.submitted_at) : '未知' }}</p>
             <p v-if="existingApplication.reviewed_at">
               <strong>審核時間：</strong>{{ formatDate(existingApplication.reviewed_at) }}
             </p>
@@ -180,7 +180,7 @@
               <label class="label">工作經驗年數 <span class="has-text-danger">*</span></label>
               <div class="control">
                 <input
-                  v-model.number="form.years_of_experience"
+                  v-model.number="form.yearsOfExperience"
                   class="input"
                   type="number"
                   min="0"
@@ -362,7 +362,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-import type { CreateApplicationRequest, InstructorApplication } from '@/api/instructor/types'
+import type { CreateApplicationRequest, InstructorApplication } from '@/types/instructor'
 import { apiService } from '@/services/api'
 import { authService } from '@/services/auth-service'
 
@@ -387,7 +387,7 @@ const form = ref<
   bio: '',
   qualifications: '',
   specialization: '',
-  years_of_experience: 0,
+  yearsOfExperience: 0,
   teaching_philosophy: '',
   specializations: [],
   target_audiences: []
@@ -405,7 +405,7 @@ const canSubmit = computed(() => {
     form.value.specializations.length > 0 &&
     form.value.target_audiences &&
     form.value.target_audiences.length > 0 &&
-    form.value.years_of_experience >= 0 &&
+    form.value.yearsOfExperience >= 0 &&
     agreedToTerms.value
   )
 })
@@ -478,7 +478,7 @@ const submitApplication = async () => {
       bio: form.value.bio,
       qualifications: form.value.qualifications,
       specialization: form.value.specializations?.join(', ') || '',
-      years_of_experience: form.value.years_of_experience,
+      yearsOfExperience: form.value.yearsOfExperience,
       target_audiences: form.value.target_audiences?.join(', ') || ''
     }
 
@@ -500,7 +500,7 @@ const submitApplication = async () => {
         bio: '',
         qualifications: '',
         specialization: '',
-        years_of_experience: 0,
+        yearsOfExperience: 0,
         teaching_philosophy: '',
         specializations: [],
         target_audiences: []

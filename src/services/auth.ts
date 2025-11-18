@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
-import { ValidationError, AuthenticationError, ConflictError } from '../api/errors'
+import { ValidationError, AuthenticationError, ConflictError } from '../types/errors'
 import { getDatabasePool } from '../config/database'
 
 // User types

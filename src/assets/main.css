@@ -1,5 +1,6 @@
 @import './base.css';
-@import 'bulma/css/bulma.css';
+/* 使用最小化的 Bulma 版本，減少 CSS 大小 */
+@import './bulma-minimal.scss';
 
 #app {
   margin: 0 auto;

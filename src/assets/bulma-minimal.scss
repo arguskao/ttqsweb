@@ -1,0 +1,48 @@
+// Bulma 最小化版本 - 只引入需要的模組
+// 這將大幅減少 CSS 大小（從 683 KB 預計降到 150-250 KB）
+
+// 1. 基礎設定（必需）
+@import 'bulma/sass/utilities';
+@import 'bulma/sass/base';
+
+// 2. 元素（按需引入）
+@import 'bulma/sass/elements/button';
+@import 'bulma/sass/elements/title';
+@import 'bulma/sass/elements/box';
+@import 'bulma/sass/elements/content';
+@import 'bulma/sass/elements/tag';
+@import 'bulma/sass/elements/table';
+@import 'bulma/sass/elements/notification';
+
+// 3. 表單（完整引入，因為表單很常用）
+@import 'bulma/sass/form';
+
+// 4. 元件（只引入使用的）
+@import 'bulma/sass/components/navbar';
+@import 'bulma/sass/components/card';
+@import 'bulma/sass/components/message';
+@import 'bulma/sass/components/modal';
+@import 'bulma/sass/components/pagination';
+
+// 5. 佈局
+@import 'bulma/sass/layout/section';
+@import 'bulma/sass/layout/footer';
+@import 'bulma/sass/layout/hero';
+
+// 6. 網格系統
+@import 'bulma/sass/grid/columns';
+
+// 7. 輔助類別（選擇性引入）
+// 注意：color helpers 包含大量顏色變體，暫時移除以減少 bundle 大小
+// @import 'bulma/sass/helpers/color';
+@import 'bulma/sass/helpers/flexbox';
+@import 'bulma/sass/helpers/spacing';
+@import 'bulma/sass/helpers/typography';
+@import 'bulma/sass/helpers/visibility';
+
+// 注意：這個配置移除了：
+// - 大量的顏色變體 (00-100 漸層)
+// - 未使用的元件 (dropdown, tabs, breadcrumb, menu, panel, etc.)
+// - 部分不常用的工具類別
+// 
+// 如果發現缺少某些樣式，可以回來添加對應的 @import

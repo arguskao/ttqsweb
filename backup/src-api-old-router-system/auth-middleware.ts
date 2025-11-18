@@ -1,7 +1,5 @@
 import jwt from 'jsonwebtoken'
 
-import { getUserById } from '../services/auth'
-
 import { AuthenticationError } from './errors'
 import type { Middleware, ApiRequest } from './types'
 
@@ -71,18 +69,20 @@ export const authMiddleware: Middleware = async (req, next) => {
     }
 
     // 直接使用 token 中的用戶信息（避免在 Cloudflare Workers 中查詢資料庫）
+    // Token 只包含基本識別資訊：userId, email, userType
+    // 詳細資訊（姓名、電話等）需要時從 /api/v1/auth/profile 獲取
     req.user = {
       id: userId,
       email: payload.email || '',
       userType: payload.userType || 'job_seeker',
-      firstName: payload.firstName || '',
-      lastName: payload.lastName || '',
-      phone: payload.phone,
+      firstName: '',  // Token 中不包含姓名，避免中文編碼問題
+      lastName: '',
+      phone: undefined,
       isActive: true,
       // 兼容舊的屬性名稱
       user_type: payload.userType || 'job_seeker',
-      first_name: payload.firstName || '',
-      last_name: payload.lastName || '',
+      first_name: '',
+      last_name: '',
       is_active: true
     }
 
@@ -110,22 +110,23 @@ export const optionalAuthMiddleware: Middleware = async (req, next) => {
 
       if (token) {
         const payload = verifyToken(token)
-        const user = await getUserById(payload.userId)
+        const userId = payload.userId || payload.id
 
-        if (user) {
+        if (userId) {
+          // 只從 token 讀取基本資訊，避免資料庫查詢
           req.user = {
-            id: user.id,
-            email: user.email,
-            userType: user.userType,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            phone: user.phone,
-            isActive: user.isActive,
+            id: userId,
+            email: payload.email || '',
+            userType: payload.userType || 'job_seeker',
+            firstName: '',  // Token 中不包含姓名
+            lastName: '',
+            phone: undefined,
+            isActive: true,
             // 兼容舊的屬性名稱
-            user_type: user.userType,
-            first_name: user.firstName,
-            last_name: user.lastName,
-            is_active: user.isActive
+            user_type: payload.userType || 'job_seeker',
+            first_name: '',
+            last_name: '',
+            is_active: true
           }
         }
       }
@@ -169,13 +170,13 @@ export const requireRole = (allowedRoles: string[]): Middleware => {
           id: userId,
           email: payload.email || '',
           userType: payload.userType || 'job_seeker',
-          firstName: payload.firstName || '',
-          lastName: payload.lastName || '',
-          phone: payload.phone,
+          firstName: '',  // Token 中不包含姓名
+          lastName: '',
+          phone: undefined,
           isActive: true,
           user_type: payload.userType || 'job_seeker',
-          first_name: payload.firstName || '',
-          last_name: payload.lastName ?? '',
+          first_name: '',
+          last_name: '',
           is_active: true
         }
       } catch (error) {

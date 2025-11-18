@@ -500,7 +500,7 @@ const router = createRouter({
 
 // Navigation guards
 router.beforeEach(async (to, from, next) => {
-  // 只在第一次初始化認證（不阻塞後續導航）
+  // 只在第一次初始化認證
   if (!(window as any).__authInitialized) {
     try {
       await authServiceEnhanced.initializeAuth()
@@ -510,9 +510,27 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // 快速檢查認證狀態（避免重複的複雜邏輯）
-  const isAuthenticated = authService.isAuthenticated()
-  const user = authService.getCurrentUser()
+  // 快速檢查認證狀態
+  let isAuthenticated = authService.isAuthenticated()
+  let user = authService.getCurrentUser()
+
+  // 如果未認證，嘗試快速恢復（只檢查一次，不重複嘗試）
+  if (!isAuthenticated) {
+    const token = sessionStorage.getItem('access_token')
+    const userStr = sessionStorage.getItem('user')
+    
+    if (token && userStr) {
+      try {
+        const userData = JSON.parse(userStr)
+        const authStore = useAuthStore()
+        authStore.setAuth(userData, token)
+        isAuthenticated = true
+        user = userData
+      } catch (error) {
+        console.error('Failed to restore auth:', error)
+      }
+    }
+  }
 
   // Check if route requires authentication
   if (to.meta.requiresAuth && !isAuthenticated) {

@@ -1,6 +1,7 @@
 /**
- * Cloudflare Pages Function 主入口
- * 使用完整的API路由系統
+ * BACKUP - 原 Catch-all 路由
+ * 此檔案已被移除，保留作為備份
+ * 日期：2025-11-18
  */
 
 import { handleApiRequest } from '../../../src/api/index'

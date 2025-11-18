@@ -44,6 +44,12 @@ const token = jwt.sign(
 - 前端使用 `atob()` 解析 token，不支援 UTF-8 編碼
 - 中文字符會導致 `InvalidCharacterError`
 
+**相關修復**：
+
+- ✅ 已修復 `src/api/auth-middleware.ts` 中錯誤假設 token 包含 firstName/lastName 的問題
+- ✅ Middleware 現在正確地只從 token 讀取 userId, email, userType
+- ✅ 詳細用戶資訊應從 `/api/v1/auth/profile` 端點獲取
+
 ---
 
 ## 2. Router Middleware 順序錯誤
@@ -144,14 +150,48 @@ const result = await sql`SELECT * FROM users WHERE id = ${userId}`
 
 ---
 
+## 5. 雙重路由系統衝突（已解決）
+
+**錯誤**：同時使用兩套路由系統
+
+```typescript
+// ❌ 錯誤：Catch-all 路由 + 獨立路由檔案
+functions/api/v1/[[path]].ts  // 轉發到 src/api/
+functions/api/v1/auth/login.ts  // 獨立處理
+```
+
+**正確做法**：只使用 Cloudflare Pages Functions 檔案路由
+
+```typescript
+// ✅ 正確：只使用檔案路由
+functions/api/v1/auth/login.ts
+functions/api/v1/auth/profile.ts
+functions/api/v1/instructors/profile.ts
+```
+
+**原因**：
+
+- 雙重路由系統會造成衝突和維護困難
+- Cloudflare Pages Functions 的檔案路由更高效
+- 減少抽象層，提升性能
+
+**解決方案**（2025-11-18）：
+
+- ✅ 已刪除 `functions/api/v1/[[path]].ts`
+- ✅ 完全使用 Cloudflare Pages Functions 檔案路由
+- ✅ 所有路由使用 Neon serverless driver
+- ✅ 統一使用 `withErrorHandler` 錯誤處理
+
+---
+
 ## 檢查清單
 
 在修改認證相關代碼時，請檢查：
 
 - [ ] Token 中是否只包含基本資訊（無中文、無敏感資訊）
-- [ ] Router middleware 順序是否正確（middleware 在 handler 之前）
-- [ ] 具體路由是否在參數路由之前註冊
-- [ ] 是否使用了適合 Cloudflare Workers 的資料庫連接方式
+- [ ] 是否使用 Neon serverless driver（不要用 connection pool）
+- [ ] 是否使用 `withErrorHandler` 包裝 handler
+- [ ] 路由檔案是否放在正確的 `functions/api/v1/` 目錄
 - [ ] 修改後是否測試了登入、個人資料、講師資料等功能
 
 ---

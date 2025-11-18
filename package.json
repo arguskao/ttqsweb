@@ -29,6 +29,8 @@
     "fix:instructors": "jiti src/scripts/fix-instructor-data.ts",
     "create:messages-table": "jiti src/scripts/create-messages-table.ts",
     "test:message-api": "jiti src/scripts/test-message-api.ts",
+    "test:api": "jiti src/scripts/test-api-endpoints.ts",
+    "test:routes": "jiti src/scripts/test-new-routes.ts",
     "test": "vitest --run",
     "test:run": "vitest --run",
     "test:watch": "vitest",

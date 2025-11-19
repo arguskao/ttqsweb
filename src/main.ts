@@ -44,7 +44,7 @@ setupApiMetrics(api)
 
 // 設置路由預加載
 const routePreloader = setupRoutePreloading(router)
-  ; (window as any).__routePreloader = routePreloader
+;(window as any).__routePreloader = routePreloader
 
 // Mount app
 app.mount('#app')
@@ -53,11 +53,11 @@ app.mount('#app')
 authServiceEnhanced
   .initializeAuth()
   .then(() => {
-    (window as any).__authInitialized = true
+    window.__authInitialized = true
   })
   .catch(error => {
     console.error('Failed to initialize auth:', error)
-    ; (window as any).__authInitialized = true // 即使失敗也標記為已初始化
+    window.__authInitialized = true // 即使失敗也標記為已初始化
   })
 
 // 開始預加載關鍵路由

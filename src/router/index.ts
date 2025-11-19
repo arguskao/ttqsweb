@@ -501,10 +501,10 @@ const router = createRouter({
 // Navigation guards
 router.beforeEach(async (to, from, next) => {
   // 只在第一次初始化認證
-  if (!(window as any).__authInitialized) {
+  if (!window.__authInitialized) {
     try {
       await authServiceEnhanced.initializeAuth()
-      ; (window as any).__authInitialized = true
+      window.__authInitialized = true
     } catch (error) {
       console.error('Auth initialization failed in router guard:', error)
     }

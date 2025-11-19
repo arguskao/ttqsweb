@@ -510,15 +510,15 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // 快速檢查認證狀態
-  let isAuthenticated = authService.isAuthenticated()
-  let user = authService.getCurrentUser()
+  // 快速檢查認證狀態 - 優先使用 authServiceEnhanced (支持 sessionStorage)
+  let isAuthenticated = authServiceEnhanced.isAuthenticated()
+  let user = authServiceEnhanced.getCurrentUser()
 
   // 如果未認證，嘗試快速恢復（只檢查一次，不重複嘗試）
   if (!isAuthenticated) {
     const token = sessionStorage.getItem('access_token')
     const userStr = sessionStorage.getItem('user')
-    
+
     if (token && userStr) {
       try {
         const userData = JSON.parse(userStr)
@@ -526,10 +526,15 @@ router.beforeEach(async (to, from, next) => {
         authStore.setAuth(userData, token)
         isAuthenticated = true
         user = userData
+        console.log('[Router] Auth restored from sessionStorage:', { email: userData.email, userType: userData.userType })
       } catch (error) {
-        console.error('Failed to restore auth:', error)
+        console.error('[Router] Failed to restore auth:', error)
       }
+    } else {
+      console.log('[Router] No auth data in sessionStorage')
     }
+  } else {
+    console.log('[Router] User authenticated:', { email: user?.email, userType: user?.userType })
   }
 
   // Check if route requires authentication

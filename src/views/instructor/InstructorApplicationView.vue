@@ -519,11 +519,8 @@ const submitApplication = async () => {
 
 // 頁面初始化
 onMounted(async () => {
-  // 檢查用戶是否已登入
-  if (!currentUser.value) {
-    router.push('/login')
-    return
-  }
+  // 路由守衛已經檢查過認證狀態,這裡直接檢查現有申請
+  console.log('InstructorApplicationView mounted, current user:', currentUser.value)
 
   // 檢查現有申請
   await checkExistingApplication()

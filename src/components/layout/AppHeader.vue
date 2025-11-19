@@ -262,9 +262,9 @@ const authStore = useAuthStore()
 const isMenuOpen = ref(false)
 const isUserMenuOpen = ref(false)
 
-// Authentication state
-const isAuthenticated = computed(() => authService.isAuthenticated())
-const currentUser = computed(() => authService.getCurrentUser())
+// Authentication state - 直接使用 authStore 以確保響應式更新
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+const currentUser = computed(() => authStore.user)
 const isApprovedInstructor = computed(() => authStore.isApprovedInstructor)
 
 // Menu functions

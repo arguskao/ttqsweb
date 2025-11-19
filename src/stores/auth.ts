@@ -75,8 +75,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   function loadAuth() {
     try {
-      const storedToken = localStorage.getItem('auth_token')
-      const storedUser = localStorage.getItem('auth_user')
+      // 優先從 sessionStorage 載入（新版認證使用 sessionStorage）
+      let storedToken = sessionStorage.getItem('access_token')
+      let storedUser = sessionStorage.getItem('user')
+
+      // 如果 sessionStorage 沒有，再嘗試從 localStorage 載入（向後兼容）
+      if (!storedToken || !storedUser) {
+        storedToken = localStorage.getItem('auth_token')
+        storedUser = localStorage.getItem('auth_user')
+      }
 
       if (storedToken && storedUser) {
         // 先驗證 token 是否可以被正確解析（避免中文字符問題）
@@ -86,19 +93,22 @@ export const useAuthStore = defineStore('auth', () => {
             // 嘗試解析 payload，如果失敗就清除舊 token
             JSON.parse(atob(parts[1]))
           }
-          
+
           // Token 可以正確解析，設置到 store
           token.value = storedToken
           user.value = JSON.parse(storedUser)
           error.value = null
+          console.log('[Auth Store] Loaded auth state:', { email: user.value?.email, userType: user.value?.userType })
         } catch (parseError) {
           console.warn('[Auth] 偵測到舊版 token（包含中文或無效字符），已自動清除')
           // Token 解析失敗，清除所有舊資料
           clearAuth()
         }
+      } else {
+        console.log('[Auth Store] No auth data found in storage')
       }
     } catch (error) {
-      console.error('Error loading auth from localStorage:', error)
+      console.error('Error loading auth from storage:', error)
       clearAuth()
       setError('登入狀態載入失敗')
     }

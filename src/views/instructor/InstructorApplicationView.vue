@@ -364,7 +364,7 @@ import { useRouter } from 'vue-router'
 
 import type { CreateApplicationRequest, InstructorApplication } from '@/types/instructor'
 import { apiService } from '@/services/api'
-import { authService } from '@/services/auth-service'
+import { authService } from '@/services/auth-service-enhanced'
 
 const router = useRouter()
 

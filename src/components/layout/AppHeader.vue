@@ -252,7 +252,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import MessageCenter from './MessageCenter.vue'
-import { authService } from '@/services/auth-service'
+import { authService } from '@/services/auth-service-enhanced'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()

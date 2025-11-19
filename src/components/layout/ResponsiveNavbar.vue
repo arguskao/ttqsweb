@@ -125,7 +125,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 
-import { authService } from '@/services/auth-service'
+import { authService } from '@/services/auth-service-enhanced'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()

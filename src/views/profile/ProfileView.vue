@@ -164,7 +164,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { authService } from '@/services/auth-service'
+import { authService } from '@/services/auth-service-enhanced'
 import type { User } from '@/types'
 
 const router = useRouter()

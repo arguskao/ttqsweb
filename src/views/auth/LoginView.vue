@@ -94,7 +94,7 @@ import {
   validateEmail,
   validateRequired,
   validationMessages
-} from '@/services/auth-service'
+} from '@/services/auth-service-enhanced'
 import type { LoginCredentials } from '@/types'
 
 const router = useRouter()

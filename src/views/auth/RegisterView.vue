@@ -191,7 +191,7 @@ import {
   validatePassword,
   validateRequired,
   validationMessages
-} from '@/services/auth-service'
+} from '@/services/auth-service-enhanced'
 import type { RegisterData } from '@/types'
 
 const router = useRouter()

@@ -83,10 +83,7 @@
                 <label class="label">&nbsp;</label>
                 <div class="control">
                   <button class="button is-light is-fullwidth" @click="$emit('reset-filters')">
-                    <span class="icon">
-                      <i class="fas fa-undo"></i>
-                    </span>
-                    <span>重置篩選</span>
+                    <span>🔄 重置篩選</span>
                   </button>
                 </div>
               </div>

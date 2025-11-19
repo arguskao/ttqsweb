@@ -93,7 +93,7 @@
                       <div class="column is-3">
                         <div class="field">
                           <label class="label">姓名</label>
-                          <p>{{ instructor.firstName || instructor.first_name }}{{ instructor.lastName || instructor.last_name }}</p>
+                          <p>{{ instructor.lastName || instructor.last_name }}{{ instructor.firstName || instructor.first_name }}</p>
                         </div>
                       </div>
                       <div class="column is-3">

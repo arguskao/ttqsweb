@@ -62,10 +62,7 @@
             <label class="label">&nbsp;</label>
             <div class="control">
               <button class="button is-light is-fullwidth" @click="$emit('reset-filters')">
-                <span class="icon">
-                  <i class="fas fa-undo"></i>
-                </span>
-                <span>重置</span>
+                <span>🔄 重置</span>
               </button>
             </div>
           </div>
@@ -100,37 +97,23 @@
                     aria-haspopup="true"
                     aria-controls="dropdown-menu"
                   >
-                    <span class="icon">
-                      <i class="fas fa-ellipsis-v"></i>
-                    </span>
+                    <span>⋮</span>
                   </button>
                 </div>
                 <div class="dropdown-menu" role="menu">
                   <div class="dropdown-content">
                     <a class="dropdown-item" @click="$emit('edit-job', job)">
-                      <span class="icon">
-                        <i class="fas fa-edit"></i>
-                      </span>
-                      <span>編輯</span>
+                      <span>✏️ 編輯</span>
                     </a>
                     <a class="dropdown-item" @click="$emit('view-applications', job)">
-                      <span class="icon">
-                        <i class="fas fa-users"></i>
-                      </span>
-                      <span>查看申請者</span>
+                      <span>👥 查看申請者</span>
                     </a>
                     <a class="dropdown-item" @click="$emit('duplicate-job', job)">
-                      <span class="icon">
-                        <i class="fas fa-copy"></i>
-                      </span>
-                      <span>複製職缺</span>
+                      <span>📋 複製職缺</span>
                     </a>
                     <hr class="dropdown-divider" />
                     <a class="dropdown-item has-text-danger" @click="$emit('delete-job', job)">
-                      <span class="icon">
-                        <i class="fas fa-trash"></i>
-                      </span>
-                      <span>刪除</span>
+                      <span>🗑️ 刪除</span>
                     </a>
                   </div>
                 </div>

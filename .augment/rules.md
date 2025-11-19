@@ -61,7 +61,12 @@
 - ✅ 使用參數化查詢防止 SQL 注入 (Drizzle 自動處理)
 - ✅ 建立適當的索引優化查詢
 - ✅ 使用 transaction 確保資料一致性
-- ❌ 不要使用傳統的 `pg` 或 `postgres` 套件 (不支援 serverless)
+- ❌ **絕對不要使用** `pg` 或 `postgres` 套件 (那些是給 Node.js 用的,在 Cloudflare Workers 會直接當掉)
+- ❌ 不要使用 `pg` 的任何函數: `Pool`, `Client`, `query()` 等
+- ❌ 不要使用 `node-postgres` 的任何 API
+- ⚠️ **重要**: `@neondatabase/serverless` 是 Neon 專用的 HTTP-based driver,與傳統 `pg` 完全不同
+- ⚠️ 傳統 `pg` 套件使用 TCP 連接,在 Cloudflare Workers 環境中**無法運作且會導致應用崩潰**
+- ⚠️ 必須透過 Drizzle ORM 操作資料庫,不能直接使用 SQL 查詢
 
 ### Hono + Neon + Drizzle 範例
 ```typescript
@@ -104,9 +109,14 @@ export default app
 import express from 'express' // 不支援 Cloudflare Workers
 const app = express()
 
-// ❌ 錯誤做法 - 使用 pg
-import { Pool } from 'pg' // 不支援 Cloudflare Workers
+// ❌ 錯誤做法 - 使用 pg (會直接當掉!)
+import { Pool, Client } from 'pg' // 這是給 Node.js 用的,在 Cloudflare Workers 會崩潰
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const client = new Client({ connectionString: process.env.DATABASE_URL })
+
+// ❌ 錯誤做法 - 使用 postgres
+import postgres from 'postgres' // 也不支援 Cloudflare Workers
+const sql = postgres(process.env.DATABASE_URL)
 ```
 
 ## 套件管理 (重要!)
@@ -232,7 +242,8 @@ refactor: Optimize database queries
 - ❌ 不要創建不必要的文件或文檔 (除非用戶明確要求)
 - ❌ 不要在 Cloudflare Workers/Pages Functions 中使用 Node.js 專屬 API
 - ❌ 不要使用 Express、Koa、Fastify 等 Node.js 框架 (改用 Hono)
-- ❌ 不要使用 `pg` 或 `postgres` 套件 (改用 `@neondatabase/serverless`)
+- ❌ **絕對禁止**使用 `pg`、`postgres`、`node-postgres` 套件 (會導致應用崩潰,改用 `@neondatabase/serverless`)
+- ❌ 不要使用 `Pool`、`Client`、`query()` 等傳統 PostgreSQL 連接方式
 - ❌ 不要寫原生 SQL (改用 Drizzle ORM)
 - ❌ 不要使用 `process.env` (改用 Cloudflare 的 `env` 參數或 Hono 的 `c.env`)
 

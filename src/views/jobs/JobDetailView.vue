@@ -95,9 +95,9 @@
 
           <!-- Sidebar -->
           <div class="column is-4">
-            <!-- Application Card -->
+            <!-- Quick Apply Card -->
             <div class="box">
-              <h3 class="title is-5">申請此職缺</h3>
+              <h3 class="title is-5">快速申請</h3>
 
               <div v-if="job.hasApplied" class="notification is-info is-light">
                 <p class="has-text-centered">
@@ -116,76 +116,9 @@
               </div>
 
               <div v-else>
-                <form @submit.prevent="submitApplication">
-                  <div class="field">
-                    <label class="label">求職信</label>
-                    <div class="control">
-                      <textarea
-                        v-model="applicationForm.coverLetter"
-                        class="textarea"
-                        placeholder="請簡述您的工作經驗和為何適合此職位..."
-                        rows="6"
-                      ></textarea>
-                    </div>
-                  </div>
-
-                  <div class="field">
-                    <label class="label">履歷檔案</label>
-                    <div class="control">
-                      <div class="file has-name is-boxed is-fullwidth">
-                        <label class="file-label">
-                          <input
-                            ref="resumeInput"
-                            class="file-input"
-                            type="file"
-                            accept=".pdf,.doc,.docx"
-                            @change="handleResumeSelect"
-                          />
-                          <span class="file-cta">
-                            <span class="file-icon">
-                              <span>📄</span>
-                            </span>
-                            <span class="file-label">選擇履歷檔案</span>
-                          </span>
-                          <span v-if="selectedResumeFile" class="file-name">
-                            {{ selectedResumeFile.name }}
-                          </span>
-                          <span v-else class="file-name">未選擇檔案</span>
-                        </label>
-                      </div>
-                    </div>
-                    <p class="help">只支持 PDF、DOC、DOCX 格式，最大 10MB</p>
-                  </div>
-                  
-                  <div v-if="uploadingResume" class="notification is-info is-light">
-                    <p class="has-text-centered">
-                      <span class="icon is-large">
-                        <span style="animation: spin 1s linear infinite">⏳</span>
-                      </span>
-                      履歷上傳中...
-                    </p>
-                  </div>
-
-                  <div v-if="applicationError" class="notification is-danger is-light">
-                    {{ applicationError }}
-                  </div>
-
-                  <div class="field">
-                    <div class="control">
-                      <button
-                        type="submit"
-                        class="button is-primary is-fullwidth"
-                        :class="{ 'is-loading': submitting }"
-                        :disabled="submitting"
-                      >
-                        <span class="icon">
-                          <span>✈️</span>
-                        </span>
-                        <span>提交申請</span>
-                      </button>
-                    </div>
-                  </div>
-                </form>
+                <button class="button is-primary is-fullwidth is-large" @click="showApplicationModal = true">
+                  <span>✈️ 立即申請</span>
+                </button>
               </div>
             </div>
 
@@ -218,6 +151,84 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Application Modal -->
+    <div class="modal" :class="{ 'is-active': showApplicationModal }">
+      <div class="modal-background" @click="showApplicationModal = false"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title">申請職缺：{{ job?.title }}</p>
+          <button class="delete" @click="showApplicationModal = false"></button>
+        </header>
+        <section class="modal-card-body">
+          <form @submit.prevent="submitApplication">
+            <div class="field">
+              <label class="label">求職信</label>
+              <div class="control">
+                <textarea
+                  v-model="applicationForm.coverLetter"
+                  class="textarea"
+                  placeholder="請簡述您的工作經驗和為何適合此職位..."
+                  rows="6"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label">履歷檔案</label>
+              <div class="control">
+                <div class="file has-name is-boxed is-fullwidth">
+                  <label class="file-label">
+                    <input
+                      ref="resumeInput"
+                      class="file-input"
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      @change="handleResumeSelect"
+                    />
+                    <span class="file-cta">
+                      <span class="file-icon">
+                        <span>📄</span>
+                      </span>
+                      <span class="file-label">選擇履歷檔案</span>
+                    </span>
+                    <span v-if="selectedResumeFile" class="file-name">
+                      {{ selectedResumeFile.name }}
+                    </span>
+                    <span v-else class="file-name">未選擇檔案</span>
+                  </label>
+                </div>
+              </div>
+              <p class="help">只支持 PDF、DOC、DOCX 格式，最大 10MB</p>
+            </div>
+            
+            <div v-if="uploadingResume" class="notification is-info is-light">
+              <p class="has-text-centered">
+                <span class="icon is-large">
+                  <span style="animation: spin 1s linear infinite">⏳</span>
+                </span>
+                履歷上傳中...
+              </p>
+            </div>
+
+            <div v-if="applicationError" class="notification is-danger is-light">
+              {{ applicationError }}
+            </div>
+          </form>
+        </section>
+        <footer class="modal-card-foot">
+          <button class="button" @click="showApplicationModal = false">取消</button>
+          <button
+            class="button is-primary"
+            :class="{ 'is-loading': submitting }"
+            :disabled="submitting"
+            @click="submitApplication"
+          >
+            <span>✈️ 提交申請</span>
+          </button>
+        </footer>
       </div>
     </div>
 
@@ -288,6 +299,7 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const submitting = ref(false)
 const applicationError = ref<string | null>(null)
+const showApplicationModal = ref(false)
 const showSuccessModal = ref(false)
 
 const resumeInput = ref<HTMLInputElement | null>(null)
@@ -457,6 +469,7 @@ const submitApplication = async () => {
 
 const closeSuccessModal = () => {
   showSuccessModal.value = false
+  showApplicationModal.value = false
 }
 
 const shareJob = () => {

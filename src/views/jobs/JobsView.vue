@@ -191,6 +191,109 @@
         </div>
       </div>
     </section>
+
+    <!-- Application Modal -->
+    <div class="modal" :class="{ 'is-active': showApplicationModal }">
+      <div class="modal-background" @click="showApplicationModal = false"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title">申請職缺：{{ selectedJob?.title }}</p>
+          <button class="delete" @click="showApplicationModal = false"></button>
+        </header>
+        <section class="modal-card-body">
+          <form @submit.prevent="submitApplication">
+            <div class="field">
+              <label class="label">求職信</label>
+              <div class="control">
+                <textarea
+                  v-model="applicationForm.coverLetter"
+                  class="textarea"
+                  placeholder="請簡述您的工作經驗和為何適合此職位..."
+                  rows="6"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label">履歷檔案</label>
+              <div class="control">
+                <div class="file has-name is-boxed is-fullwidth">
+                  <label class="file-label">
+                    <input
+                      ref="resumeInput"
+                      class="file-input"
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      @change="handleResumeSelect"
+                    />
+                    <span class="file-cta">
+                      <span class="file-icon">
+                        <span>📄</span>
+                      </span>
+                      <span class="file-label">選擇履歷檔案</span>
+                    </span>
+                    <span v-if="selectedResumeFile" class="file-name">
+                      {{ selectedResumeFile.name }}
+                    </span>
+                    <span v-else class="file-name">未選擇檔案</span>
+                  </label>
+                </div>
+              </div>
+              <p class="help">只支持 PDF、DOC、DOCX 格式，最大 10MB</p>
+            </div>
+            
+            <div v-if="uploadingResume" class="notification is-info is-light">
+              <p class="has-text-centered">
+                <span class="icon is-large">
+                  <span style="animation: spin 1s linear infinite">⏳</span>
+                </span>
+                履歷上傳中...
+              </p>
+            </div>
+
+            <div v-if="applicationError" class="notification is-danger is-light">
+              {{ applicationError }}
+            </div>
+          </form>
+        </section>
+        <footer class="modal-card-foot">
+          <button class="button" @click="showApplicationModal = false">取消</button>
+          <button
+            class="button is-primary"
+            :class="{ 'is-loading': submitting }"
+            :disabled="submitting"
+            @click="submitApplication"
+          >
+            <span>✈️ 提交申請</span>
+          </button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal" :class="{ 'is-active': showSuccessModal }">
+      <div class="modal-background" @click="closeSuccessModal"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title">申請成功</p>
+          <button class="delete" @click="closeSuccessModal"></button>
+        </header>
+        <section class="modal-card-body">
+          <div class="has-text-centered">
+            <span class="icon is-large has-text-success" style="font-size: 3rem">
+              <span>✅</span>
+            </span>
+            <p class="title is-4 mt-4">您的申請已成功提交！</p>
+            <p class="subtitle is-6">雇主將會審核您的申請，請耐心等待回覆。</p>
+          </div>
+        </section>
+        <footer class="modal-card-foot">
+          <button class="button is-primary is-fullwidth" @click="closeSuccessModal">
+            確定
+          </button>
+        </footer>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -235,6 +338,21 @@ const meta = ref({
   limit: 9,
   total: 0,
   totalPages: 0
+})
+
+// Application modal related
+const showApplicationModal = ref(false)
+const selectedJobId = ref<number | null>(null)
+const selectedJob = ref<Job | null>(null)
+const submitting = ref(false)
+const applicationError = ref<string | null>(null)
+const showSuccessModal = ref(false)
+const uploadingResume = ref(false)
+const selectedResumeFile = ref<File | null>(null)
+const resumeInput = ref<HTMLInputElement | null>(null)
+const applicationForm = ref({
+  coverLetter: '',
+  resumeUrl: ''
 })
 
 const isJobSeeker = computed(() => {
@@ -337,8 +455,97 @@ const applyToJob = (jobId: number) => {
     router.push('/login')
     return
   }
-  // 直接跳轉到工作詳情頁面，那裡有申請表單
-  router.push(`/jobs/${jobId}`)
+  // 彈出申請 modal
+  selectedJobId.value = jobId
+  showApplicationModal.value = true
+  // 載入該職缺的詳細資訊
+  fetchJobForApplication(jobId)
+}
+
+// Application functions
+const fetchJobForApplication = async (jobId: number) => {
+  try {
+    const response = await jobService.getJobById(jobId)
+    if (response.data.success) {
+      selectedJob.value = response.data.data
+    }
+  } catch (err) {
+    console.error('Failed to fetch job details:', err)
+  }
+}
+
+const handleResumeSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    selectedResumeFile.value = target.files[0]!
+    uploadResume()
+  }
+}
+
+const uploadResume = async () => {
+  if (!selectedResumeFile.value) return
+
+  uploadingResume.value = true
+
+  try {
+    const formData = new FormData()
+    formData.append('resume', selectedResumeFile.value)
+
+    const response = await fetch('/api/v1/job-applications/upload-resume', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token') || localStorage.getItem('auth_token')}`
+      },
+      body: formData
+    }).then(res => res.json())
+    
+    if (!response || response.success === false) {
+      throw new Error(response?.message || '上傳失敗')
+    }
+
+    if (response.success && response.data) {
+      applicationForm.value.resumeUrl = response.data.url
+    }
+  } catch (err: any) {
+    applicationError.value = err.message || '上傳履歷失敗，請稍後再試'
+    selectedResumeFile.value = null
+  } finally {
+    uploadingResume.value = false
+  }
+}
+
+const submitApplication = async () => {
+  if (!selectedJobId.value) return
+
+  submitting.value = true
+  applicationError.value = null
+
+  try {
+    const response = await jobService.applyToJob(selectedJobId.value, applicationForm.value)
+
+    if (response.data.success) {
+      showSuccessModal.value = true
+      showApplicationModal.value = false
+      applicationForm.value = {
+        coverLetter: '',
+        resumeUrl: ''
+      }
+      selectedResumeFile.value = null
+      if (resumeInput.value) {
+        resumeInput.value.value = ''
+      }
+      // 重新載入職缺列表以更新申請狀態
+      fetchJobs()
+    }
+  } catch (err: any) {
+    applicationError.value = err.response?.data?.error?.message || '提交申請失敗，請稍後再試'
+  } finally {
+    submitting.value = false
+  }
+}
+
+const closeSuccessModal = () => {
+  showSuccessModal.value = false
 }
 
 // 移除收藏功能 - 網站目前不支援此功能

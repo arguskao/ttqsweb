@@ -303,6 +303,7 @@ import { useRouter } from 'vue-router'
 
 import JobCard from '@/components/common/JobCard.vue'
 import jobService from '@/services/job-service'
+import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 
 interface Job {
@@ -465,10 +466,8 @@ const applyToJob = (jobId: number) => {
 // Application functions
 const fetchJobForApplication = async (jobId: number) => {
   try {
-    const response = await jobService.getJobById(jobId)
-    if (response.data.success) {
-      selectedJob.value = response.data.data
-    }
+    const job = await jobService.getJobById(jobId)
+    selectedJob.value = job
   } catch (err) {
     console.error('Failed to fetch job details:', err)
   }
@@ -521,9 +520,17 @@ const submitApplication = async () => {
   applicationError.value = null
 
   try {
-    const response = await jobService.applyToJob(selectedJobId.value, applicationForm.value)
+    // 直接使用 API 調用
+    const response = await fetch(`/api/v1/jobs/${selectedJobId.value}/apply`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token') || localStorage.getItem('auth_token')}`
+      },
+      body: JSON.stringify(applicationForm.value)
+    }).then(res => res.json())
 
-    if (response.data.success) {
+    if (response.success) {
       showSuccessModal.value = true
       showApplicationModal.value = false
       applicationForm.value = {
@@ -536,9 +543,11 @@ const submitApplication = async () => {
       }
       // 重新載入職缺列表以更新申請狀態
       fetchJobs()
+    } else {
+      throw new Error(response.message || '提交申請失敗')
     }
   } catch (err: any) {
-    applicationError.value = err.response?.data?.error?.message || '提交申請失敗，請稍後再試'
+    applicationError.value = err.message || '提交申請失敗，請稍後再試'
   } finally {
     submitting.value = false
   }

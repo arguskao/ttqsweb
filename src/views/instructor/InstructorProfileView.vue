@@ -197,22 +197,13 @@
                 <div class="card-content">
                   <div class="buttons mb-4">
                     <router-link to="/instructor/course-application" class="button is-primary">
-                      <span class="icon">
-                        <i class="fas fa-plus"></i>
-                      </span>
-                      <span>申請開課</span>
+                      <span>➕ 申請開課</span>
                     </router-link>
                     <router-link to="/instructor/my-courses" class="button is-info">
-                      <span class="icon">
-                        <i class="fas fa-chalkboard-teacher"></i>
-                      </span>
-                      <span>我的授課</span>
+                      <span>📚 我的授課</span>
                     </router-link>
                     <router-link to="/courses" class="button is-light">
-                      <span class="icon">
-                        <i class="fas fa-graduation-cap"></i>
-                      </span>
-                      <span>瀏覽所有課程</span>
+                      <span>🎓 瀏覽所有課程</span>
                     </router-link>
                   </div>
 

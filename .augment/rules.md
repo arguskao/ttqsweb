@@ -43,11 +43,13 @@
 
 ### Node.js / JavaScript
 ```bash
-# ✅ 正確做法
-npm install <package>
-npm uninstall <package>
+# ✅ 正確做法 - 使用 pnpm
+pnpm install <package>
+pnpm add <package>
+pnpm remove <package>
 
 # ❌ 錯誤做法
+# 不要使用 npm install
 # 不要手動編輯 package.json
 ```
 

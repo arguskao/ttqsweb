@@ -28,16 +28,49 @@
 
 ## 後端開發規範
 
+### Cloudflare 部署 (TypeScript 專案)
+- ✅ 使用 **Cloudflare Pages Functions** 或 **Cloudflare Workers**
+- ✅ 只使用 Cloudflare 支援的 API (Web Standards API)
+- ❌ 不要使用 Node.js 專屬 API (fs, path, process 等)
+- ❌ 不要使用 `__dirname`, `__filename`
+- ✅ 使用 `Request` 和 `Response` Web API
+- ✅ 使用 `fetch` 進行 HTTP 請求
+- ✅ 環境變數使用 `env` 參數,不是 `process.env`
+
 ### API 設計
 - ✅ 使用 RESTful API 設計原則
 - ✅ 使用 async/await 處理異步操作
 - ✅ 所有 API 錯誤必須妥善處理
 - ✅ 返回適當的 HTTP 狀態碼
+- ✅ API 路由放在 `functions/api/` 目錄
 
-### 資料庫
-- ✅ 使用參數化查詢防止 SQL 注入
+### 資料庫 (Neon PostgreSQL)
+- ✅ 使用 **Neon Serverless Driver** (`@neondatabase/serverless`)
+- ✅ 使用 **Drizzle ORM** 進行資料庫操作
+- ✅ 使用 Drizzle 的 schema 定義資料表
+- ✅ 使用 Drizzle 的 query builder,不要寫原生 SQL
+- ✅ 使用參數化查詢防止 SQL 注入 (Drizzle 自動處理)
 - ✅ 建立適當的索引優化查詢
 - ✅ 使用 transaction 確保資料一致性
+- ❌ 不要使用傳統的 `pg` 或 `postgres` 套件 (不支援 serverless)
+
+### Neon + Drizzle 範例
+```typescript
+// ✅ 正確做法
+import { neon } from '@neondatabase/serverless'
+import { drizzle } from 'drizzle-orm/neon-http'
+import * as schema from './schema'
+
+const sql = neon(env.DATABASE_URL)
+const db = drizzle(sql, { schema })
+
+// 使用 Drizzle 查詢
+const users = await db.select().from(schema.users).where(eq(schema.users.id, userId))
+
+// ❌ 錯誤做法
+import { Pool } from 'pg' // 不支援 Cloudflare Workers
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+```
 
 ## 套件管理 (重要!)
 
@@ -51,6 +84,22 @@ pnpm remove <package>
 # ❌ 錯誤做法
 # 不要使用 npm install
 # 不要手動編輯 package.json
+```
+
+### TypeScript 專案必備套件
+```bash
+# Cloudflare 部署
+pnpm add -D wrangler @cloudflare/workers-types
+
+# Neon 資料庫
+pnpm add @neondatabase/serverless
+
+# Drizzle ORM
+pnpm add drizzle-orm
+pnpm add -D drizzle-kit
+
+# TypeScript
+pnpm add -D typescript @types/node
 ```
 
 ### Python
@@ -141,6 +190,10 @@ refactor: Optimize database queries
 - ❌ 不要使用已棄用的 API 或套件
 - ❌ 不要提交包含敏感資訊的代碼
 - ❌ 不要創建不必要的文件或文檔 (除非用戶明確要求)
+- ❌ 不要在 Cloudflare Workers/Pages Functions 中使用 Node.js 專屬 API
+- ❌ 不要使用 `pg` 或 `postgres` 套件 (改用 `@neondatabase/serverless`)
+- ❌ 不要寫原生 SQL (改用 Drizzle ORM)
+- ❌ 不要使用 `process.env` (改用 Cloudflare 的 `env` 參數)
 
 ## 部署流程
 

@@ -30,12 +30,21 @@
 
 ### Cloudflare 部署 (TypeScript 專案)
 - ✅ 使用 **Cloudflare Pages Functions** 或 **Cloudflare Workers**
+- ✅ 使用 **Hono 框架** 建立 API (不要使用 Express)
 - ✅ 只使用 Cloudflare 支援的 API (Web Standards API)
 - ❌ 不要使用 Node.js 專屬 API (fs, path, process 等)
 - ❌ 不要使用 `__dirname`, `__filename`
 - ✅ 使用 `Request` 和 `Response` Web API
 - ✅ 使用 `fetch` 進行 HTTP 請求
 - ✅ 環境變數使用 `env` 參數,不是 `process.env`
+
+### Hono 框架
+- ✅ 使用 **Hono** 作為 Web 框架 (輕量、快速、支援 Cloudflare Workers)
+- ✅ 使用 Hono 的路由系統定義 API 端點
+- ✅ 使用 Hono 的中間件處理認證、CORS 等
+- ✅ 使用 Hono 的 context (`c`) 存取 request、response、env
+- ❌ 不要使用 Express (不支援 Cloudflare Workers)
+- ❌ 不要使用 Koa、Fastify 等 Node.js 框架
 
 ### API 設計
 - ✅ 使用 RESTful API 設計原則
@@ -54,20 +63,48 @@
 - ✅ 使用 transaction 確保資料一致性
 - ❌ 不要使用傳統的 `pg` 或 `postgres` 套件 (不支援 serverless)
 
-### Neon + Drizzle 範例
+### Hono + Neon + Drizzle 範例
 ```typescript
-// ✅ 正確做法
+// ✅ 正確做法 - Hono API 路由
+import { Hono } from 'hono'
 import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
+import { eq } from 'drizzle-orm'
 import * as schema from './schema'
 
-const sql = neon(env.DATABASE_URL)
-const db = drizzle(sql, { schema })
+type Env = {
+  DATABASE_URL: string
+}
 
-// 使用 Drizzle 查詢
-const users = await db.select().from(schema.users).where(eq(schema.users.id, userId))
+const app = new Hono<{ Bindings: Env }>()
 
-// ❌ 錯誤做法
+// 定義路由
+app.get('/api/users/:id', async (c) => {
+  const userId = c.req.param('id')
+
+  // 連接資料庫
+  const sql = neon(c.env.DATABASE_URL)
+  const db = drizzle(sql, { schema })
+
+  // 使用 Drizzle 查詢
+  const users = await db.select()
+    .from(schema.users)
+    .where(eq(schema.users.id, userId))
+
+  if (users.length === 0) {
+    return c.json({ error: 'User not found' }, 404)
+  }
+
+  return c.json(users[0])
+})
+
+export default app
+
+// ❌ 錯誤做法 - 使用 Express
+import express from 'express' // 不支援 Cloudflare Workers
+const app = express()
+
+// ❌ 錯誤做法 - 使用 pg
 import { Pool } from 'pg' // 不支援 Cloudflare Workers
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 ```
@@ -88,6 +125,9 @@ pnpm remove <package>
 
 ### TypeScript 專案必備套件
 ```bash
+# Hono 框架
+pnpm add hono
+
 # Cloudflare 部署
 pnpm add -D wrangler @cloudflare/workers-types
 
@@ -191,9 +231,10 @@ refactor: Optimize database queries
 - ❌ 不要提交包含敏感資訊的代碼
 - ❌ 不要創建不必要的文件或文檔 (除非用戶明確要求)
 - ❌ 不要在 Cloudflare Workers/Pages Functions 中使用 Node.js 專屬 API
+- ❌ 不要使用 Express、Koa、Fastify 等 Node.js 框架 (改用 Hono)
 - ❌ 不要使用 `pg` 或 `postgres` 套件 (改用 `@neondatabase/serverless`)
 - ❌ 不要寫原生 SQL (改用 Drizzle ORM)
-- ❌ 不要使用 `process.env` (改用 Cloudflare 的 `env` 參數)
+- ❌ 不要使用 `process.env` (改用 Cloudflare 的 `env` 參數或 Hono 的 `c.env`)
 
 ## 部署流程
 

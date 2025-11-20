@@ -49,7 +49,40 @@
 
 ## ❌ **嘗試過但失敗的優化:**
 
-### **1. PurgeCSS 優化 Bulma CSS**
+### **1. 延遲載入 FontAwesome + CSS minify (第2次嘗試)**
+
+**嘗試內容:**
+- 延遲載入 FontAwesome CSS
+- 啟用 esbuild CSS minify
+
+**結果:**
+- 🔴 **分數更差**
+- 🔴 部署失敗 (UTF-8 編碼問題)
+
+**教訓:**
+- 簡單的優化不一定有效
+- 需要實測才知道
+
+---
+
+### **2. 優化 preconnect 和字體載入策略 (第3次嘗試)**
+
+**嘗試內容:**
+- 添加 crossorigin 到 cdnjs.cloudflare.com
+- 改變 Google Fonts 為立即載入
+- 保持 FontAwesome 延遲載入
+
+**結果:**
+- 🔴 **分數更差**
+
+**教訓:**
+- 針對 Lighthouse 報告的優化建議不一定有效
+- 每次優化都要測試
+- 如果沒改善,立即回滾
+
+---
+
+### **3. PurgeCSS 優化 Bulma CSS (第1次嘗試)**
 - **目標**: 減少 CSS 大小
 - **結果**: ❌ 沒有效果
 - **原因**: Bulma CSS 已經被 Vite 優化過,PurgeCSS 無法進一步減少

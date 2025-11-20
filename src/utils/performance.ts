@@ -73,7 +73,7 @@ export const addResourceHint = (href: string, rel: 'prefetch' | 'preconnect' | '
   document.head.appendChild(link)
 }
 
-// Web Vitals tracking
+// Web Vitals tracking (console only - no external analytics)
 export const trackWebVitals = () => {
   if (typeof window === 'undefined') return
 
@@ -84,11 +84,11 @@ export const trackWebVitals = () => {
 
     if (!lastEntry) return
 
-    // Send to analytics
-    if (window.gtag) {
-      window.gtag('event', 'LCP', {
+    // Log to console for debugging
+    if (import.meta.env.DEV) {
+      console.log('[Web Vitals] LCP:', {
         value: Math.round((lastEntry as any).startTime ?? 0),
-        event_category: 'Web Vitals'
+        element: lastEntry
       })
     }
   })

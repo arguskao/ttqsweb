@@ -64,10 +64,8 @@ authServiceEnhanced
 // 開始預加載關鍵路由
 routePreloader.preloadCriticalRoutes()
 
-// Initialize analytics
-if (import.meta.env.VITE_GA_TRACKING_ID) {
-  analytics.init()
-}
+// Note: Analytics is console-only (no external tracking)
+// Real analytics can be added later if needed
 
 // Register Service Worker for PWA
 if ('serviceWorker' in navigator) {

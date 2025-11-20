@@ -1,19 +1,22 @@
-// 全域類型定義
-export {}
+/**
+ * Global Type Definitions
+ */
+
+import type { RoutePreloader } from '@/utils/route-preloader'
 
 declare global {
   interface Window {
-    // 認證初始化標記
+    /**
+     * Route preloader instance for manual preloading
+     */
+    __routePreloader?: RoutePreloader
+
+    /**
+     * Authentication initialization status
+     */
     __authInitialized?: boolean
-    
-    // 效能監控相關
-    __performanceMetrics?: {
-      fcp?: number
-      lcp?: number
-      cls?: number
-      fid?: number
-      ttfb?: number
-    }
   }
 }
+
+export {}
 

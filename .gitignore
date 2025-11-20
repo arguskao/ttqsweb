@@ -39,3 +39,12 @@ coverage
 
 # Wrangler configuration (contains secrets)
 wrangler.toml
+
+# Wrangler local development files
+.wrangler/
+.dev.vars
+
+# Temporary files
+.cursorrules
+223.md
+BUNDLE_ANALYSIS.md

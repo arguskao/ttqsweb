@@ -14,6 +14,7 @@ import { setupApiMetrics } from './utils/api-metrics'
 import { setupGlobalErrorHandlers } from './utils/error-logger'
 import { loadCriticalResources } from './utils/performance'
 import { setupRoutePreloading } from './utils/route-preloader'
+import { ANALYTICS_CONFIG } from './config/analytics'
 
 // Load critical resources early
 loadCriticalResources()
@@ -44,7 +45,7 @@ setupApiMetrics(api)
 
 // 設置路由預加載
 const routePreloader = setupRoutePreloading(router)
-;(window as any).__routePreloader = routePreloader
+window.__routePreloader = routePreloader
 
 // Mount app
 app.mount('#app')
@@ -100,15 +101,17 @@ if (typeof window !== 'undefined') {
   // Simple Web Vitals monitoring (console only)
   import('web-vitals')
     .then(mod => {
-      const { getCLS, getFID, getFCP, getLCP, getTTFB } = mod as any
-      getCLS((metric: any) => console.log('CLS:', metric))
-      getFID((metric: any) => console.log('FID:', metric))
-      getFCP((metric: any) => console.log('FCP:', metric))
-      getLCP((metric: any) => console.log('LCP:', metric))
-      getTTFB((metric: any) => console.log('TTFB:', metric))
+      const { onCLS, onFID, onFCP, onLCP, onTTFB } = mod
+      onCLS(metric => console.log('CLS:', metric))
+      onFID(metric => console.log('FID:', metric))
+      onFCP(metric => console.log('FCP:', metric))
+      onLCP(metric => console.log('LCP:', metric))
+      onTTFB(metric => console.log('TTFB:', metric))
     })
-    .catch(() => {
-      // Silently fail if web-vitals is not available
+    .catch(error => {
+      if (import.meta.env.DEV) {
+        console.warn('Failed to load web-vitals:', error)
+      }
     })
 
   // Monitor memory usage in development
@@ -126,7 +129,10 @@ if (typeof window !== 'undefined') {
     const docHeight = document.documentElement.scrollHeight - window.innerHeight
     const scrollPercent = Math.round((scrollTop / docHeight) * 100)
 
-    if (scrollPercent > maxScrollDepth && scrollPercent % 25 === 0) {
+    if (
+      scrollPercent > maxScrollDepth &&
+      scrollPercent % ANALYTICS_CONFIG.SCROLL_DEPTH_INTERVAL === 0
+    ) {
       maxScrollDepth = scrollPercent
       analytics.trackScrollDepth(scrollPercent)
     }
@@ -135,14 +141,14 @@ if (typeof window !== 'undefined') {
   let scrollTimeout: ReturnType<typeof setTimeout>
   const scrollHandler = () => {
     clearTimeout(scrollTimeout)
-    scrollTimeout = setTimeout(trackScrollDepth, 100)
+    scrollTimeout = setTimeout(trackScrollDepth, ANALYTICS_CONFIG.SCROLL_DEBOUNCE_DELAY)
   }
   window.addEventListener('scroll', scrollHandler)
 
   // Track time on page
   const startTime = Date.now()
   const beforeUnloadHandler = () => {
-    const timeOnPage = Math.round((Date.now() - startTime) / 1000)
+    const timeOnPage = Math.round((Date.now() - startTime) / ANALYTICS_CONFIG.MS_TO_SECONDS)
     analytics.trackTimeOnPage(timeOnPage)
     
     // Cleanup event listeners to prevent memory leaks

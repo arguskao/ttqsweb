@@ -6,7 +6,7 @@ interface PreloadConfig {
   condition?: () => boolean
 }
 
-class RoutePreloader {
+export class RoutePreloader {
   private readonly router: Router
   private readonly preloadedRoutes = new Set<string>()
   private config: PreloadConfig[] = []
@@ -148,7 +148,7 @@ export function setupRoutePreloading(router: Router): RoutePreloader {
 export const vPreloadOnHover = {
   mounted(el: HTMLElement, binding: { value: string }) {
     const routeName = binding.value
-    const preloader = (window as any).__routePreloader as RoutePreloader
+    const preloader = window.__routePreloader
 
     if (preloader) {
       preloader.preloadOnHover(el, routeName)

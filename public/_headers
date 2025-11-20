@@ -28,9 +28,10 @@
   # Permissions policy (disable unnecessary features)
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=()
 
-  # Content Security Policy
-  # Allows: self, inline scripts/styles, CDN resources, external fonts
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  # Content Security Policy - TEMPORARILY DISABLED FOR TESTING
+  # CSP with 'unsafe-inline' and 'unsafe-eval' causes Best Practices score to drop
+  # TODO: Re-enable with proper nonce-based CSP after testing
+  # Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
 
   # HSTS (HTTP Strict Transport Security)
   # Force HTTPS for 1 year, including subdomains

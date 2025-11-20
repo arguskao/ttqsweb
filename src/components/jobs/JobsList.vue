@@ -2,72 +2,85 @@
   <div class="jobs-list">
     <!-- 篩選和搜索 -->
     <div class="box">
-      <div class="columns">
-        <div class="column is-4">
-          <div class="field">
-            <label class="label">搜索職缺</label>
-            <div class="control has-icons-left">
-              <input
-                :value="searchQuery"
-                class="input"
-                type="text"
-                placeholder="搜索職缺標題或描述..."
-                @input="$emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
-              />
-              <span class="icon is-small is-left">
-                <i class="fas fa-search"></i>
-              </span>
+      <form role="search" aria-label="搜尋職缺" @submit.prevent>
+        <div class="columns">
+          <div class="column is-4">
+            <div class="field">
+              <label class="label" for="job-search">搜索職缺</label>
+              <div class="control has-icons-left">
+                <input
+                  id="job-search"
+                  :value="searchQuery"
+                  class="input"
+                  type="search"
+                  placeholder="搜索職缺標題或描述..."
+                  aria-label="搜尋職缺關鍵字"
+                  @input="$emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
+                />
+                <span class="icon is-small is-left" aria-hidden="true">
+                  <i class="fas fa-search"></i>
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="column is-3">
-          <div class="field">
-            <label class="label">狀態篩選</label>
-            <div class="control">
-              <div class="select is-fullwidth">
-                <select
-                  :value="statusFilter"
-                  @change="$emit('update:statusFilter', ($event.target as HTMLSelectElement).value)"
+          <div class="column is-3">
+            <div class="field">
+              <label class="label" for="status-filter">狀態篩選</label>
+              <div class="control">
+                <div class="select is-fullwidth">
+                  <select
+                    id="status-filter"
+                    :value="statusFilter"
+                    aria-label="選擇職缺狀態"
+                    @change="$emit('update:statusFilter', ($event.target as HTMLSelectElement).value)"
+                  >
+                    <option value="">全部狀態</option>
+                    <option value="active">活躍</option>
+                    <option value="paused">暫停</option>
+                    <option value="closed">已關閉</option>
+                    <option value="expired">已過期</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="column is-3">
+            <div class="field">
+              <label class="label" for="sort-by">排序方式</label>
+              <div class="control">
+                <div class="select is-fullwidth">
+                  <select
+                    id="sort-by"
+                    :value="sortBy"
+                    aria-label="選擇排序方式"
+                    @change="$emit('update:sortBy', ($event.target as HTMLSelectElement).value)"
+                  >
+                    <option value="created_at">發布時間</option>
+                    <option value="title">標題</option>
+                    <option value="applications">申請數量</option>
+                    <option value="expires_at">過期時間</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="column is-2">
+            <div class="field">
+              <label class="label">&nbsp;</label>
+              <div class="control">
+                <button
+                  type="button"
+                  class="button is-light is-fullwidth"
+                  aria-label="重置所有篩選條件"
+                  @click="$emit('reset-filters')"
                 >
-                  <option value="">全部狀態</option>
-                  <option value="active">活躍</option>
-                  <option value="paused">暫停</option>
-                  <option value="closed">已關閉</option>
-                  <option value="expired">已過期</option>
-                </select>
+                  <span>🔄 重置</span>
+                </button>
               </div>
             </div>
           </div>
         </div>
-        <div class="column is-3">
-          <div class="field">
-            <label class="label">排序方式</label>
-            <div class="control">
-              <div class="select is-fullwidth">
-                <select
-                  :value="sortBy"
-                  @change="$emit('update:sortBy', ($event.target as HTMLSelectElement).value)"
-                >
-                  <option value="created_at">發布時間</option>
-                  <option value="title">標題</option>
-                  <option value="applications">申請數量</option>
-                  <option value="expires_at">過期時間</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="column is-2">
-          <div class="field">
-            <label class="label">&nbsp;</label>
-            <div class="control">
-              <button class="button is-light is-fullwidth" @click="$emit('reset-filters')">
-                <span>🔄 重置</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      </form>
     </div>
 
     <!-- 職缺列表 -->

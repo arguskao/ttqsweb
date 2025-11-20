@@ -5,18 +5,18 @@
         <strong>藥助Next學院</strong>
       </router-link>
 
-      <a
-        role="button"
+      <button
+        type="button"
         class="navbar-burger"
         :class="{ 'is-active': isMenuOpen }"
-        aria-label="menu"
-        aria-expanded="false"
+        aria-label="切換導航選單"
+        :aria-expanded="isMenuOpen ? 'true' : 'false'"
         @click="toggleMenu"
       >
         <span aria-hidden="true"></span>
         <span aria-hidden="true"></span>
         <span aria-hidden="true"></span>
-      </a>
+      </button>
     </div>
 
     <div class="navbar-menu" :class="{ 'is-active': isMenuOpen }">

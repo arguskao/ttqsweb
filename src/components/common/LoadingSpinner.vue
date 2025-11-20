@@ -1,6 +1,6 @@
 <template>
-  <div class="loading-spinner">
-    <div class="spinner"></div>
+  <div class="loading-spinner" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
     <p class="loading-text">{{ text }}</p>
   </div>
 </template>

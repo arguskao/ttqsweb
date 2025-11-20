@@ -25,14 +25,19 @@ onMounted(() => {
 
 <template>
   <div id="app">
+    <!-- 跳過導航連結 (無障礙功能) -->
+    <a href="#main-content" class="skip-link">跳至主要內容</a>
+
     <AppHeader />
-    <main class="main-content">
+
+    <main id="main-content" class="main-content" tabindex="-1">
       <RouterView v-slot="{ Component }">
         <KeepAlive :include="cachedViews">
           <component :is="Component" />
         </KeepAlive>
       </RouterView>
     </main>
+
     <AppFooter />
     <ToastContainer ref="toastContainerRef" />
   </div>
@@ -45,9 +50,31 @@ onMounted(() => {
   flex-direction: column;
 }
 
+/* 跳過導航連結樣式 */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #00d1b2;
+  color: white;
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 100;
+  font-weight: 600;
+  border-radius: 0 0 4px 0;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
 .main-content {
   flex: 1;
   padding-top: 2rem;
   padding-bottom: 2rem;
+}
+
+.main-content:focus {
+  outline: none;
 }
 </style>

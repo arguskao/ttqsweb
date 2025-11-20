@@ -76,14 +76,14 @@
         </div>
 
         <!-- Loading State -->
-        <div v-if="loading" class="has-text-centered py-6">
-          <button class="button is-loading is-large is-white"></button>
+        <div v-if="loading" class="has-text-centered py-6" role="status" aria-live="polite">
+          <button class="button is-loading is-large is-white" aria-hidden="true"></button>
           <p class="mt-3">載入中...</p>
         </div>
 
         <!-- Error State -->
-        <div v-else-if="error" class="notification is-danger">
-          <button class="delete" @click="error = null"></button>
+        <div v-else-if="error" class="notification is-danger" role="alert" aria-live="assertive">
+          <button class="delete" aria-label="關閉錯誤訊息" @click="error = null"></button>
           {{ error }}
         </div>
 
